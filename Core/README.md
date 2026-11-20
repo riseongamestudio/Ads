@@ -1,4 +1,4 @@
-# RiseOn Ads
+# RiseOn.Ads
 
 Quảng cáo tự khởi động khi mở game theo thiết lập trong Project Settings: mediation
 khởi động khi luồng consent cho phép quảng cáo, danh sách ưu tiên theo định dạng
@@ -10,25 +10,76 @@ và chạy lớp đó.
 
 Package `com.riseon.ads`, namespace `RiseOn.Ads`.
 
+## Mục lục
+
+- [Yêu cầu](#yêu-cầu)
+- [Cài đặt](#cài-đặt)
+- [Tổng quan](#tổng-quan)
+- [Cài đặt của project](#cài-đặt-của-project)
+- [`AdsManagerBase`](#adsmanagerbase)
+- [Trong Editor](#trong-editor)
+- [Hướng dẫn nhanh](#hướng-dẫn-nhanh)
+- [Consent của SDK](#consent-của-sdk)
+- [Lịch sử thay đổi](#lịch-sử-thay-đổi)
+- [Giấy phép](#giấy-phép)
+
 ## Yêu cầu
 
-| Phụ thuộc | Cách có |
-|---|---|
-| Unity 6000.0+ | |
-| `com.riseon.consent` | Tự cài theo `package.json`; luồng UMP + ATT mà mediation chờ |
-| `com.riseon.utils`, `com.riseon.serializables` | Tự cài theo `package.json` |
-| `com.cysharp.unitask` | Tự cài theo `package.json` (OpenUPM, scope `com.cysharp`) |
-| `com.unity.ugui` | Tự cài theo `package.json`; màn che trong Editor vẽ bằng uGUI |
-| Odin Inspector | Cài tay từ Asset Store |
-| Ít nhất một adapter | `com.riseon.ads.admob`, `com.riseon.ads.max`, `com.riseon.ads.levelplay` |
-| `com.riseon.firebase.remoteconfig` (tùy chọn) | Cài thì mỗi format trong mục Formats có dòng chọn key Remote Config cho danh sách mediation, và mỗi luật số hay bật/tắt của format (trừ Included In Remove Ads) cùng On Launch, After Away của mục On Return To Game có ô chọn key |
+| Phụ thuộc | Cách có | Dùng cho |
+|---|---|---|
+| Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của trang cài đặt |
+| `com.riseon.consent` 1.0.2 | Tự cài theo `package.json` | Luồng UMP và ATT mà mediation chờ |
+| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của trang cài đặt |
+| `com.riseon.serializables` 1.0.5 | Tự cài theo `package.json` | Thiết lập của từng format, danh sách mediation |
+| `com.cysharp.unitask` 2.5.11 | Tự cài theo `package.json`, từ OpenUPM | Các hàm `async` |
+| `com.unity.ugui` 2.0.0 | Tự cài theo `package.json` | Màn che và ad mẫu trong Editor, cửa sổ `AdsDebugger` |
+| Ít nhất một adapter | `com.riseon.ads.admob`, `com.riseon.ads.max` hoặc `com.riseon.ads.levelplay` | Mediation chạy quảng cáo |
+| `com.riseon.firebase.remoteconfig` (tùy chọn) | Cài tay | Mỗi format trong mục Formats có dòng chọn key Remote Config cho danh sách mediation; mỗi luật số hay bật/tắt của format (trừ Included In Remove Ads), cùng On Launch và After Away của mục On Return To Game, có ô chọn key |
+
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ `RiseOn.Ads.Requirements`.
 
 ## Cài đặt
 
-Thêm registry RiseOn (`https://upm.riseongamestudio.com`) với scope `com.riseon`, và
-OpenUPM với scope `com.google`, `com.cysharp`, rồi thêm
-`"com.riseon.ads": "1.0.1"` và adapter cần dùng. Bản local:
-`"com.riseon.ads": "file:<thư mục repo Ads>/Core"`.
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`, và
+OpenUPM với scope `com.cysharp`, `com.google` (UniTask, External Dependency Manager
+của `com.riseon.consent`), vào `Packages/manifest.json`, rồi thêm package và adapter
+cần dùng:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "RiseOn",
+      "url": "https://upm.riseongamestudio.com",
+      "scopes": ["com.riseon"]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.cysharp", "com.google"]
+    }
+  ],
+  "dependencies": {
+    "com.riseon.ads": "2.0.0"
+  }
+}
+```
+
+Mỗi adapter cần thêm registry của SDK nó dùng, xem README của adapter.
+
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM như ví
+dụ trên; `com.riseon.utils`, `com.riseon.consent` và `com.riseon.serializables` lấy từ
+registry RiseOn, hoặc cài bằng git URL trước theo thứ tự này. Rồi *Package Manager → + →
+Add package from git URL*:
+
+```
+https://github.com/riseongamestudio/Ads.git?path=/Core
+```
+
+**Thư mục local**: `"com.riseon.ads": "file:D:/path/to/Ads/Core"`.
 
 ## Tổng quan
 
@@ -334,6 +385,10 @@ var rewarded = await GameAds.Ins.ShowRewardedAsync("revive");
 App id AdMob, câu xin tracking (ATT) và việc tắt consent flow riêng của từng SDK
 do pack `com.riseon.consent` quản: trang **RiseOn > Consent** liệt kê chỗ sai kèm
 nút sửa, và build dừng khi còn sai. Xem README của pack đó, mục "Khi build".
+
+## Lịch sử thay đổi
+
+Xem [CHANGELOG.md](CHANGELOG.md).
 
 ## Giấy phép
 

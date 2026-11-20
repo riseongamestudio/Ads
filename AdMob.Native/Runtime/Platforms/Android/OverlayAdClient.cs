@@ -4,15 +4,15 @@ using UnityEngine.Android;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
     internal sealed class OverlayAdClient : IOverlayAdClient {
-        private const string JAVA_CLASS_NAME               = "com.riseon.ads.admobnative.OverlayAd";
-        private const string JAVA_SET_LISTENER_METHOD      = "SetListener";
-        private const string JAVA_CONFIGURE_METHOD         = "Configure";
-        private const string JAVA_SET_CLOSE_METHOD         = "SetClose";
-        private const string JAVA_LOAD_AD_METHOD           = "Load";
-        private const string JAVA_SHOW_AD_METHOD           = "Show";
-        private const string JAVA_HIDE_AD_METHOD           = "Hide";
-        private const string JAVA_RELEASE_METHOD           = "Release";
-        private const string JAVA_PANEL_HEIGHT_METHOD      = "ResolvePanelHeight";
+        private const string JavaClassName         = "com.riseon.ads.admobnative.OverlayAd";
+        private const string JavaSetListenerMethod = "SetListener";
+        private const string JavaConfigureMethod   = "Configure";
+        private const string JavaSetCloseMethod    = "SetClose";
+        private const string JavaLoadAdMethod      = "Load";
+        private const string JavaShowAdMethod      = "Show";
+        private const string JavaHideAdMethod      = "Hide";
+        private const string JavaReleaseMethod     = "Release";
+        private const string JavaPanelHeightMethod = "ResolvePanelHeight";
 
         private readonly IOverlayAdCallbacks callbacks;
         private AndroidJavaObject javaObject;
@@ -25,10 +25,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
           , IOverlayAdCallbacks callbacks) {
             this.callbacks = callbacks;
             javaObject = new AndroidJavaObject(
-                JAVA_CLASS_NAME
+                JavaClassName
               , settings.AdUnitId);
             javaObject.Call(
-                JAVA_CONFIGURE_METHOD
+                JavaConfigureMethod
               , settings.FullScreen
               , settings.HeightRatio
               , settings.BackgroundColor
@@ -39,19 +39,19 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
               , settings.Close.RedirectOnClose);
             listener = new NativeAdLoadListenerProxy(callbacks);
             javaObject.Call(
-                JAVA_SET_LISTENER_METHOD
+                JavaSetListenerMethod
               , new object[] { listener });
         }
 
         public float PanelHeight
             => javaObject?.Call<float>(
-                    JAVA_PANEL_HEIGHT_METHOD
+                    JavaPanelHeightMethod
                   , AndroidApplication.currentActivity)
                ?? 0f;
 
         public void SetClose(in CloseSettings controls) {
             javaObject?.Call(
-                JAVA_SET_CLOSE_METHOD
+                JavaSetCloseMethod
               , controls.Cooldown
               , (int)controls.CloseSide
               , (int)controls.TimerSide
@@ -60,7 +60,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
 
         public void Load() {
             javaObject?.Call(
-                JAVA_LOAD_AD_METHOD
+                JavaLoadAdMethod
               , AndroidApplication.currentActivity);
         }
 
@@ -75,7 +75,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
             activeShowCompleted = completedListener;
             try {
                 javaObject?.Call(
-                    JAVA_SHOW_AD_METHOD
+                    JavaShowAdMethod
                   , AndroidApplication.currentActivity
                   , completedListener
                   , slideIn
@@ -91,7 +91,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
         }
 
         public void Hide(bool slideOut) {
-            javaObject?.Call(JAVA_HIDE_AD_METHOD, slideOut);
+            javaObject?.Call(JavaHideAdMethod, slideOut);
         }
 
         public void Release() {
@@ -100,7 +100,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
             listener            = null;
             activeShowCompleted = null;
             try {
-                releasedObject?.Call(JAVA_RELEASE_METHOD);
+                releasedObject?.Call(JavaReleaseMethod);
             } catch (Exception exception) {
                 Debug.LogException(exception);
             } finally {

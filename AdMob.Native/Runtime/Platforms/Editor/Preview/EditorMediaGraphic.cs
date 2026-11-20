@@ -4,26 +4,26 @@ using UnityEngine.UI;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     internal sealed class EditorMediaGraphic : MaskableGraphic {
-        private const int SUN_SEGMENTS = 18;
-        private const float SUN_RADIUS_RATIO = 0.09f;
-        private const float SUN_X_RATIO = 0.78f;
-        private const float SUN_Y_RATIO = 0.74f;
-        private const float BACK_PEAK_X_RATIO = 0.48f;
-        private const float BACK_PEAK_Y_RATIO = 0.70f;
-        private const float BACK_END_X_RATIO = 0.88f;
-        private const float FRONT_START_X_RATIO = 0.24f;
-        private const float FRONT_PEAK_X_RATIO = 0.68f;
-        private const float FRONT_PEAK_Y_RATIO = 0.58f;
+        private const int SunSegments = 18;
+        private const float SunRadiusRatio = 0.09f;
+        private const float SunXRatio = 0.78f;
+        private const float SunYRatio = 0.74f;
+        private const float BackPeakXRatio = 0.48f;
+        private const float BackPeakYRatio = 0.70f;
+        private const float BackEndXRatio = 0.88f;
+        private const float FrontStartXRatio = 0.24f;
+        private const float FrontPeakXRatio = 0.68f;
+        private const float FrontPeakYRatio = 0.58f;
 
-        private static readonly Color TopColor =
+        private static readonly Color topColor =
                 new(0.10f, 0.15f, 0.24f, 1f);
-        private static readonly Color BottomColor =
+        private static readonly Color bottomColor =
                 new(0.08f, 0.43f, 0.48f, 1f);
-        private static readonly Color BackMountainColor =
+        private static readonly Color backMountainColor =
                 new(0.22f, 0.61f, 0.62f, 0.88f);
-        private static readonly Color FrontMountainColor =
+        private static readonly Color frontMountainColor =
                 new(0.10f, 0.28f, 0.38f, 0.94f);
-        private static readonly Color SunColor =
+        private static readonly Color sunColor =
                 new(1f, 0.76f, 0.24f, 0.95f);
 
         protected override void OnPopulateMesh(VertexHelper vertexHelper) {
@@ -32,20 +32,20 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             EditorGraphicUtility.AddGradientQuad(
                 vertexHelper
               , rect
-              , BottomColor
-              , TopColor);
+              , bottomColor
+              , topColor);
 
             var sunRadius =
                     Mathf.Min(rect.width, rect.height)
-                            * SUN_RADIUS_RATIO;
+                            * SunRadiusRatio;
             EditorGraphicUtility.AddCircle(
                 vertexHelper
               , new(
-                    Mathf.Lerp(rect.xMin, rect.xMax, SUN_X_RATIO)
-                  , Mathf.Lerp(rect.yMin, rect.yMax, SUN_Y_RATIO))
+                    Mathf.Lerp(rect.xMin, rect.xMax, SunXRatio)
+                  , Mathf.Lerp(rect.yMin, rect.yMax, SunYRatio))
               , sunRadius
-              , SunColor
-              , SUN_SEGMENTS);
+              , sunColor
+              , SunSegments);
 
             EditorGraphicUtility.AddTriangle(
                 vertexHelper
@@ -54,37 +54,37 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     Mathf.Lerp(
                         rect.xMin
                       , rect.xMax
-                      , BACK_PEAK_X_RATIO)
+                      , BackPeakXRatio)
                   , Mathf.Lerp(
                         rect.yMin
                       , rect.yMax
-                      , BACK_PEAK_Y_RATIO))
+                      , BackPeakYRatio))
               , new(
                     Mathf.Lerp(
                         rect.xMin
                       , rect.xMax
-                      , BACK_END_X_RATIO)
+                      , BackEndXRatio)
                   , rect.yMin)
-              , BackMountainColor);
+              , backMountainColor);
             EditorGraphicUtility.AddTriangle(
                 vertexHelper
               , new(
                     Mathf.Lerp(
                         rect.xMin
                       , rect.xMax
-                      , FRONT_START_X_RATIO)
+                      , FrontStartXRatio)
                   , rect.yMin)
               , new(
                     Mathf.Lerp(
                         rect.xMin
                       , rect.xMax
-                      , FRONT_PEAK_X_RATIO)
+                      , FrontPeakXRatio)
                   , Mathf.Lerp(
                         rect.yMin
                       , rect.yMax
-                      , FRONT_PEAK_Y_RATIO))
+                      , FrontPeakYRatio))
               , new(rect.xMax, rect.yMin)
-              , FrontMountainColor);
+              , frontMountainColor);
         }
     }
 }

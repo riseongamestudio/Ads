@@ -15,6 +15,8 @@ namespace RiseOn.Ads {
             return id;
         }
 
-        public static string Of(Type type) => type.GetCustomAttribute<TypeRegistryItemAttribute>()?.Name ?? type.Name;
+        public static string Of(Type type) {
+            return type.GetCustomAttribute<TypeRegistryItemAttribute>()?.Name ?? type.Name;
+        }
     }
 }

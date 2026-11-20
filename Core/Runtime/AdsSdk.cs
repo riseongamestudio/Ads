@@ -214,7 +214,7 @@ namespace RiseOn.Ads {
             var settings = Application.isEditor ? UnityEngine.Object.Instantiate(asset) : asset;
             launched = true;
 
-            AdsEditorLayers.Lowest = settings.EditorSortingOrder;
+            AdsEditorLayers.lowest = settings.EditorSortingOrder;
             host = new AdsHost(settings, initialized);
             Application.quitting += host.Dispose;
 

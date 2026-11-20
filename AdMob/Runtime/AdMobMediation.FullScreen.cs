@@ -38,7 +38,9 @@ namespace RiseOn.Ads.AdMob {
         }
 
         // Google's formats load and show through Unity's thread; the native views of this pack do not need it.
-        public bool ShowsFromAnyThread(AdFormat format) => format.IsNative();
+        public bool ShowsFromAnyThread(AdFormat format) {
+            return format.IsNative();
+        }
 
         public void Show(AdFormat format, IAdShowListener listener) {
             var slot = SlotOf(format);
@@ -117,9 +119,9 @@ namespace RiseOn.Ads.AdMob {
         /// Loads happen on Unity's thread, the show's events reach its listener on the SDK's thread, and a new ad loads once the shown one is gone.
         /// </summary>
         private abstract class GmaSlot<TAd> : FullScreenSlot where TAd : class {
-            protected readonly AdMobMediation Owner;
-            protected readonly string          UnitId;
-            protected readonly AdFormat        Format;
+            protected readonly AdMobMediation owner;
+            protected readonly string          unitId;
+            protected readonly AdFormat        format;
 
             private readonly TimeSpan  maxAge;
             private readonly Stopwatch age = new();
@@ -131,9 +133,9 @@ namespace RiseOn.Ads.AdMob {
             private IAdShowListener listener;
 
             protected GmaSlot(AdMobMediation owner, string unitId, AdFormat format, TimeSpan maxAge) {
-                Owner       = owner;
-                UnitId      = unitId;
-                Format      = format;
+                this.owner  = owner;
+                this.unitId = unitId;
+                this.format = format;
                 this.maxAge = maxAge;
             }
 
@@ -153,12 +155,12 @@ namespace RiseOn.Ads.AdMob {
                 if (disposed || loading || ad != null) return;
 
                 loading = true;
-                LoadAd(UnitId, Owner.NewRequest(), (loaded, error) => UniTask.Post(() => HandleLoaded(loaded, error)));
+                LoadAd(unitId, owner.NewRequest(), (loaded, error) => UniTask.Post(() => HandleLoaded(loaded, error)));
             }
 
             public override void Show(IAdShowListener showListener) {
                 if (!IsReady) {
-                    showListener.OnFailed(new AdError(-1, $"{Format} not ready"));
+                    showListener.OnFailed(new AdError(-1, $"{format} not ready"));
                     return;
                 }
 
@@ -181,7 +183,7 @@ namespace RiseOn.Ads.AdMob {
             protected abstract void Subscribe(TAd loaded);
 
             protected void HandlePaid(TAd paid, AdValue value) {
-                Owner.ReportPaid(Format, UnitId, value, ResponseOf(paid));
+                owner.ReportPaid(format, unitId, value, ResponseOf(paid));
             }
 
             protected void HandleOpened() {
@@ -189,7 +191,7 @@ namespace RiseOn.Ads.AdMob {
             }
 
             protected void HandleClosed() {
-                if (Format.IsRewarding() && Application.platform is RuntimePlatform.IPhonePlayer) {
+                if (format.IsRewarding() && Application.platform is RuntimePlatform.IPhonePlayer) {
                     UniTask.Post(() => EndAfterRewardAsync().Forget());
                     return;
                 }
@@ -221,8 +223,8 @@ namespace RiseOn.Ads.AdMob {
                 }
 
                 if (error != null || loaded == null) {
-                    Owner.context?.ReportLoadFailed(Format, error == null ? new AdError(-1, "No ad") : new AdError(error.GetCode(), error.GetMessage()));
-                    Owner.RetryLater(ref attempt, Load);
+                    owner.context?.ReportLoadFailed(format, error == null ? new AdError(-1, "No ad") : new AdError(error.GetCode(), error.GetMessage()));
+                    owner.RetryLater(ref attempt, Load);
                     return;
                 }
 
@@ -230,7 +232,7 @@ namespace RiseOn.Ads.AdMob {
                 ad      = loaded;
                 age.Restart();
                 Subscribe(loaded);
-                Owner.context?.ReportLoaded(Format);
+                owner.context?.ReportLoaded(format);
             }
 
             private void Replace() {
@@ -245,11 +247,11 @@ namespace RiseOn.Ads.AdMob {
         }
 
         // An hour is how long Google keeps a loaded interstitial or rewarded worth showing; app open, four.
-        private static readonly TimeSpan OneHour   = TimeSpan.FromHours(1);
-        private static readonly TimeSpan FourHours = TimeSpan.FromHours(4);
+        private static readonly TimeSpan oneHour   = TimeSpan.FromHours(1);
+        private static readonly TimeSpan fourHours = TimeSpan.FromHours(4);
 
         private sealed class InterstitialSlot : GmaSlot<InterstitialAd> {
-            public InterstitialSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.Interstitial, OneHour) {}
+            public InterstitialSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.Interstitial, oneHour) {}
 
             protected override void LoadAd(string unitId, AdRequest request, Action<InterstitialAd, LoadAdError> onLoaded) => InterstitialAd.Load(unitId, request, onLoaded);
             protected override bool CanShow(InterstitialAd shown) => shown.CanShowAd();
@@ -266,7 +268,7 @@ namespace RiseOn.Ads.AdMob {
         }
 
         private sealed class RewardedSlot : GmaSlot<RewardedAd> {
-            public RewardedSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.Rewarded, OneHour) {}
+            public RewardedSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.Rewarded, oneHour) {}
 
             protected override void LoadAd(string unitId, AdRequest request, Action<RewardedAd, LoadAdError> onLoaded) => RewardedAd.Load(unitId, request, onLoaded);
             protected override bool CanShow(RewardedAd shown) => shown.CanShowAd();
@@ -283,7 +285,7 @@ namespace RiseOn.Ads.AdMob {
         }
 
         private sealed class RewardedInterstitialSlot : GmaSlot<RewardedInterstitialAd> {
-            public RewardedInterstitialSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.RewardedInterstitial, OneHour) {}
+            public RewardedInterstitialSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.RewardedInterstitial, oneHour) {}
 
             protected override void LoadAd(string unitId, AdRequest request, Action<RewardedInterstitialAd, LoadAdError> onLoaded) => RewardedInterstitialAd.Load(unitId, request, onLoaded);
             protected override bool CanShow(RewardedInterstitialAd shown) => shown.CanShowAd();
@@ -300,7 +302,7 @@ namespace RiseOn.Ads.AdMob {
         }
 
         private sealed class AppOpenSlot : GmaSlot<AppOpenAd> {
-            public AppOpenSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.AppOpen, FourHours) {}
+            public AppOpenSlot(AdMobMediation owner, string unitId) : base(owner, unitId, AdFormat.AppOpen, fourHours) {}
 
             protected override void LoadAd(string unitId, AdRequest request, Action<AppOpenAd, LoadAdError> onLoaded) => AppOpenAd.Load(unitId, request, onLoaded);
             protected override bool CanShow(AppOpenAd shown) => shown.CanShowAd();

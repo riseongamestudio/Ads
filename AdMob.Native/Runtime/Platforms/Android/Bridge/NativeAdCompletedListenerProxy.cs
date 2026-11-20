@@ -3,13 +3,13 @@ using UnityEngine;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
     internal sealed class NativeAdCompletedListenerProxy : AndroidJavaProxy {
-        private const string JAVA_LISTENER_CLASS_NAME = "com.riseon.ads.admobnative.NativeAdCompletedListener";
+        private const string JavaListenerClassName = "com.riseon.ads.admobnative.NativeAdCompletedListener";
 
         private readonly Action<string, bool, int> onAdCompleted;
 
         internal NativeAdCompletedListenerProxy(
             Action<string, bool, int> onAdCompleted)
-            : base(JAVA_LISTENER_CLASS_NAME) {
+            : base(JavaListenerClassName) {
             this.onAdCompleted = onAdCompleted;
         }
 

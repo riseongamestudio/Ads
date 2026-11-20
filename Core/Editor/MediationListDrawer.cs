@@ -27,7 +27,9 @@ namespace RiseOn.Ads.Editor {
         }
 
         /// <summary>Starts reading the adapters' versions, unless read; the Ads page calls it as it opens.</summary>
-        internal static void LoadVersions() => adapters.Load();
+        internal static void LoadVersions() {
+            adapters.Load();
+        }
 
         protected override void DrawPropertyLayout(GUIContent label) {
             var settings = Property.Tree.WeakTargets.OfType<AdsSettings>().FirstOrDefault();

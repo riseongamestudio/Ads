@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace RiseOn.Ads {
     /// <summary>
-    /// One ad unit id per platform. The Editor uses the Android one, or the iOS one when Android's is empty; it loads none of the formats it fakes.<br/>
-    /// A platform whose Test is on uses the network's test unit instead of the id written for it: the one the field's <see cref="AdUnitTestAttribute"/>
-    /// names, which the settings page stores here.
+    /// One ad unit id per platform.<br/>
+    /// The Editor uses the Android one, or the iOS one when Android's is empty; it loads none of the formats it fakes.<br/>
+    /// A platform whose Test is on uses the network's test unit instead of the id written for it: the one the field's <see cref="AdUnitTestAttribute"/> names, which the settings page stores here.
     /// </summary>
     [Serializable]
     public struct AdUnitId {
@@ -26,13 +26,13 @@ namespace RiseOn.Ads {
         }
 
         public string Value => Application.platform switch {
-            RuntimePlatform.IPhonePlayer => Ios
+            RuntimePlatform.IPhonePlayer => IOS
           , RuntimePlatform.Android      => Android
-          , _                            => string.IsNullOrEmpty(Android) ? Ios : Android
+          , _                            => string.IsNullOrEmpty(Android) ? IOS : Android
         };
 
         private string Android => androidTest ? androidTestId : android;
-        private string Ios => iosTest ? iosTestId : ios;
+        private string IOS => iosTest ? iosTestId : ios;
 
         public bool IsEmpty => string.IsNullOrEmpty(Value);
     }

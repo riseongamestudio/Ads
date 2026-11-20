@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace RiseOn.Ads.AdMob.Native {
     /// <summary>
-    /// A native ad in a rect the game places: one cell of a feed, or a block such as an MRec. It draws from the native pool of its unit, which every native format on the same unit shares.<br/>
+    /// A native ad in a rect the game places: one cell of a feed, or a block such as an MRec.<br/>
+    /// It draws from the native pool of its unit, which every native format on the same unit shares.<br/>
     /// It holds an ad only while shown: hiding it gives back an ad it never displayed, and a hidden one keeps at most the ad it displayed and has not yet shown long enough, which no other placement could use.<br/>
     /// One that is never sized or shown still keeps its unit's pool warm with its <see cref="Settings.CacheSize"/>.
     /// </summary>

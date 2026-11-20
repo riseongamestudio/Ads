@@ -9,8 +9,7 @@ using UnityEditor;
 
 namespace RiseOn.Ads.Max.Editor {
     /// <summary>
-    /// The networks MAX mediates, as AppLovin's Integration Manager lists and installs them, through its public API: the list from AppLovin's
-    /// server, each adapter added or removed as the Integration Manager does it, in the manifest when the plugin is a package, else in Assets.
+    /// The networks MAX mediates, as AppLovin's Integration Manager lists and installs them, through its public API: the list from AppLovin's server, each adapter added or removed as the Integration Manager does it, in the manifest when the plugin is a package, else in Assets.
     /// </summary>
     internal sealed class MaxNetworks : AdNetworkCatalog {
         protected override string Key => "RiseOn.Ads.Max.Networks";

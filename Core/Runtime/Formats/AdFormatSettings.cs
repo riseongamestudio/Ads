@@ -6,7 +6,8 @@ using UnityEngine;
 namespace RiseOn.Ads {
     /// <summary>
     /// How each format shows, whichever mediation serves it, and the rules the game's manager applies to it, the same on both platforms.<br/>
-    /// A mediation reads it from <see cref="IAdMediationContext.Formats"/> and turns it into its SDK's terms. The formats with nothing to set have no entry.
+    /// A mediation reads it from <see cref="IAdMediationContext.Formats"/> and turns it into its SDK's terms.<br/>
+    /// The formats with nothing to set have no entry.
     /// </summary>
     [Serializable]
     public sealed class AdFormatSettings {
@@ -84,10 +85,10 @@ namespace RiseOn.Ads {
           , AdFullScreenFormat.NativeInterstitial   => nativeInterstitial.Pacing
           , AdFullScreenFormat.NativeAppOpen        => nativeAppOpen.Pacing
           , AdFullScreenFormat.NativeEndCard        => nativeEndCard.Pacing
-          , _                                       => NoPacing
+          , _                                       => noPacing
         };
 
-        private static readonly AdPacingSettings NoPacing = new();
+        private static readonly AdPacingSettings noPacing = new();
 
         // Each setting's Remote Config key with the type its value needs, for the page's check.
         internal IEnumerable<(string Setting, int KeyId, Type Type)> RemoteKeyUses {

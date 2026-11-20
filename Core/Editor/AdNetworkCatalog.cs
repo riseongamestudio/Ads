@@ -9,8 +9,7 @@ using UnityEngine;
 
 namespace RiseOn.Ads.Editor {
     /// <summary>
-    /// A mediation's Networks section, which its Editor assembly draws under the mediation's settings: a row for each network the SDK lists, with
-    /// the adapter's version in the project, the newest one, and Install, Update and Uninstall, as the SDK's own manager has them.<br/>
+    /// A mediation's Networks section, which its Editor assembly draws under the mediation's settings: a row for each network the SDK lists, with the adapter's version in the project, the newest one, and Install, Update and Uninstall, as the SDK's own manager has them.<br/>
     /// The list loads the first time the section opens, as it may ask a server; the bar's button loads it again.
     /// </summary>
     public abstract class AdNetworkCatalog {
@@ -26,7 +25,9 @@ namespace RiseOn.Ads.Editor {
         private readonly HashSet<string> selected = new();
         private int anchor = -1;
 
-        protected AdNetworkCatalog() => all.Add(this);
+        protected AdNetworkCatalog() {
+            all.Add(this);
+        }
 
         /// <summary>Starts reading every catalog not read yet; the Ads page calls it as it opens.</summary>
         internal static void LoadAll() {
@@ -44,8 +45,7 @@ namespace RiseOn.Ads.Editor {
         protected abstract string LoadingText { get; }
 
         /// <summary>
-        /// Reads the list, then calls <paramref name="done"/> once, on the main thread, with the networks, and with a problem to show when the list
-        /// lacks some of what the SDK offers, or null.
+        /// Reads the list, then calls <paramref name="done"/> once, on the main thread, with the networks, and with a problem to show when the list lacks some of what the SDK offers, or null.
         /// </summary>
         protected abstract void Load(Action<List<PackageRow>, string> done);
 
@@ -134,7 +134,9 @@ namespace RiseOn.Ads.Editor {
             }
         }
 
-        private static string Names(List<PackageRow> list) => string.Join(", ", list.ConvertAll(network => network.Name));
+        private static string Names(List<PackageRow> list) {
+            return string.Join(", ", list.ConvertAll(network => network.Name));
+        }
 
         // At the bar's end, as the Integration Manager's Upgrade All is over its list: grayed out while every adapter is on its newest version.
         private void DrawUpdateAll(Rect value) {
@@ -150,7 +152,9 @@ namespace RiseOn.Ads.Editor {
         }
 
         /// <summary>Starts a package change shown in this section.</summary>
-        protected void Change(string what, string[] add, string[] remove) => PackageJobs.Change(Key, what, add, remove);
+        protected void Change(string what, string[] add, string[] remove) {
+            PackageJobs.Change(Key, what, add, remove);
+        }
 
         private void StartLoad() {
             isLoading = true;

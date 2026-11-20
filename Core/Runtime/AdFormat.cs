@@ -27,7 +27,7 @@ namespace RiseOn.Ads {
       , NativeEndCard        = (int)AdFormat.NativeEndCard
     }
 
-    public static class AdFormatExt {
+    public static class AdFormatUtils {
         /// <summary>The same format as an <see cref="AdFormat"/>, for the members that take any format.</summary>
         public static AdFormat ToFormat(this AdFullScreenFormat format) => (AdFormat)format;
 

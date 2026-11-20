@@ -5,12 +5,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
     // AndroidJavaProxy dispatches by name. Callbacks arrive on JNI threads;
     // the core wrapper marshals and gates them.
     internal sealed class NativeAdLoadListenerProxy : AndroidJavaProxy {
-        private const string JAVA_LISTENER_CLASS_NAME = "com.riseon.ads.admobnative.NativeAdLoadListener";
+        private const string JavaListenerClassName = "com.riseon.ads.admobnative.NativeAdLoadListener";
 
         private readonly IOverlayAdCallbacks callbacks;
 
         internal NativeAdLoadListenerProxy(IOverlayAdCallbacks callbacks)
-            : base(JAVA_LISTENER_CLASS_NAME) {
+            : base(JavaListenerClassName) {
             this.callbacks = callbacks;
         }
 

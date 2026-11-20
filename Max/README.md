@@ -1,15 +1,76 @@
-# RiseOn Ads MAX
+# RiseOn.Ads.Max
 
 Mediation AppLovin MAX cho `com.riseon.ads`.
 
 Package `com.riseon.ads.max`, namespace `RiseOn.Ads.Max`, mediation id `max`.
 
+## Mục lục
+
+- [Yêu cầu](#yêu-cầu)
+- [Cài đặt](#cài-đặt)
+- [Định dạng](#định-dạng)
+- [Những điều cần biết](#những-điều-cần-biết)
+- [Setting của SDK](#setting-của-sdk)
+- [Network](#network)
+- [Lịch sử thay đổi](#lịch-sử-thay-đổi)
+- [Giấy phép](#giấy-phép)
+
 ## Yêu cầu
 
-| Phụ thuộc | Cách có |
-|---|---|
-| `com.riseon.ads` | Tự cài theo `package.json` |
-| `com.applovin.mediation.ads` 8.6.5 | Tự cài theo `package.json`; cần scoped registry AppLovin (`https://unity.packages.applovin.com/`) |
+| Phụ thuộc | Cách có | Dùng cho |
+|---|---|---|
+| Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của MAX trên trang Ads |
+| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của MAX trên trang Ads |
+| `com.applovin.mediation.ads` 8.6.5 | Tự cài theo `package.json`, từ registry AppLovin | AppLovin MAX SDK |
+
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ `RiseOn.Ads.Max.Requirements`.
+
+## Cài đặt
+
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`,
+OpenUPM với scope `com.cysharp`, `com.google` (phụ thuộc của `com.riseon.ads`), và
+registry AppLovin với scope `com.applovin`, vào `Packages/manifest.json`, rồi thêm
+package:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "RiseOn",
+      "url": "https://upm.riseongamestudio.com",
+      "scopes": ["com.riseon"]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.cysharp", "com.google"]
+    },
+    {
+      "name": "AppLovin MAX",
+      "url": "https://unity.packages.applovin.com/",
+      "scopes": ["com.applovin"]
+    }
+  ],
+  "dependencies": {
+    "com.riseon.ads.max": "1.0.1"
+  }
+}
+```
+
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM và
+registry AppLovin như ví dụ trên; `com.riseon.utils`, `com.riseon.consent`,
+`com.riseon.serializables` và `com.riseon.ads` lấy từ registry RiseOn, hoặc cài bằng git
+URL trước theo thứ tự này. Rồi *Package Manager → + → Add package from git URL*:
+
+```
+https://github.com/riseongamestudio/Ads.git?path=/Max
+```
+
+**Thư mục local**: `"com.riseon.ads.max": "file:D:/path/to/Ads/Max"`.
 
 ## Định dạng
 
@@ -81,6 +142,10 @@ trang mở hoặc khi thanh Networks hiện trên trang. Nút ↻ trên thanh đ
   như `Installing Pangle failed: …`.
 - Không chọn được phiên bản: Integration Manager chỉ đưa bản mới nhất của mỗi adapter.
 - Không đọc được danh sách thì mục báo kiểm tra kết nối mạng.
+
+## Lịch sử thay đổi
+
+Xem [CHANGELOG.md](CHANGELOG.md).
 
 ## Giấy phép
 

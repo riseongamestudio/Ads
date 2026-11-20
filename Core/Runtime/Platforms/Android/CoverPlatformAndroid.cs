@@ -4,8 +4,8 @@ using UnityEngine.Android;
 namespace RiseOn.Ads.Platforms.Android {
     internal sealed class CoverPlatformAndroid : ICoverPlatform {
         // One Java class per cover, exactly as on this side.
-        private const string FULL_SCREEN_CLASS = "com.riseon.ads.FullScreenCover";
-        private const string HALF_SCREEN_CLASS = "com.riseon.ads.HalfScreenCover";
+        private const string FullScreenClass = "com.riseon.ads.FullScreenCover";
+        private const string HalfScreenClass = "com.riseon.ads.HalfScreenCover";
 
         private readonly object javaStateLock = new();
 
@@ -56,14 +56,14 @@ namespace RiseOn.Ads.Platforms.Android {
 
         private void CallFullScreen(string methodName, params object[] parameters) {
             lock (javaStateLock) {
-                fullScreenClass ??= new(FULL_SCREEN_CLASS);
+                fullScreenClass ??= new(FullScreenClass);
                 fullScreenClass.CallStatic(methodName, parameters);
             }
         }
 
         private void CallHalfScreen(string methodName, params object[] parameters) {
             lock (javaStateLock) {
-                halfScreenClass ??= new(HALF_SCREEN_CLASS);
+                halfScreenClass ??= new(HalfScreenClass);
                 halfScreenClass.CallStatic(methodName, parameters);
             }
         }

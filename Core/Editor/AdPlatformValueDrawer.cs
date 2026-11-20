@@ -9,8 +9,7 @@ using UnityEngine;
 
 namespace RiseOn.Ads.Editor {
     /// <summary>
-    /// A value that may differ between Android and iOS: one row while both share it, with a button at its end to split it; split, a row for each platform
-    /// under the label's row, which says which platform's value the Editor uses and whose button links them back into Android's value.
+    /// A value that may differ between Android and iOS: one row while both share it, with a button at its end to split it; split, a row for each platform under the label's row, which says which platform's value the Editor uses and whose button links them back into Android's value.
     /// </summary>
     internal sealed class AdPlatformValueDrawer<T> : OdinValueDrawer<AdPlatformValue<T>> {
         private const float PopupWidth = 90;
@@ -64,7 +63,9 @@ namespace RiseOn.Ads.Editor {
         }
 
         // A list is the one value held by reference: iOS's starts as a list of its own.
-        private static object Copy(object value) => value is AdPriorityList list ? new AdPriorityList(list.MediationIds.ToArray()) : value;
+        private static object Copy(object value) {
+            return value is AdPriorityList list ? new AdPriorityList(list.MediationIds.ToArray()) : value;
+        }
     }
 
     /// <summary>A row of the Formats section: its value, then a square at its first line's end in the column of the section's buttons, empty on a row with no button, so every row ends at one edge.</summary>

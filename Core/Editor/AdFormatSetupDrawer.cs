@@ -14,7 +14,7 @@ namespace RiseOn.Ads.Editor {
     /// </summary>
     [DrawerPriority(0, 0, 2)]
     internal sealed class AdFormatSetupDrawer : OdinValueDrawer<AdFormatSetup> {
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
         private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; the Remote Config key that can replace them at launch; "
                                  + "whether remove-ads takes it; how it shows and the manager's rules for it. The mediations can split into a list per platform, the Editor using the one its row picks.";
 #else
@@ -72,7 +72,7 @@ namespace RiseOn.Ads.Editor {
                 if (!sub.Open) continue;
 
                 entries[format].Children["value"].Draw(mediations);
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
                 // One key for both platforms, so no split button.
                 if (settings) AdButtonRow.Draw(() => AdRemoteKeyDrawer.Draw(EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(), remoteKey), settings, format));
 #endif

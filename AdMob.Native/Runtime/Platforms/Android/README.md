@@ -147,7 +147,7 @@ nhận chạm.
 window animation và không đổi cỡ window: window giữ đúng chiều cao panel suốt
 lúc trượt, mép window cắt phần đã ra ngoài, và window phía sau (nếu có) luôn
 khớp mép. `onStart` chạy **trước** khi window được add, nên vị trí xuất phát
-(dưới mép) và khoá chạm (`OverlayAdContentView.SetTouchLocked`, nuốt mọi chạm
+(dưới mép) và khóa chạm (`OverlayAdContentView.SetTouchLocked`, nuốt mọi chạm
 trong window) đặt ở đó — frame đầu không bao giờ thấy panel nằm yên. Animation
 bắt đầu ở show message (`OnShowListener`, lúc window đã add); `withEndAction`
 không chạy khi bị cancel, nên trượt ra giữa chừng trượt vào chỉ việc cancel
@@ -191,7 +191,7 @@ duration scale = 0" làm trượt kết thúc ngay — vẫn đúng thứ tự e
 - Backdrop bo góc kiêm clip (`setOutlineProvider(BACKGROUND)` +
   `setClipToOutline(true)`); màu trong suốt vẫn clip.
 - **Không measure-thăm-dò + `requestLayout` giữa layout pass** mà không có
-  khoá idempotent: Android vứt `requestLayout` giữa pass và GMA lay cột ở cỡ
+  khóa idempotent: Android vứt `requestLayout` giữa pass và GMA lay cột ở cỡ
   thăm dò (ad67dcb4). Bản sửa `post()` từ `onSizeChanged` sau đó bị thay:
   overlay giờ lập kế hoạch né control **trong `onMeasure`** theo kích thước
   thật, guard bằng `plannedPanelWidth/Height` + `avoidancePlanDirty`, và

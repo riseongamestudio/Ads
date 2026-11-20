@@ -5,8 +5,7 @@ using UnityEngine;
 
 namespace RiseOn.Ads {
     /// <summary>
-    /// How often the game's manager lets a format show, on both platforms: not before some seconds from launch, then not again before some seconds from its last display,
-    /// nor, for the interstitials, before some seconds from a rewarded ad's.
+    /// How often the game's manager lets a format show, on both platforms: not before some seconds from launch, then not again before some seconds from its last display, nor, for the interstitials, before some seconds from a rewarded ad's.
     /// </summary>
     [Serializable]
     public sealed class AdPacingSettings {

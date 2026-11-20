@@ -16,164 +16,164 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , Roomy
         }
 
-        private const string AD_OBJECT_NAME            = "Native Editor Ad";
-        private const string BUILT_IN_FONT_NAME        = "LegacyRuntime.ttf";
-        private const string AD_ATTRIBUTION_TEXT       = "Ad";
-        private const string AD_CHOICES_TEXT           = "AdChoices";
-        private const string HEADLINE_TEXT             = "Native Editor Ad";
-        private const string ADVERTISER_TEXT           = "Google Mobile Ads placeholder";
-        private const string STAR_RATING_TEXT          = "★★★★☆  4.0";
-        private const string BODY_TEXT                 = "This GameObject previews the native ad layout in the Unity Editor.";
-        private const string CALL_TO_ACTION_TEXT       = "Install";
-        private const string IMAGE_MEDIA_TEXT          = "IMAGE MEDIA";
-        private const string FLEXIBLE_MEDIA_TEXT       = "IMAGE / VIDEO MEDIA";
-        private const string CLICK_LOG_TEXT            = "Native ad preview click";
-        private const string TEST_AD_CLICK_URL         = "https://google.com";
-        private const string AD_CHOICES_URL            = "https://support.google.com/My-Ad-Center-Help/answer/12155764";
-        private const string AD_CHOICES_CLICK_LOG_TEXT = "Native AdChoices preview click";
-        private const string PANEL_OBJECT_NAME         = "Native Ad Panel";
-        private const string BACKDROP_OBJECT_NAME      = "Backdrop";
-        private const string CONTENT_AREA_OBJECT_NAME  = "Content Area";
-        private const string CONTENT_OBJECT_NAME       = "Content";
-        private const string DETAILS_OBJECT_NAME       = "Details";
-        private const string IDENTITY_ROW_OBJECT_NAME  = "Identity Row";
-        private const string IDENTITY_TEXT_OBJECT_NAME = "Identity Text";
-        private const string ICON_OBJECT_NAME          = "Icon";
-        private const string ICON_TEXT                 = "APP";
-        private const string MEDIA_OBJECT_NAME         = "Media";
-        private const string SCRIM_OBJECT_NAME         = "Scrim";
-        private const string CLOSE_OBJECT_NAME         = "Close";
-        private const string COUNTDOWN_OBJECT_NAME     = "Countdown";
+        private const string AdObjectName           = "Native Editor Ad";
+        private const string BuiltInFontName        = "LegacyRuntime.ttf";
+        private const string AdAttributionText      = "Ad";
+        private const string AdChoicesText          = "AdChoices";
+        private const string HeadlineText           = "Native Editor Ad";
+        private const string AdvertiserText         = "Google Mobile Ads placeholder";
+        private const string StarRatingText         = "★★★★☆  4.0";
+        private const string BodyText               = "This GameObject previews the native ad layout in the Unity Editor.";
+        private const string CallToActionText       = "Install";
+        private const string ImageMediaText         = "IMAGE MEDIA";
+        private const string FlexibleMediaText      = "IMAGE / VIDEO MEDIA";
+        private const string ClickLogText           = "Native ad preview click";
+        private const string TestAdClickUrl         = "https://google.com";
+        private const string AdChoicesUrl           = "https://support.google.com/My-Ad-Center-Help/answer/12155764";
+        private const string AdChoicesClickLogText  = "Native AdChoices preview click";
+        private const string PanelObjectName        = "Native Ad Panel";
+        private const string BackdropObjectName     = "Backdrop";
+        private const string ContentAreaObjectName  = "Content Area";
+        private const string ContentObjectName      = "Content";
+        private const string DetailsObjectName      = "Details";
+        private const string IdentityRowObjectName  = "Identity Row";
+        private const string IdentityTextObjectName = "Identity Text";
+        private const string IconObjectName         = "Icon";
+        private const string IconText               = "APP";
+        private const string MediaObjectName        = "Media";
+        private const string ScrimObjectName        = "Scrim";
+        private const string CloseObjectName        = "Close";
+        private const string CountdownObjectName    = "Countdown";
         // U+2715, the mark the device draws. U+00D7 - the multiplication
         // sign that used to stand here - is a maths operator: thinner, and
         // sitting on the maths axis rather than centered in its box.
-        private const string CLOSE_TEXT                = "✕";
+        private const string CloseText                = "✕";
 
         // The device spends 5dp a side, not the 20dp gutters an early build
         // had - and only on text: the media bleeds edge to edge.
-        private const int CONTENT_HORIZONTAL_PADDING_DP     = 5;
-        private const int CONTENT_SPACING_DP                = 4;
+        private const int ContentHorizontalPaddingDp = 5;
+        private const int ContentSpacingDp           = 4;
         // The device's control strip: CONTROL_STRIP_HEIGHT_DP on Android,
         // kRANControlStripHeight on iOS. Both are 30.
-        private const int CONTROL_SIZE_DP                   = 30;
-        private const int CONTROL_BADGE_SPACING_DP          = 2;
+        private const int ControlSizeDp         = 30;
+        private const int ControlBadgeSpacingDp = 2;
         // The mark Google draws in the corner. The Java side only reserves
         // room for it and never paints, so this is the preview's own
         // assumption: the AdChoices asset is a 15dp glyph, while the 24dp
         // square and 76px width the reserve asks for are the overlay's touch
         // area, not the drawing.
-        private const int AD_CHOICES_SIZE_DP                = 15;
+        private const int AdChoicesSizeDp                = 15;
         // The device keeps close and timer this far from the right edge, as
         // a flat number: RIGHT_CONTROL_INSET_DP on Android. Deriving it from
         // the AdChoices size would push the controls further out every time
         // that assumption changed.
-        private const int CONTROL_RIGHT_INSET_DP            = 18;
-        private const int ATTRIBUTION_WIDTH_DP              = 24;
-        private const int CONTROL_LEFT_INSET_DP =
-                ATTRIBUTION_WIDTH_DP
-              + CONTROL_BADGE_SPACING_DP;
-        private const int ATTRIBUTION_HEIGHT_DP             = 18;
-        private const int ATTRIBUTION_FONT_SIZE             = 10;
-        private const int ICON_SIZE_DP                      = 36;
-        private const int ICON_GAP_DP                       = 8;
-        private const int ICON_FONT_SIZE                    = 10;
-        private const float MAX_ICON_ROW_WIDTH_RATIO        = 0.33f;
-        private const int MEDIA_MIN_SIZE_DP                 = 120;
-        private const float SCRIM_ALPHA                     = 0.7f;
+        private const int ControlRightInsetDp = 18;
+        private const int AttributionWidthDp  = 24;
+        private const int ControlLeftInsetDp  =
+                AttributionWidthDp
+              + ControlBadgeSpacingDp;
+        private const int AttributionHeightDp    = 18;
+        private const int AttributionFontSize    = 10;
+        private const int IconSizeDp             = 36;
+        private const int IconGapDp              = 8;
+        private const int IconFontSize           = 10;
+        private const float MaxIconRowWidthRatio = 0.33f;
+        private const int MediaMinSizeDp         = 120;
+        private const float ScrimAlpha           = 0.7f;
         // The device rule verbatim: a headline line beside an icon keeps at
         // least this width, otherwise the icon stands alone and the text
         // takes the full width below it.
-        private const int MIN_ICON_ROW_TEXT_WIDTH_DP        = 72;
-        private const int RECT_AD_CTA_MIN_HEIGHT_DP         = 18;
-        private const int RECT_AD_CTA_MAX_HEIGHT_DP         = 36;
-        private const int RECT_AD_COMPACT_FONT_SIZE         = 12;
-        private const int RECT_AD_SECONDARY_FONT_SIZE       = 10;
-        private const float RECT_AD_TEXT_HEIGHT_MULTIPLIER  = 1.2f;
-        private const int RECT_AD_CTA_MIN_FONT_SIZE         = 10;
-        private const int RECT_AD_ATTRIBUTION_MIN_FONT_SIZE = 5;
-        private const int MIN_BADGE_SIZE_PX                 = 15;
-        private const int RECT_AD_REGULAR_SHORT_SIDE_DP     = 150;
-        private const int RECT_AD_ROOMY_SHORT_SIDE_DP       = 280;
-        private const int RECT_AD_COMPACT_ICON_DP           = 24;
-        private const int RECT_AD_REGULAR_ICON_DP           = 36;
-        private const int RECT_AD_ROOMY_ICON_DP             = 48;
-        private const int RECT_AD_COMPACT_GAP_DP            = 1;
-        private const int RECT_AD_REGULAR_GAP_DP            = 3;
-        private const int RECT_AD_ROOMY_GAP_DP              = 5;
-        private const int FULLSCREEN_HEADLINE_FONT_SIZE     = 18;
-        private const int COMPACT_HEADLINE_FONT_SIZE        = 15;
-        private const int ADVERTISER_FONT_SIZE              = 12;
-        private const int RATING_FONT_SIZE                  = 12;
-        private const int BODY_FONT_SIZE                    = 13;
-        private const int MEDIA_LABEL_FONT_SIZE             = 15;
+        private const int MinIconRowTextWidthDp        = 72;
+        private const int RectAdCtaMinHeightDp         = 18;
+        private const int RectAdCtaMaxHeightDp         = 36;
+        private const int RectAdCompactFontSize        = 12;
+        private const int RectAdSecondaryFontSize      = 10;
+        private const float RectAdTextHeightMultiplier = 1.2f;
+        private const int RectAdCtaMinFontSize         = 10;
+        private const int RectAdAttributionMinFontSize = 5;
+        private const int MinBadgeSizePx               = 15;
+        private const int RectAdRegularShortSideDp     = 150;
+        private const int RectAdRoomyShortSideDp       = 280;
+        private const int RectAdCompactIconDp          = 24;
+        private const int RectAdRegularIconDp          = 36;
+        private const int RectAdRoomyIconDp            = 48;
+        private const int RectAdCompactGapDp           = 1;
+        private const int RectAdRegularGapDp           = 3;
+        private const int RectAdRoomyGapDp             = 5;
+        private const int FullScreenHeadlineFontSize   = 18;
+        private const int CompactHeadlineFontSize      = 15;
+        private const int AdvertiserFontSize           = 12;
+        private const int RatingFontSize               = 12;
+        private const int BodyFontSize                 = 13;
+        private const int MediaLabelFontSize           = 15;
         // The device's own numbers, not a size that merely looks close:
         // OverlayAdContentView draws these at CLOSE_TEXT_SIZE_SP 20 and
         // COUNTDOWN_TEXT_SIZE_SP 18 inside a 30dp box. This canvas works in
         // dp already, so sp carries over unchanged. Close is deliberately
         // the larger of the two - that difference is part of the look.
-        private const int CLOSE_FONT_SIZE                   = 20;
-        private const int COUNTDOWN_FONT_SIZE               = 18;
-        private const int CALL_TO_ACTION_FONT_SIZE          = 14;
-        private const int CALL_TO_ACTION_HEIGHT_DP          = 44;
-        private const float CANVAS_MATCH_WIDTH_OR_HEIGHT    = 0.5f;
-        private const float SCREEN_CHANGE_TOLERANCE         = 0.001f;
-        // The device's half-screen floor: MIN_PANEL_HEIGHT_DP on Android,
+        private const int CloseFontSize              = 20;
+        private const int CountdownFontSize          = 18;
+        private const int CallToActionFontSize       = 14;
+        private const int CallToActionHeightDp       = 44;
+        private const float CanvasMatchWidthOrHeight = 0.5f;
+        private const float ScreenChangeTolerance    = 0.001f;
+        // The device's half-screen floor: MinPanelHeightDp on Android,
         // kRANMinPanelHeight on iOS. Both are 48.
-        private const int   MIN_PANEL_HEIGHT_DP             = 48;
-        private const float DEFAULT_HEIGHT_RATIO            = 0.5f;
+        private const int   MinPanelHeightDp   = 48;
+        private const float DefaultHeightRatio = 0.5f;
         // The device's slide: SLIDE_DURATION_MS on Android, kRANSlideDuration
         // on iOS. Timed on the unscaled clock, because whatever stands
         // behind the panel may be holding the game at a time scale of zero.
-        private const float SLIDE_DURATION_SECONDS          = 0.25f;
-        private const float TEXT_HEIGHT_MULTIPLIER          = 1.5f;
-        private const float ANDROID_BASELINE_DPI            = 160f;
-        private const float MIN_DEVICE_SIMULATOR_DPI        = 160f;
-        private const float RECT_AD_CTA_SHORT_SIDE_RATIO    = 0.18f;
-        private const float RECT_AD_BADGE_SHORT_SIDE_RATIO  = 0.10f;
-        private const float RECT_AD_ATTRIBUTION_ASPECT_RATIO = 4f / 3f;
-        private const float RECT_AD_CTA_FONT_HEIGHT_RATIO   = 0.5f;
+        private const float SlideDurationSeconds         = 0.25f;
+        private const float TextHeightMultiplier         = 1.5f;
+        private const float AndroidBaselineDpi           = 160f;
+        private const float MinDeviceSimulatorDpi        = 160f;
+        private const float RectAdCtaShortSideRatio      = 0.18f;
+        private const float RectAdBadgeShortSideRatio    = 0.10f;
+        private const float RectAdAttributionAspectRatio = 4f / 3f;
+        private const float RectAdCtaFontHeightRatio     = 0.5f;
         // The scrim block's own inset from the cell's edges - a hair on a
         // small cell, a few points on a large one.
-        private const float RECT_AD_SCRIM_PADDING_RATIO     = 0.015f;
-        private const int   RECT_AD_SCRIM_PADDING_MIN_DP    = 1;
-        private const int   RECT_AD_SCRIM_PADDING_MAX_DP    = 4;
+        private const float RectAdScrimPaddingRatio = 0.015f;
+        private const int   RectAdScrimPaddingMinDp = 1;
+        private const int   RectAdScrimPaddingMaxDp = 4;
         // How far a straight-edged asset has to stand back from a rounded
         // corner of radius r so that its own corner just touches the arc:
         // d = r * (1 - 1 / sqrt 2). The device's number, computed the
         // device's way (ceil in pixels) before it is scaled for the canvas.
-        private static readonly float RECT_AD_CORNER_INSET_RATIO =
+        private static readonly float rectAdCornerInsetRatio =
                 1f - Mathf.Sqrt(.5f);
         // Text is sized by the box it sits in. The same preview draws a 96dp
         // feed cell and a full screen, so one point size cannot serve both:
         // it looks lost in the roomy box and cramped in the tight one. These
         // are the share of the box a label's cap height should take, with a
         // floor so it stays legible and a ceiling so it never shouts.
-        private const float ICON_TEXT_BOX_RATIO             = 0.26f;
-        private const int   ICON_TEXT_MIN_SIZE              = 5;
-        private const int   ICON_TEXT_MAX_SIZE              = 16;
-        private const float CALL_TO_ACTION_TEXT_BOX_RATIO   = 0.40f;
-        private const int   CALL_TO_ACTION_TEXT_MIN_SIZE    = 7;
-        private const int   CALL_TO_ACTION_TEXT_MAX_SIZE    = 18;
-        private const float MEDIA_LABEL_BOX_RATIO           = 0.085f;
-        private const int   MEDIA_LABEL_MIN_SIZE            = 6;
-        private const int   MEDIA_LABEL_MAX_SIZE            = 18;
-        private const float ATTRIBUTION_TEXT_BOX_RATIO      = 0.62f;
-        private const int   ATTRIBUTION_TEXT_MIN_SIZE       = 4;
-        private const int   ATTRIBUTION_TEXT_MAX_SIZE       = 12;
-        private static readonly Vector2 ReferenceResolution =
+        private const float IconTextBoxRatio         = 0.26f;
+        private const int   IconTextMinSize          = 5;
+        private const int   IconTextMaxSize          = 16;
+        private const float CallToActionTextBoxRatio = 0.40f;
+        private const int   CallToActionTextMinSize  = 7;
+        private const int   CallToActionTextMaxSize  = 18;
+        private const float MediaLabelBoxRatio       = 0.085f;
+        private const int   MediaLabelMinSize        = 6;
+        private const int   MediaLabelMaxSize        = 18;
+        private const float AttributionTextBoxRatio  = 0.62f;
+        private const int   AttributionTextMinSize   = 4;
+        private const int   AttributionTextMaxSize   = 12;
+        private static readonly Vector2 referenceResolution =
                 new(360f, 800f);
-        private static readonly Color SecondaryTextColor =
+        private static readonly Color secondaryTextColor =
                 new(1f, 1f, 1f, 0.8f);
-        private static readonly Color ControlColor =
+        private static readonly Color controlColor =
                 new(0f, 0f, 0f, 0.7f);
-        private static readonly Color AttributionColor =
+        private static readonly Color attributionColor =
                 new(1f, 0.76f, 0.03f, 1f);
         // The device call to action verbatim: #2196F3, bordered #1565C0.
-        private static readonly Color CallToActionColor =
+        private static readonly Color callToActionColor =
                 new(0x21 / 255f, 0x96 / 255f, 0xF3 / 255f, 1f);
-        private static readonly Color CallToActionBorderColor =
+        private static readonly Color callToActionBorderColor =
                 new(0x15 / 255f, 0x65 / 255f, 0xC0 / 255f, 1f);
-        private static readonly Color ElementOutlineColor =
+        private static readonly Color elementOutlineColor =
                 new(0f, 0f, 0f, 0.35f);
 
         private enum Slide {
@@ -241,7 +241,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , bool slideIn
           , bool slideOutOnClose) {
             var previewObject = new GameObject(
-                AD_OBJECT_NAME
+                AdObjectName
               , typeof(RectTransform)
               , typeof(Canvas)
               , typeof(CanvasScaler)
@@ -327,17 +327,17 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             EditorAdMode mode) {
             return mode switch {
                 EditorAdMode.FullScreen =>
-                        EditorSortingOrder.FULL_SCREEN_AD
+                        EditorSortingOrder.FullScreenAd
               , EditorAdMode.Collapsible =>
-                        EditorSortingOrder.HALF_SCREEN_AD
-              , _ => EditorSortingOrder.RECT_AD
+                        EditorSortingOrder.HalfScreenAd
+              , _ => EditorSortingOrder.RectAd
             };
         }
 
         private RectTransform CreatePanel(
             EditorAdConfig config) {
             var panelObject = new GameObject(
-                PANEL_OBJECT_NAME
+                PanelObjectName
               , typeof(RectTransform)
               , typeof(CanvasRenderer)
               , typeof(Image)
@@ -368,8 +368,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             if (backgroundIsClickable) {
                 panelButton.onClick.AddListener(
                     () => TryOpenUrl(
-                        TEST_AD_CLICK_URL
-                      , CLICK_LOG_TEXT));
+                        TestAdClickUrl
+                      , ClickLogText));
             }
             if (config.Mode is EditorAdMode.RectAd
                     && config.RoundCornerPx > 0) {
@@ -408,7 +408,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             mask.showMaskGraphic = false;
 
             var backdropObject = new GameObject(
-                BACKDROP_OBJECT_NAME
+                BackdropObjectName
               , typeof(RectTransform)
               , typeof(Image));
             backdropObject.transform.SetParent(panel, false);
@@ -479,7 +479,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             EditorAdConfig config
           , float uiScale) {
             if (config.RoundCornerPx <= 0) return 0f;
-            return Mathf.Ceil(config.RoundCornerPx * RECT_AD_CORNER_INSET_RATIO)
+            return Mathf.Ceil(config.RoundCornerPx * rectAdCornerInsetRatio)
                  / uiScale;
         }
 
@@ -549,7 +549,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , EditorAdConfig config) {
             var fullScreen = config.Mode is EditorAdMode.FullScreen;
             var contentObject = new GameObject(
-                CONTENT_OBJECT_NAME
+                ContentObjectName
               , typeof(RectTransform)
               , typeof(EditorAdaptiveLayoutGroup));
             contentObject.transform.SetParent(panel, false);
@@ -561,11 +561,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // an element like every other, 5dp off the sides, sitting below
             // the control band.
             content.offsetMin = new(
-                CONTENT_HORIZONTAL_PADDING_DP
+                ContentHorizontalPaddingDp
               , 0f);
             content.offsetMax = new(
-                -CONTENT_HORIZONTAL_PADDING_DP
-              , -CONTROL_SIZE_DP);
+                -ContentHorizontalPaddingDp
+              , -ControlSizeDp);
 
             contentLayout =
                     contentObject
@@ -576,17 +576,17 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             }
 
             var mediaText = config.AllowsVideo
-                    ? FLEXIBLE_MEDIA_TEXT
-                    : IMAGE_MEDIA_TEXT;
+                    ? FlexibleMediaText
+                    : ImageMediaText;
             mediaLayoutElement =
                     CreateMedia(
                         content
                       , mediaText
-                      , MEDIA_MIN_SIZE_DP
+                      , MediaMinSizeDp
                       , out mediaLabel);
 
             var detailsObject = new GameObject(
-                DETAILS_OBJECT_NAME
+                DetailsObjectName
               , typeof(RectTransform)
               , typeof(VerticalLayoutGroup)
               , typeof(LayoutElement));
@@ -596,7 +596,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             detailsLayoutElement.flexibleWidth = 1f;
             detailsLayout =
                     detailsObject.GetComponent<VerticalLayoutGroup>();
-            detailsLayout.spacing = CONTENT_SPACING_DP;
+            detailsLayout.spacing = ContentSpacingDp;
             detailsLayout.childAlignment = TextAnchor.MiddleLeft;
             detailsLayout.childControlWidth = true;
             detailsLayout.childControlHeight = true;
@@ -606,11 +606,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var identityTextParent =
                     CreateIdentityRow(detailsObject.transform);
             var headlineFontSize = fullScreen
-                    ? FULLSCREEN_HEADLINE_FONT_SIZE
-                    : COMPACT_HEADLINE_FONT_SIZE;
+                    ? FullScreenHeadlineFontSize
+                    : CompactHeadlineFontSize;
             headlineText = CreateText(
                 identityTextParent
-              , HEADLINE_TEXT
+              , HeadlineText
               , headlineFontSize
               , TextAnchor.MiddleLeft
               , Color.white);
@@ -619,28 +619,28 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             CreateText(
                 identityTextParent
-              , ADVERTISER_TEXT
-              , ADVERTISER_FONT_SIZE
+              , AdvertiserText
+              , AdvertiserFontSize
               , TextAnchor.MiddleLeft
-              , SecondaryTextColor);
+              , secondaryTextColor);
             CreateText(
                 identityTextParent
-              , STAR_RATING_TEXT
-              , RATING_FONT_SIZE
+              , StarRatingText
+              , RatingFontSize
               , TextAnchor.MiddleLeft
-              , AttributionColor);
+              , attributionColor);
             CreateText(
                 detailsObject.transform
-              , BODY_TEXT
-              , BODY_FONT_SIZE
+              , BodyText
+              , BodyFontSize
               , TextAnchor.MiddleLeft
-              , SecondaryTextColor);
+              , secondaryTextColor);
 
             callToActionLayoutElement = CreateCallToAction(
                 detailsObject.transform
               , config.AdUnitId
-              , CALL_TO_ACTION_HEIGHT_DP
-              , CALL_TO_ACTION_FONT_SIZE
+              , CallToActionHeightDp
+              , CallToActionFontSize
               , out callToActionText);
             return content;
         }
@@ -648,7 +648,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private static void ConfigureContentLayout(
             EditorAdaptiveLayoutGroup layout) {
             layout.IsVertical = true;
-            layout.spacing = CONTENT_SPACING_DP;
+            layout.spacing = ContentSpacingDp;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -658,7 +658,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         private Transform CreateIdentityRow(Transform parent) {
             var identityRowObject = new GameObject(
-                IDENTITY_ROW_OBJECT_NAME
+                IdentityRowObjectName
               , typeof(RectTransform)
               , typeof(HorizontalLayoutGroup)
               , typeof(LayoutElement));
@@ -668,7 +668,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var identityRowLayout =
                     identityRowObject.GetComponent<HorizontalLayoutGroup>();
-            identityRowLayout.spacing = ICON_GAP_DP;
+            identityRowLayout.spacing = IconGapDp;
             identityRowLayout.childAlignment = TextAnchor.MiddleLeft;
             identityRowLayout.childControlWidth = true;
             identityRowLayout.childControlHeight = true;
@@ -677,15 +677,15 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var identityRowLayoutElement =
                     identityRowObject.GetComponent<LayoutElement>();
-            identityRowLayoutElement.minHeight = ICON_SIZE_DP;
+            identityRowLayoutElement.minHeight = IconSizeDp;
             identityRowLayoutElement.flexibleWidth = 1f;
 
             iconLayoutElement = CreateIcon(
                 identityRowObject.transform
-              , ICON_SIZE_DP);
+              , IconSizeDp);
 
             var identityTextObject = new GameObject(
-                IDENTITY_TEXT_OBJECT_NAME
+                IdentityTextObjectName
               , typeof(RectTransform)
               , typeof(VerticalLayoutGroup)
               , typeof(LayoutElement));
@@ -713,7 +713,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             Transform parent
           , int sizeDp) {
             var iconObject = new GameObject(
-                ICON_OBJECT_NAME
+                IconObjectName
               , typeof(RectTransform)
               , typeof(Image)
               , typeof(Button)
@@ -721,15 +721,15 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             iconObject.transform.SetParent(parent, false);
 
             var image = iconObject.GetComponent<Image>();
-            image.color = CallToActionColor;
-            AddOutline(image, ElementOutlineColor);
+            image.color = callToActionColor;
+            AddOutline(image, elementOutlineColor);
 
             var button = iconObject.GetComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(
                 () => TryOpenUrl(
-                    TEST_AD_CLICK_URL
-                  , CLICK_LOG_TEXT));
+                    TestAdClickUrl
+                  , ClickLogText));
 
             var layout = iconObject.GetComponent<LayoutElement>();
             layout.minWidth = sizeDp;
@@ -739,8 +739,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var label = CreateOverlayText(
                 iconObject.transform
-              , ICON_TEXT
-              , ICON_FONT_SIZE
+              , IconText
+              , IconFontSize
               , TextAnchor.MiddleCenter
               , Color.white);
             Stretch(label.rectTransform);
@@ -748,9 +748,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             ScaleToBox(
                 label
               , label.rectTransform
-              , ICON_TEXT_BOX_RATIO
-              , ICON_TEXT_MIN_SIZE
-              , ICON_TEXT_MAX_SIZE
+              , IconTextBoxRatio
+              , IconTextMinSize
+              , IconTextMaxSize
               , followsShortSide: true);
             return layout;
         }
@@ -761,7 +761,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , float minimumHeight
           , out Text label) {
             var mediaObject = new GameObject(
-                MEDIA_OBJECT_NAME
+                MediaObjectName
               , typeof(RectTransform)
               , typeof(CanvasRenderer)
               , typeof(EditorMediaGraphic)
@@ -772,14 +772,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var graphic =
                     mediaObject.GetComponent<EditorMediaGraphic>();
             graphic.raycastTarget = true;
-            AddOutline(graphic, ElementOutlineColor);
+            AddOutline(graphic, elementOutlineColor);
 
             var button = mediaObject.GetComponent<Button>();
             button.targetGraphic = graphic;
             button.onClick.AddListener(
                 () => TryOpenUrl(
-                    TEST_AD_CLICK_URL
-                  , CLICK_LOG_TEXT));
+                    TestAdClickUrl
+                  , ClickLogText));
 
             var layout = mediaObject.GetComponent<LayoutElement>();
             layout.minHeight = minimumHeight;
@@ -788,16 +788,16 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             label = CreateOverlayText(
                 mediaObject.transform
               , text
-              , MEDIA_LABEL_FONT_SIZE
+              , MediaLabelFontSize
               , TextAnchor.MiddleCenter
               , Color.white);
             Stretch(label.rectTransform);
             ScaleToBox(
                 label
               , label.rectTransform
-              , MEDIA_LABEL_BOX_RATIO
-              , MEDIA_LABEL_MIN_SIZE
-              , MEDIA_LABEL_MAX_SIZE
+              , MediaLabelBoxRatio
+              , MediaLabelMinSize
+              , MediaLabelMaxSize
               , followsShortSide: true);
             return layout;
         }
@@ -809,7 +809,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , int fontSize
           , out Text label) {
             var buttonObject = new GameObject(
-                CALL_TO_ACTION_TEXT
+                CallToActionText
               , typeof(RectTransform)
               , typeof(Image)
               , typeof(Button)
@@ -817,15 +817,15 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             buttonObject.transform.SetParent(parent, false);
 
             var image = buttonObject.GetComponent<Image>();
-            image.color = CallToActionColor;
-            AddOutline(image, CallToActionBorderColor);
+            image.color = callToActionColor;
+            AddOutline(image, callToActionBorderColor);
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(
                 () => TryOpenUrl(
-                    TEST_AD_CLICK_URL
-                  , $"{CLICK_LOG_TEXT}. Ad unit ID: {adUnitId}"));
+                    TestAdClickUrl
+                  , $"{ClickLogText}. Ad unit ID: {adUnitId}"));
 
             var layout = buttonObject.GetComponent<LayoutElement>();
             layout.minHeight = heightDp;
@@ -833,7 +833,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             label = CreateOverlayText(
                 buttonObject.transform
-              , CALL_TO_ACTION_TEXT
+              , CallToActionText
               , fontSize
               , TextAnchor.MiddleCenter
               , Color.white);
@@ -841,9 +841,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             ScaleToBox(
                 label
               , label.rectTransform
-              , CALL_TO_ACTION_TEXT_BOX_RATIO
-              , CALL_TO_ACTION_TEXT_MIN_SIZE
-              , CALL_TO_ACTION_TEXT_MAX_SIZE);
+              , CallToActionTextBoxRatio
+              , CallToActionTextMinSize
+              , CallToActionTextMaxSize);
             return layout;
         }
 
@@ -870,21 +870,21 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var tier = ResolveRectAdTier(shortSide);
             var gap = ResolveRectAdGap(tier);
             var headlineHeight =
-                    RECT_AD_COMPACT_FONT_SIZE * TEXT_HEIGHT_MULTIPLIER;
+                    RectAdCompactFontSize * TextHeightMultiplier;
             var callToActionBandHeight = Mathf.Clamp(
-                shortSide * RECT_AD_CTA_SHORT_SIDE_RATIO
-              , RECT_AD_CTA_MIN_HEIGHT_DP
-              , RECT_AD_CTA_MAX_HEIGHT_DP);
+                shortSide * RectAdCtaShortSideRatio
+              , RectAdCtaMinHeightDp
+              , RectAdCtaMaxHeightDp);
             // The device rule: the scrim template is how media survives a
             // cell that cannot host a dedicated media band; any cell that
             // fits the band gets the media-top column.
             var mediaBandEstimate =
-                    RECT_AD_MEDIA_FLOOR_DP
+                    RectAdMediaFloorDp
                   + headlineHeight
                   + callToActionBandHeight
                   + 4 * gap;
             var scrimTemplate = innerHeight < mediaBandEstimate
-                    || innerWidth < RECT_AD_MEDIA_FLOOR_DP;
+                    || innerWidth < RectAdMediaFloorDp;
 
             // Where the column's content lives. On the scrim template the
             // picture is the cell's background and runs under the curve, so
@@ -894,7 +894,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var contentArea = panel;
             if (!scrimTemplate && rectAdCornerInset > 0f) {
                 var contentAreaObject = new GameObject(
-                    CONTENT_AREA_OBJECT_NAME
+                    ContentAreaObjectName
                   , typeof(RectTransform));
                 contentAreaObject.transform.SetParent(panel, false);
                 contentArea = contentAreaObject.GetComponent<RectTransform>();
@@ -909,7 +909,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // The media: the whole cell on the scrim template, the top band
             // of the column otherwise.
             var mediaObject = new GameObject(
-                MEDIA_OBJECT_NAME
+                MediaObjectName
               , typeof(RectTransform)
               , typeof(CanvasRenderer)
               , typeof(EditorMediaGraphic)
@@ -919,28 +919,28 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var mediaGraphic =
                     mediaObject.GetComponent<EditorMediaGraphic>();
             mediaGraphic.raycastTarget = true;
-            AddOutline(mediaGraphic, ElementOutlineColor);
+            AddOutline(mediaGraphic, elementOutlineColor);
             var mediaButton = mediaObject.GetComponent<Button>();
             mediaButton.targetGraphic = mediaGraphic;
             mediaButton.onClick.AddListener(
                 () => TryOpenUrl(
-                    TEST_AD_CLICK_URL
-                  , CLICK_LOG_TEXT));
+                    TestAdClickUrl
+                  , ClickLogText));
             mediaLabel = CreateOverlayText(
                 mediaObject.transform
               , config.AllowsVideo
-                        ? FLEXIBLE_MEDIA_TEXT
-                        : IMAGE_MEDIA_TEXT
-              , MEDIA_LABEL_FONT_SIZE
+                        ? FlexibleMediaText
+                        : ImageMediaText
+              , MediaLabelFontSize
               , TextAnchor.MiddleCenter
               , Color.white);
             Stretch(mediaLabel.rectTransform);
             ScaleToBox(
                 mediaLabel
               , mediaLabel.rectTransform
-              , MEDIA_LABEL_BOX_RATIO
-              , MEDIA_LABEL_MIN_SIZE
-              , MEDIA_LABEL_MAX_SIZE
+              , MediaLabelBoxRatio
+              , MediaLabelMinSize
+              , MediaLabelMaxSize
               , followsShortSide: true);
 
             if (scrimTemplate) {
@@ -949,13 +949,13 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 // One veil over the whole cell, exactly like the device: no
                 // uncovered strip above the text block.
                 var scrimObject = new GameObject(
-                    SCRIM_OBJECT_NAME
+                    ScrimObjectName
                   , typeof(RectTransform)
                   , typeof(Image));
                 scrimObject.transform.SetParent(panel, false);
                 Stretch(scrimObject.GetComponent<RectTransform>());
                 var scrimImage = scrimObject.GetComponent<Image>();
-                scrimImage.color = new(0f, 0f, 0f, SCRIM_ALPHA);
+                scrimImage.color = new(0f, 0f, 0f, ScrimAlpha);
                 scrimImage.raycastTarget = false;
             } else {
                 // The media absorbs whatever the text stack leaves free,
@@ -963,12 +963,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 // instead of keeping an empty band.
                 var secondaryLineHeight =
                         (tier is RectAdTier.Compact
-                                ? RECT_AD_SECONDARY_FONT_SIZE
-                                : ADVERTISER_FONT_SIZE)
-                        * RECT_AD_TEXT_HEIGHT_MULTIPLIER;
+                                ? RectAdSecondaryFontSize
+                                : AdvertiserFontSize)
+                        * RectAdTextHeightMultiplier;
                 var lowerEstimate =
-                        RECT_AD_COMPACT_FONT_SIZE
-                                * RECT_AD_TEXT_HEIGHT_MULTIPLIER
+                        RectAdCompactFontSize
+                                * RectAdTextHeightMultiplier
                       + secondaryLineHeight * 2f
                       + (tier is not RectAdTier.Compact
                                 ? secondaryLineHeight
@@ -983,14 +983,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 mediaRect.sizeDelta = new(
                     0f
                   , Mathf.Max(
-                        RECT_AD_MEDIA_FLOOR_DP
+                        RectAdMediaFloorDp
                       , innerHeight - lowerEstimate));
             }
 
             // The bottom stack: icon by the device's shared-line floor, the
             // headline, the body on roomier tiers, then the button.
             var contentObject = new GameObject(
-                CONTENT_OBJECT_NAME
+                ContentObjectName
               , typeof(RectTransform)
               , typeof(VerticalLayoutGroup)
               , typeof(ContentSizeFitter));
@@ -1014,9 +1014,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var pad = scrimTemplate
                     ? Mathf.Max(
                         Mathf.Clamp(
-                            Mathf.RoundToInt(shortSide * RECT_AD_SCRIM_PADDING_RATIO)
-                          , RECT_AD_SCRIM_PADDING_MIN_DP
-                          , RECT_AD_SCRIM_PADDING_MAX_DP)
+                            Mathf.RoundToInt(shortSide * RectAdScrimPaddingRatio)
+                          , RectAdScrimPaddingMinDp
+                          , RectAdScrimPaddingMaxDp)
                       , Mathf.RoundToInt(rectAdCornerInset))
                     : 0;
             stack.padding = new(pad, pad, pad, pad);
@@ -1032,32 +1032,32 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var iconSize = ResolveRectAdIconSize(tier);
             var headlineFontSize = tier switch {
-                RectAdTier.Roomy => FULLSCREEN_HEADLINE_FONT_SIZE
-              , RectAdTier.Regular => COMPACT_HEADLINE_FONT_SIZE
-              , _ => RECT_AD_COMPACT_FONT_SIZE
+                RectAdTier.Roomy => FullScreenHeadlineFontSize
+              , RectAdTier.Regular => CompactHeadlineFontSize
+              , _ => RectAdCompactFontSize
             };
             var secondaryFontSize = tier is RectAdTier.Compact
-                    ? RECT_AD_SECONDARY_FONT_SIZE
-                    : ADVERTISER_FONT_SIZE;
+                    ? RectAdSecondaryFontSize
+                    : AdvertiserFontSize;
             var callToActionHeight = Mathf.RoundToInt(
                 Mathf.Clamp(
-                    shortSide * RECT_AD_CTA_SHORT_SIDE_RATIO
-                  , RECT_AD_CTA_MIN_HEIGHT_DP
-                  , RECT_AD_CTA_MAX_HEIGHT_DP));
+                    shortSide * RectAdCtaShortSideRatio
+                  , RectAdCtaMinHeightDp
+                  , RectAdCtaMaxHeightDp));
             var callToActionFontSize = Mathf.Clamp(
                 Mathf.RoundToInt(
-                    callToActionHeight * RECT_AD_CTA_FONT_HEIGHT_RATIO)
-              , RECT_AD_CTA_MIN_FONT_SIZE
-              , CALL_TO_ACTION_FONT_SIZE);
+                    callToActionHeight * RectAdCtaFontHeightRatio)
+              , RectAdCtaMinFontSize
+              , CallToActionFontSize);
 
             if (scrimTemplate) {
                 // The device's shared-line floor: the icon only joins the
                 // headline's line when the line keeps 72dp of text.
                 var lineTextWidth =
                         cellWidth - 2 * pad - iconSize - gap;
-                if (lineTextWidth < MIN_ICON_ROW_TEXT_WIDTH_DP) {
+                if (lineTextWidth < MinIconRowTextWidthDp) {
                     var iconHolder = new GameObject(
-                        IDENTITY_ROW_OBJECT_NAME
+                        IdentityRowObjectName
                       , typeof(RectTransform)
                       , typeof(HorizontalLayoutGroup));
                     iconHolder.transform.SetParent(
@@ -1079,14 +1079,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
                     headlineText = CreateText(
                         contentObject.transform
-                      , HEADLINE_TEXT
+                      , HeadlineText
                       , headlineFontSize
                       , TextAnchor.MiddleLeft
                       , Color.white
-                      , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+                      , RectAdTextHeightMultiplier);
                 } else {
                     var identityRowObject = new GameObject(
-                        IDENTITY_ROW_OBJECT_NAME
+                        IdentityRowObjectName
                       , typeof(RectTransform)
                       , typeof(HorizontalLayoutGroup));
                     identityRowObject.transform.SetParent(
@@ -1105,11 +1105,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     CreateIcon(identityRowObject.transform, iconSize);
                     headlineText = CreateText(
                         identityRowObject.transform
-                      , HEADLINE_TEXT
+                      , HeadlineText
                       , headlineFontSize
                       , TextAnchor.MiddleLeft
                       , Color.white
-                      , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+                      , RectAdTextHeightMultiplier);
                     headlineText
                             .GetComponent<LayoutElement>()
                             .flexibleWidth = 1f;
@@ -1119,11 +1119,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
                 var body = CreateText(
                     contentObject.transform
-                  , BODY_TEXT
+                  , BodyText
                   , secondaryFontSize
                   , TextAnchor.MiddleLeft
-                  , SecondaryTextColor
-                  , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+                  , secondaryTextColor
+                  , RectAdTextHeightMultiplier);
                 body.verticalOverflow = VerticalWrapMode.Truncate;
 
                 callToActionLayoutElement = CreateCallToAction(
@@ -1144,41 +1144,41 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // height.
             headlineText = CreateText(
                 contentObject.transform
-              , HEADLINE_TEXT
+              , HeadlineText
               , headlineFontSize
               , TextAnchor.MiddleLeft
               , Color.white
-              , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+              , RectAdTextHeightMultiplier);
             headlineLayoutElement =
                     headlineText.GetComponent<LayoutElement>();
 
             var bodyLine = CreateText(
                 contentObject.transform
-              , BODY_TEXT
+              , BodyText
               , secondaryFontSize
               , TextAnchor.MiddleLeft
-              , SecondaryTextColor
-              , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+              , secondaryTextColor
+              , RectAdTextHeightMultiplier);
             bodyLine.verticalOverflow = VerticalWrapMode.Truncate;
             CreateText(
                 contentObject.transform
-              , ADVERTISER_TEXT
+              , AdvertiserText
               , secondaryFontSize
               , TextAnchor.MiddleLeft
-              , SecondaryTextColor
-              , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+              , secondaryTextColor
+              , RectAdTextHeightMultiplier);
             if (tier is not RectAdTier.Compact) {
                 CreateText(
                     contentObject.transform
-                  , STAR_RATING_TEXT
+                  , StarRatingText
                   , secondaryFontSize
                   , TextAnchor.MiddleLeft
-                  , AttributionColor
-                  , RECT_AD_TEXT_HEIGHT_MULTIPLIER);
+                  , attributionColor
+                  , RectAdTextHeightMultiplier);
             }
 
             var actionRowObject = new GameObject(
-                IDENTITY_ROW_OBJECT_NAME
+                IdentityRowObjectName
               , typeof(RectTransform)
               , typeof(HorizontalLayoutGroup));
             actionRowObject.transform.SetParent(
@@ -1208,10 +1208,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         }
 
         private static RectAdTier ResolveRectAdTier(float shortSide) {
-            if (shortSide >= RECT_AD_ROOMY_SHORT_SIDE_DP) {
+            if (shortSide >= RectAdRoomyShortSideDp) {
                 return RectAdTier.Roomy;
             }
-            if (shortSide >= RECT_AD_REGULAR_SHORT_SIDE_DP) {
+            if (shortSide >= RectAdRegularShortSideDp) {
                 return RectAdTier.Regular;
             }
             return RectAdTier.Compact;
@@ -1219,23 +1219,23 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         private static int ResolveRectAdGap(RectAdTier tier) {
             return tier switch {
-                RectAdTier.Roomy => RECT_AD_ROOMY_GAP_DP
-              , RectAdTier.Regular => RECT_AD_REGULAR_GAP_DP
-              , _ => RECT_AD_COMPACT_GAP_DP
+                RectAdTier.Roomy => RectAdRoomyGapDp
+              , RectAdTier.Regular => RectAdRegularGapDp
+              , _ => RectAdCompactGapDp
             };
         }
 
         private static int ResolveRectAdIconSize(RectAdTier tier) {
             return tier switch {
-                RectAdTier.Roomy => RECT_AD_ROOMY_ICON_DP
-              , RectAdTier.Regular => RECT_AD_REGULAR_ICON_DP
-              , _ => RECT_AD_COMPACT_ICON_DP
+                RectAdTier.Roomy => RectAdRoomyIconDp
+              , RectAdTier.Regular => RectAdRegularIconDp
+              , _ => RectAdCompactIconDp
             };
         }
 
         // The image policy floor the device applies to a registered
         // MediaView; only a video creative demands the 120dp minimum.
-        private const int RECT_AD_MEDIA_FLOOR_DP = 48;
+        private const int RectAdMediaFloorDp = 48;
 
         // ------------------------------------------------------------------
         // Badges and controls
@@ -1243,7 +1243,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         private RectTransform CreateBadges(RectTransform panel) {
             var attributionObject = new GameObject(
-                AD_ATTRIBUTION_TEXT
+                AdAttributionText
               , typeof(RectTransform)
               , typeof(Image));
             attributionObject.transform.SetParent(panel, false);
@@ -1253,14 +1253,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 attributionRect
               , Vector2.zero
               , new(
-                    ATTRIBUTION_WIDTH_DP
-                  , ATTRIBUTION_HEIGHT_DP));
+                    AttributionWidthDp
+                  , AttributionHeightDp));
             attributionObject.GetComponent<Image>().color =
-                    AttributionColor;
+                    attributionColor;
             attributionText = CreateOverlayText(
                 attributionObject.transform
-              , AD_ATTRIBUTION_TEXT
-              , ATTRIBUTION_FONT_SIZE
+              , AdAttributionText
+              , AttributionFontSize
               , TextAnchor.MiddleCenter
               , Color.black);
             Stretch(attributionText.rectTransform);
@@ -1268,12 +1268,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             ScaleToBox(
                 attributionText
               , attributionText.rectTransform
-              , ATTRIBUTION_TEXT_BOX_RATIO
-              , ATTRIBUTION_TEXT_MIN_SIZE
-              , ATTRIBUTION_TEXT_MAX_SIZE);
+              , AttributionTextBoxRatio
+              , AttributionTextMinSize
+              , AttributionTextMaxSize);
 
             var adChoicesObject = new GameObject(
-                AD_CHOICES_TEXT
+                AdChoicesText
               , typeof(RectTransform)
               , typeof(CanvasRenderer)
               , typeof(EditorAdChoicesGraphic)
@@ -1290,8 +1290,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             button.targetGraphic = graphic;
             button.onClick.AddListener(
                 () => TryOpenUrl(
-                    AD_CHOICES_URL
-                  , AD_CHOICES_CLICK_LOG_TEXT));
+                    AdChoicesUrl
+                  , AdChoicesClickLogText));
             return adChoicesRect;
         }
 
@@ -1310,9 +1310,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             closeControlOnLeft = closeOnLeft;
             closeButton = CreateControlButton(
                 panel
-              , CLOSE_OBJECT_NAME
-              , CLOSE_TEXT
-              , CLOSE_FONT_SIZE
+              , CloseObjectName
+              , CloseText
+              , CloseFontSize
               , closeOnLeft);
             DrawCloseGlyph(closeButton);
             // Closes at once, where a device waits for the redirect to take
@@ -1324,7 +1324,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // already taking the screen.
             closeButton.onClick.AddListener(() => {
                 if (config.Close.RedirectOnClose) {
-                    TryOpenUrl(TEST_AD_CLICK_URL, CLICK_LOG_TEXT);
+                    TryOpenUrl(TestAdClickUrl, ClickLogText);
                     Finish(true);
                     return;
                 }
@@ -1340,9 +1340,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             };
             countdownControl = CreateControlText(
                 panel
-              , COUNTDOWN_OBJECT_NAME
+              , CountdownObjectName
               , config.Close.Cooldown.ToString()
-              , COUNTDOWN_FONT_SIZE
+              , CountdownFontSize
               , countdownControlOnLeft
               , out countdownText);
             countdownRemaining = config.Close.Cooldown;
@@ -1354,8 +1354,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         // The close mark's geometry, the device's own two numbers: it spans
         // this share of the box's shorter side, in strokes this thick.
-        private const float CLOSE_GLYPH_SPAN_RATIO = .44f;
-        private const float CLOSE_GLYPH_STROKE_DP  = 2.5f;
+        private const float CloseGlyphSpanRatio = .44f;
+        private const float CloseGlyphStrokeDp  = 2.5f;
 
         // Drawn, not typed - the device draws two strokes because U+2715 has
         // no single font behind it across OEMs, so a typed mark never looks
@@ -1372,10 +1372,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             // Four texels per unit keeps the edge crisp at any preview scale.
             const int texelsPerUnit = 4;
-            var size   = Mathf.RoundToInt(CONTROL_SIZE_DP * texelsPerUnit);
+            var size   = Mathf.RoundToInt(ControlSizeDp * texelsPerUnit);
             var center = new Vector2(size * .5f, size * .5f);
-            var half   = size * CLOSE_GLYPH_SPAN_RATIO * .5f;
-            var radius = CLOSE_GLYPH_STROKE_DP * texelsPerUnit * .5f;
+            var half   = size * CloseGlyphSpanRatio * .5f;
+            var radius = CloseGlyphStrokeDp * texelsPerUnit * .5f;
             var a1 = center + new Vector2(-half, -half);
             var b1 = center + new Vector2( half,  half);
             var a2 = center + new Vector2(-half,  half);
@@ -1456,7 +1456,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             SetControlRect(rect, onLeft);
 
             var image = buttonObject.GetComponent<Image>();
-            image.color = ControlColor;
+            image.color = controlColor;
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -1488,7 +1488,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var controlRect =
                     controlObject.GetComponent<RectTransform>();
             SetControlRect(controlRect, onLeft);
-            controlObject.GetComponent<Image>().color = ControlColor;
+            controlObject.GetComponent<Image>().color = controlColor;
 
             label = CreateOverlayText(
                 controlObject.transform
@@ -1509,13 +1509,13 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             if (onLeft) {
                 SetTopLeftRect(
                     rect
-                  , new(CONTROL_LEFT_INSET_DP, -topInset)
-                  , new(CONTROL_SIZE_DP, CONTROL_SIZE_DP));
+                  , new(ControlLeftInsetDp, -topInset)
+                  , new(ControlSizeDp, ControlSizeDp));
             } else {
                 SetTopRightRect(
                     rect
-                  , new(-CONTROL_RIGHT_INSET_DP, -topInset)
-                  , new(CONTROL_SIZE_DP, CONTROL_SIZE_DP));
+                  , new(-ControlRightInsetDp, -topInset)
+                  , new(ControlSizeDp, ControlSizeDp));
             }
         }
 
@@ -1525,7 +1525,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , int fontSize
           , TextAnchor alignment
           , Color color
-          , float heightMultiplier = TEXT_HEIGHT_MULTIPLIER) {
+          , float heightMultiplier = TextHeightMultiplier) {
             var label = CreateOverlayText(
                 parent
               , text
@@ -1571,7 +1571,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var label = textObject.GetComponent<Text>();
             label.font = Resources.GetBuiltinResource<Font>(
-                BUILT_IN_FONT_NAME);
+                BuiltInFontName);
             label.text = text;
             label.fontSize = fontSize;
             label.alignment = alignment;
@@ -1583,26 +1583,26 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         // The border the device buttons carry: a thin rim drawn INSIDE the
         // element's own bounds - an inner stroke, the way GradientDrawable
         // strokes on Android - so the border never grows the element.
-        private const float INNER_STROKE_WIDTH_DP = 1.5f;
+        private const float InnerStrokeWidthDp = 1.5f;
 
         private static void AddOutline(Graphic graphic, Color color) {
             var target = graphic.rectTransform;
             CreateStrokeEdge(
                 target, color, new(0f, 1f), new(1f, 1f)
-              , new(0.5f, 1f), new(0f, INNER_STROKE_WIDTH_DP));
+              , new(0.5f, 1f), new(0f, InnerStrokeWidthDp));
             CreateStrokeEdge(
                 target, color, new(0f, 0f), new(1f, 0f)
-              , new(0.5f, 0f), new(0f, INNER_STROKE_WIDTH_DP));
+              , new(0.5f, 0f), new(0f, InnerStrokeWidthDp));
             // The side bars stop short of the corners the horizontal bars
             // already own, so a translucent stroke never doubles up there.
             CreateStrokeEdge(
                 target, color, new(0f, 0f), new(0f, 1f)
               , new(0f, 0.5f)
-              , new(INNER_STROKE_WIDTH_DP, -2f * INNER_STROKE_WIDTH_DP));
+              , new(InnerStrokeWidthDp, -2f * InnerStrokeWidthDp));
             CreateStrokeEdge(
                 target, color, new(1f, 0f), new(1f, 1f)
               , new(1f, 0.5f)
-              , new(INNER_STROKE_WIDTH_DP, -2f * INNER_STROKE_WIDTH_DP));
+              , new(InnerStrokeWidthDp, -2f * InnerStrokeWidthDp));
         }
 
         private static void CreateStrokeEdge(
@@ -1657,7 +1657,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             SetTopRightRect(
                 adChoices
               , new(0f, -safeTopInset)
-              , new(AD_CHOICES_SIZE_DP, AD_CHOICES_SIZE_DP));
+              , new(AdChoicesSizeDp, AdChoicesSizeDp));
         }
 
         private static void SetTopRightRect(
@@ -1680,13 +1680,13 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         internal static float ResolveHalfScreenPanelHeight(float heightRatio) {
             var ratio = float.IsFinite(heightRatio)
                     ? Mathf.Clamp01(heightRatio)
-                    : DEFAULT_HEIGHT_RATIO;
+                    : DefaultHeightRatio;
             float screenHeight = Screen.height;
             return Mathf.Min(
                 screenHeight
               , Mathf.Max(
                     screenHeight * ratio
-                  , MIN_PANEL_HEIGHT_DP * ResolveUIScale()));
+                  , MinPanelHeightDp * ResolveUIScale()));
         }
 
         private void BeginSlide(Slide direction) {
@@ -1706,12 +1706,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     ? 1f - SlideProgress()
                     : 0f;
             BeginSlide(Slide.Out);
-            slideElapsed = turnedAt * SLIDE_DURATION_SECONDS;
+            slideElapsed = turnedAt * SlideDurationSeconds;
             ApplySlideOffset();
         }
 
         private float SlideProgress() {
-            return Mathf.Clamp01(slideElapsed / SLIDE_DURATION_SECONDS);
+            return Mathf.Clamp01(slideElapsed / SlideDurationSeconds);
         }
 
         private void AdvanceSlide() {
@@ -1777,7 +1777,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     && Screen.height == lastScreenHeight
                     && Screen.safeArea == lastSafeArea
                     && Mathf.Abs(uiScale - lastUIScale)
-                            <= SCREEN_CHANGE_TOLERANCE) {
+                            <= ScreenChangeTolerance) {
                 return;
             }
 
@@ -1814,12 +1814,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 identityTextRect.rect.height
               , LayoutUtility.GetPreferredHeight(identityTextRect));
             var maximumIconSize = Mathf.Max(
-                ICON_SIZE_DP
+                IconSizeDp
               , identityRowRect.rect.width
-                    * MAX_ICON_ROW_WIDTH_RATIO);
+                    * MaxIconRowWidthRatio);
             var resolvedIconSize = Mathf.Clamp(
                 textHeight
-              , ICON_SIZE_DP
+              , IconSizeDp
               , maximumIconSize);
             if (Mathf.Approximately(
                         iconLayoutElement.preferredWidth
@@ -1855,20 +1855,20 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // Collapsible: the content stays below the control strip.
             if (config.Mode is EditorAdMode.FullScreen) {
                 content.offsetMax = new(
-                    -CONTENT_HORIZONTAL_PADDING_DP
-                  , -(CONTROL_SIZE_DP + safeTopInset));
+                    -ContentHorizontalPaddingDp
+                  , -(ControlSizeDp + safeTopInset));
             } else {
                 content.offsetMax = new(
-                    -CONTENT_HORIZONTAL_PADDING_DP
-                  , -CONTROL_SIZE_DP);
+                    -ContentHorizontalPaddingDp
+                  , -ControlSizeDp);
             }
             if (attributionRect != null) {
                 SetTopLeftRect(
                     attributionRect
                   , new(0f, -safeTopInset)
                   , new(
-                        ATTRIBUTION_WIDTH_DP
-                      , ATTRIBUTION_HEIGHT_DP));
+                        AttributionWidthDp
+                      , AttributionHeightDp));
             }
             if (closeButton != null) {
                 SetControlRect(
@@ -1888,17 +1888,17 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             float safeTopInset
           , float uiScale) {
             if (config.Mode is EditorAdMode.RectAd) {
-                var minimumBadgeSize = MIN_BADGE_SIZE_PX / uiScale;
+                var minimumBadgeSize = MinBadgeSizePx / uiScale;
                 var badgeSize = ResolveRectAdBadgeSize(uiScale);
                 var availableAttributionWidth = Mathf.Max(
                     minimumBadgeSize
                   , panel.rect.width
                             - badgeSize);
                 var attributionWidth = Mathf.Clamp(
-                    badgeSize * RECT_AD_ATTRIBUTION_ASPECT_RATIO
+                    badgeSize * RectAdAttributionAspectRatio
                   , minimumBadgeSize
                   , Mathf.Min(
-                        ATTRIBUTION_WIDTH_DP
+                        AttributionWidthDp
                       , availableAttributionWidth));
                 // The badges sit on the panel, outside the content area, so
                 // they carry the corner clearance themselves - on the scrim
@@ -1923,38 +1923,38 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     attributionRect
                   , new(0f, -safeTopInset)
                   , new(
-                        ATTRIBUTION_WIDTH_DP
-                      , ATTRIBUTION_HEIGHT_DP));
+                        AttributionWidthDp
+                      , AttributionHeightDp));
             }
             PlaceAdChoices(adChoicesRect, safeTopInset);
         }
 
         private float ResolveRectAdBadgeSize(float uiScale) {
-            var minimumBadgeSize = MIN_BADGE_SIZE_PX / uiScale;
+            var minimumBadgeSize = MinBadgeSizePx / uiScale;
             var shortSide = Mathf.Min(
                 panel.rect.width
               , panel.rect.height);
             return Mathf.Clamp(
-                shortSide * RECT_AD_BADGE_SHORT_SIDE_RATIO
+                shortSide * RectAdBadgeShortSideRatio
               , minimumBadgeSize
-              , AD_CHOICES_SIZE_DP);
+              , AdChoicesSizeDp);
         }
 
         private static float ResolveUIScale() {
             if (float.IsFinite(Screen.dpi)
-                    && Screen.dpi >= MIN_DEVICE_SIMULATOR_DPI) {
-                return Screen.dpi / ANDROID_BASELINE_DPI;
+                    && Screen.dpi >= MinDeviceSimulatorDpi) {
+                return Screen.dpi / AndroidBaselineDpi;
             }
 
             if (Screen.width <= 0
                     || Screen.height <= 0
-                    || ReferenceResolution.x <= 0f
-                    || ReferenceResolution.y <= 0f) {
+                    || referenceResolution.x <= 0f
+                    || referenceResolution.y <= 0f) {
                 return 1f;
             }
 
-            var widthScale = Screen.width / ReferenceResolution.x;
-            var heightScale = Screen.height / ReferenceResolution.y;
+            var widthScale = Screen.width / referenceResolution.x;
+            var heightScale = Screen.height / referenceResolution.y;
             var logWidth = Mathf.Log(widthScale, 2f);
             var logHeight = Mathf.Log(heightScale, 2f);
             return Mathf.Max(
@@ -1964,7 +1964,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                   , Mathf.Lerp(
                         logWidth
                       , logHeight
-                      , CANVAS_MATCH_WIDTH_OR_HEIGHT)));
+                      , CanvasMatchWidthOrHeight)));
         }
 
         private void TryOpenUrl(string url, string logMessage) {

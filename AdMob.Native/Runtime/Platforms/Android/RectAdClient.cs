@@ -4,13 +4,13 @@ using UnityEngine.Android;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
     internal sealed class RectAdClient : IRectAdClient {
-        private const string JAVA_CLASS_NAME          = "com.riseon.ads.admobnative.RectAd";
-        private const string JAVA_SET_LISTENER_METHOD = "SetListener";
-        private const string JAVA_CONFIGURE_METHOD    = "Configure";
-        private const string JAVA_SHOW_METHOD         = "Show";
-        private const string JAVA_HIDE_METHOD         = "Hide";
-        private const string JAVA_SET_POSITION_METHOD = "SetPosition";
-        private const string JAVA_RELEASE_METHOD      = "Release";
+        private const string JavaClassName         = "com.riseon.ads.admobnative.RectAd";
+        private const string JavaSetListenerMethod = "SetListener";
+        private const string JavaConfigureMethod   = "Configure";
+        private const string JavaShowMethod        = "Show";
+        private const string JavaHideMethod        = "Hide";
+        private const string JavaSetPositionMethod = "SetPosition";
+        private const string JavaReleaseMethod     = "Release";
 
         private AndroidJavaObject javaObject;
         // Anchors the proxy while the Java side holds it.
@@ -21,20 +21,20 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
             RectAd.Settings settings
           , IRectAdCallbacks callbacks) {
             javaObject = new AndroidJavaObject(
-                JAVA_CLASS_NAME
+                JavaClassName
               , AndroidApplication.currentActivity
               , settings.AdUnitId
               , settings.CacheSize
               , AdColor.Pack(settings.BackgroundColor));
             listener = new RectAdListenerProxy(callbacks);
             javaObject.Call(
-                JAVA_SET_LISTENER_METHOD
+                JavaSetListenerMethod
               , new object[] { listener });
         }
 
         public void SetSize(Vector2Int sizePx, int roundCornerPx) {
             javaObject?.Call(
-                JAVA_CONFIGURE_METHOD
+                JavaConfigureMethod
               , AndroidApplication.currentActivity
               , positionPx.x
               , positionPx.y
@@ -46,19 +46,19 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
         public void SetPosition(Vector2Int newPositionPx) {
             positionPx = newPositionPx;
             javaObject?.Call(
-                JAVA_SET_POSITION_METHOD
+                JavaSetPositionMethod
               , newPositionPx.x
               , newPositionPx.y);
         }
 
         public void Show() {
             javaObject?.Call(
-                JAVA_SHOW_METHOD
+                JavaShowMethod
               , AndroidApplication.currentActivity);
         }
 
         public void Hide() {
-            javaObject?.Call(JAVA_HIDE_METHOD);
+            javaObject?.Call(JavaHideMethod);
         }
 
         public void Release() {
@@ -66,7 +66,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
             javaObject = null;
             listener   = null;
             try {
-                releasedObject?.Call(JAVA_RELEASE_METHOD);
+                releasedObject?.Call(JavaReleaseMethod);
             } catch (Exception exception) {
                 Debug.LogException(exception);
             } finally {

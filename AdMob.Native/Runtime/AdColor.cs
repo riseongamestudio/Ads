@@ -6,7 +6,7 @@ namespace RiseOn.Ads.AdMob.Native {
     /// The wire carries packed ARGB because that is what both native sides build a color from - Color.argb over there, the shift-and-mask in RANRectAdPresentation here - and because a float per channel would cost four parameters where the ABI check watches one.
     /// </summary>
     internal static class AdColor {
-        private const int CHANNEL_MAX = 255;
+        private const int ChannelMax = 255;
 
         internal static int Pack(Color color) {
             return Channel(color.a) << 24
@@ -17,14 +17,14 @@ namespace RiseOn.Ads.AdMob.Native {
 
         internal static Color Unpack(int packed) {
             return new Color(
-                (packed >> 16 & 0xFF) / (float)CHANNEL_MAX
-              , (packed >> 8  & 0xFF) / (float)CHANNEL_MAX
-              , (packed       & 0xFF) / (float)CHANNEL_MAX
-              , (packed >> 24 & 0xFF) / (float)CHANNEL_MAX);
+                (packed >> 16 & 0xFF) / (float)ChannelMax
+              , (packed >> 8  & 0xFF) / (float)ChannelMax
+              , (packed       & 0xFF) / (float)ChannelMax
+              , (packed >> 24 & 0xFF) / (float)ChannelMax);
         }
 
         private static int Channel(float value) {
-            return Mathf.Clamp(Mathf.RoundToInt(value * CHANNEL_MAX), 0, CHANNEL_MAX);
+            return Mathf.Clamp(Mathf.RoundToInt(value * ChannelMax), 0, ChannelMax);
         }
     }
 }

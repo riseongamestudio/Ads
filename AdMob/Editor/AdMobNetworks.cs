@@ -9,8 +9,7 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace RiseOn.Ads.AdMob.Editor {
     /// <summary>
-    /// AdMob's mediation adapters, which Google publishes on OpenUPM as one package each, com.google.ads.mobile.mediation.*: the list is the
-    /// Package Manager's search of the project's registries, and Install, Update and Uninstall change the package as Unity's Package Manager window does.
+    /// AdMob's mediation adapters, which Google publishes on OpenUPM as one package each, com.google.ads.mobile.mediation.*: the list is the Package Manager's search of the project's registries, and Install, Update and Uninstall change the package as Unity's Package Manager window does.
     /// </summary>
     internal sealed class AdMobNetworks : AdNetworkCatalog {
         private const string Prefix = "com.google.ads.mobile.mediation.";

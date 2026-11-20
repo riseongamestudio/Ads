@@ -11,7 +11,7 @@ namespace RiseOn.Ads.Platforms.Editor {
     // device's cover is not part of any scene either - a cover raised over a
     // level change is still up when the next level arrives.
     internal sealed class EditorCover : MonoBehaviour {
-        private const string AREA_OBJECT_NAME = "Area";
+        private const string AreaObjectName = "Area";
 
         private Canvas canvas;
         private Image area;
@@ -34,7 +34,7 @@ namespace RiseOn.Ads.Platforms.Editor {
             cover.canvas.enabled = false;
 
             var areaObject = new GameObject(
-                AREA_OBJECT_NAME
+                AreaObjectName
               , typeof(RectTransform)
               , typeof(CanvasRenderer)
               , typeof(Image));

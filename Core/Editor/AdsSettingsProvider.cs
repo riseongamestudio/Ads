@@ -28,8 +28,8 @@ namespace RiseOn.Ads.Editor {
         }
 
         [SettingsProvider]
-        private static SettingsProvider Create() =>
-            new(PagePath, SettingsScope.Project) {
+        private static SettingsProvider Create() {
+            return new(PagePath, SettingsScope.Project) {
                 guiHandler = _ => {
                     using var page = SettingsPage.Begin();
                     Draw(LoadOrCreate());
@@ -41,6 +41,7 @@ namespace RiseOn.Ads.Editor {
               , deactivateHandler = tree.Dispose
               , keywords = new[] { "ads", "admob", "max", "levelplay", "banner", "interstitial", "rewarded", "app open" }
             };
+        }
 
         /// <summary>The whole page for one settings asset.</summary>
         internal static void Draw(AdsSettings settings) {
@@ -78,7 +79,7 @@ namespace RiseOn.Ads.Editor {
                 });
             }
 
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
             // The game would throw reading them at launch, and start no mediation.
             var lost = new List<AdFormat>();
             foreach (var (format, key) in settings.RemoteKeys) {
@@ -129,7 +130,9 @@ namespace RiseOn.Ads.Editor {
         }
 
         /// <summary>Every class the pack could run; the source generator lets only one compile in an assembly.</summary>
-        internal static List<Type> Candidates() => TypeCache.GetTypesDerivedFrom<AdsManagerBase>().Where(type => !type.IsAbstract).ToList();
+        internal static List<Type> Candidates() {
+            return TypeCache.GetTypesDerivedFrom<AdsManagerBase>().Where(type => !type.IsAbstract).ToList();
+        }
 
         private static string Problem(Type type) {
             if (type.GetConstructor(Type.EmptyTypes) == null) return $"{type.Name} needs a constructor without parameters";
@@ -148,8 +151,7 @@ namespace RiseOn.Ads.Editor {
         private static HashSet<string> playerAssemblies;
 
         /// <summary>
-        /// Makes the settings hold an instance of the game's one manager class, keeping the fields when it already does, and one of every mediation
-        /// class in the project, so an adapter installed is on the page without a step of its own; a mediation no format lists serves nothing.<br/>
+        /// Makes the settings hold an instance of the game's one manager class, keeping the fields when it already does, and one of every mediation class in the project, so an adapter installed is on the page without a step of its own; a mediation no format lists serves nothing.<br/>
         /// Leaves them alone while scripts fail to compile, when a class could be missing only for now; a class gone is the page's to report.
         /// </summary>
         internal static void Adopt(AdsSettings settings) {

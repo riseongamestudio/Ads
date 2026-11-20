@@ -201,7 +201,9 @@ namespace RiseOn.Ads.Max {
 
         // ---- Full screen
 
-        public bool Supports(AdFormat format) => format is AdFormat.Interstitial or AdFormat.Rewarded or AdFormat.AppOpen;
+        public bool Supports(AdFormat format) {
+            return format is AdFormat.Interstitial or AdFormat.Rewarded or AdFormat.AppOpen;
+        }
 
         public bool IsReady(AdFormat format) {
             var unit = UnitOf(format);

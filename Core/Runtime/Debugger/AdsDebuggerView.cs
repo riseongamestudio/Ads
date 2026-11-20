@@ -18,11 +18,11 @@ namespace RiseOn.Ads {
         private const int   NoteSize     = 26;
         private const float ButtonHeight = 84;
 
-        private static readonly Color DimColor    = new(0, 0, 0, 0.7f);
-        private static readonly Color PanelColor  = new(0.13f, 0.13f, 0.15f);
-        private static readonly Color ButtonColor = new(0.22f, 0.42f, 0.86f);
-        private static readonly Color MutedColor  = new(0.72f, 0.72f, 0.75f);
-        private static readonly Color WarnColor   = new(1f, 0.75f, 0.35f);
+        private static readonly Color dimColor    = new(0, 0, 0, 0.7f);
+        private static readonly Color panelColor  = new(0.13f, 0.13f, 0.15f);
+        private static readonly Color buttonColor = new(0.22f, 0.42f, 0.86f);
+        private static readonly Color mutedColor  = new(0.72f, 0.72f, 0.75f);
+        private static readonly Color warnColor   = new(1f, 0.75f, 0.35f);
 
         private readonly CancellationTokenSource lifetime = new();
         // The SDKs' tools answer from their own threads; Update applies the answers.
@@ -55,7 +55,7 @@ namespace RiseOn.Ads {
             gameObject.AddComponent<GraphicRaycaster>();
 
             // Takes every touch the window does not, so that none reaches the game.
-            Stretch(Child(transform, "Blocker")).gameObject.AddComponent<Image>().color = DimColor;
+            Stretch(Child(transform, "Blocker")).gameObject.AddComponent<Image>().color = dimColor;
 
             var safe = Child(transform, "Safe Area");
             var area = Screen.safeArea;
@@ -67,7 +67,7 @@ namespace RiseOn.Ads {
             panel.anchorMin = new Vector2(0.04f, 0.5f);
             panel.anchorMax = new Vector2(0.96f, 0.5f);
             panel.pivot     = new Vector2(0.5f, 0.5f);
-            panel.gameObject.AddComponent<Image>().color = PanelColor;
+            panel.gameObject.AddComponent<Image>().color = panelColor;
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding                = new RectOffset(32, 32, 32, 32);
             layout.spacing                = 18;
@@ -79,14 +79,14 @@ namespace RiseOn.Ads {
 
             AddText(panel, font, "RiseOn Ads Debugger", FontSize + 8, Color.white, FontStyle.Bold);
 
-            AddText(panel, font, "Advertising ID: register it as a test device on the AdMob and LevelPlay dashboards", NoteSize, MutedColor);
+            AddText(panel, font, "Advertising ID: register it as a test device on the AdMob and LevelPlay dashboards", NoteSize, mutedColor);
             idValue    = AddText(panel, font, "Reading", FontSize, Color.white);
             copyButton = AddButton(panel, font, "Copy", Copy, out copyLabel);
             copyButton.interactable = false;
 
             if (Application.platform is RuntimePlatform.IPhonePlayer) {
                 var tracking = ConsentFlow.State?.TrackingStatus;
-                AddText(panel, font, $"Tracking (ATT): {(tracking.HasValue ? tracking.Value.ToString() : "not asked yet")}", NoteSize, MutedColor);
+                AddText(panel, font, $"Tracking (ATT): {(tracking.HasValue ? tracking.Value.ToString() : "not asked yet")}", NoteSize, mutedColor);
                 // Restricted: Screen Time or device management holds the switch, so the app's settings have none to turn on.
                 if (tracking is TrackingStatus.Denied) {
                     AddButton(panel, font, "Allow tracking in Settings", () => Application.OpenURL("app-settings:"), out _);
@@ -94,16 +94,16 @@ namespace RiseOn.Ads {
             }
 
             var mediations = AdsSdk.RunningMediations;
-            if (mediations.Count == 0) AddText(panel, font, "No mediation is running yet: the pack starts them once the consent flow allows ads", NoteSize, WarnColor);
+            if (mediations.Count == 0) AddText(panel, font, "No mediation is running yet: the pack starts them once the consent flow allows ads", NoteSize, warnColor);
             foreach (var mediation in mediations) {
                 if (mediation is not IAdMediationDebugger debugger) {
-                    AddText(panel, font, $"{mediation.Id}: no debugging tool", NoteSize, MutedColor);
+                    AddText(panel, font, $"{mediation.Id}: no debugging tool", NoteSize, mutedColor);
                     continue;
                 }
 
                 Text note = null;
                 AddButton(panel, font, $"{mediation.Id}: {debugger.DebuggerName}", () => Open(debugger, note), out _);
-                note = AddText(panel, font, "", NoteSize, WarnColor);
+                note = AddText(panel, font, "", NoteSize, warnColor);
                 note.gameObject.SetActive(false);
             }
 
@@ -127,7 +127,7 @@ namespace RiseOn.Ads {
 
             static Button AddButton(Transform parent, Font font, string value, UnityAction onClick, out Text label) {
                 var rect = Child(parent, value);
-                rect.gameObject.AddComponent<Image>().color             = ButtonColor;
+                rect.gameObject.AddComponent<Image>().color             = buttonColor;
                 rect.gameObject.AddComponent<LayoutElement>().minHeight = ButtonHeight;
                 var button = rect.gameObject.AddComponent<Button>();
                 button.onClick.AddListener(onClick);
@@ -181,7 +181,7 @@ namespace RiseOn.Ads {
             var (id, problem) = await AdvertisingId.ReadAsync(lifetime.Token);
             advertisingId           = id;
             idValue.text            = id ?? problem;
-            idValue.color           = id == null ? WarnColor : Color.white;
+            idValue.color           = id == null ? warnColor : Color.white;
             copyButton.interactable = id != null;
         }
 
@@ -191,7 +191,7 @@ namespace RiseOn.Ads {
 
             ownEventSystem = new GameObject(nameof(EventSystem), typeof(EventSystem));
             DontDestroyOnLoad(ownEventSystem);
-#if ENABLE_INPUT_SYSTEM && RISEON_ADS_INPUTSYSTEM
+#if ENABLE_INPUT_SYSTEM && ADS_SUPPORT_INPUTSYSTEM
             ownEventSystem.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
 #else
             ownEventSystem.AddComponent<StandaloneInputModule>();

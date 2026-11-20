@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using RiseOn.Utils.Editor;
 using UnityEditor;
 using UnityEngine;
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
 using System.Reflection;
 using RiseOn.Firebase.RemoteConfig;
 #endif
@@ -11,7 +11,8 @@ using RiseOn.Firebase.RemoteConfig;
 namespace RiseOn.Ads.Editor {
     /// <summary>
     /// A format's Remote Config key for its mediations, the Mediations Remote Key row of its section under Formats: a drop-down of that pack's string keys, No Remote Key first; a key since removed shows as missing.<br/>
-    /// One key for every platform. Nothing without the pack.
+    /// One key for every platform.<br/>
+    /// Nothing without the pack.
     /// </summary>
     internal static class AdRemoteKeyDrawer {
         public const string Tooltip = "A Remote Config string key whose value replaces this format's mediations at launch: mediation ids best first, split by commas, such as \"max,admob\", or \"off\" to turn the format off. "
@@ -19,7 +20,7 @@ namespace RiseOn.Ads.Editor {
 
         /// <summary>Draws <paramref name="format"/>'s key in <paramref name="rect"/>; a pick goes straight into the settings asset, with undo.</summary>
         public static void Draw(Rect rect, AdsSettings settings, AdFormat format) {
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
             var current = settings.RemoteKeys[format].Id;
             ChoiceFieldUtils.Value(rect, AdRemoteKeys.Choices(typeof(string), current), current, picked => {
                 Undo.RecordObject(settings, "Pick a remote key");
@@ -60,7 +61,7 @@ namespace RiseOn.Ads.Editor {
 
         private static List<(string Name, int Value)> Find(Type type) {
             var keys = new List<(string Name, int Value)>();
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
             // The pack's source generator gives each key a property of its value's type and an enum member of the same name.
             var valueType = typeof(RemoteValue<>).MakeGenericType(type);
             foreach (var property in typeof(RemoteKeys).GetProperties(BindingFlags.Public | BindingFlags.Static)) {

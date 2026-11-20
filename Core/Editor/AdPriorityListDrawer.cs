@@ -11,7 +11,8 @@ using UnityEngine;
 
 namespace RiseOn.Ads.Editor {
     /// <summary>
-    /// A format's mediations as a row of chips, best first, an arrow between each two side by side, wrapping onto more lines as text does when the row is too narrow; chips that move to another line slide there. A chip dragged takes the slot nearest to it while the others slide aside, x removes it, + adds one of the page's mediations the format lacks.
+    /// A format's mediations as a row of chips, best first, an arrow between each two side by side, wrapping onto more lines as text does when the row is too narrow; chips that move to another line slide there.<br/>
+    /// A chip dragged takes the slot nearest to it while the others slide aside, x removes it, + adds one of the page's mediations the format lacks.
     /// </summary>
     internal sealed class AdPriorityListDrawer : OdinValueDrawer<AdPriorityList> {
         private const float Gap   = 4;

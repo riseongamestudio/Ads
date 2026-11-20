@@ -132,7 +132,7 @@ view của game để chen xuống dưới.
   pause khi mở và **resume khi đóng** — cú resume rơi giữa lúc màn che còn
   đứng. Không có sự kiện nào báo, nên `ROAdsPauseGuard` là một `CADisplayLink`
   (common run-loop modes) chỉ sống khi màn che full đứng: mỗi frame đọc
-  `UnityIsPaused()`, thấy bị xoá thì đặt lại, log một lần mỗi lượt. Có thể lọt
+  `UnityIsPaused()`, thấy bị xóa thì đặt lại, log một lần mỗi lượt. Có thể lọt
   **một frame** game chạy sau khi ad đóng, sau màn che đục. `Hide` khi không có
   màn che thì không đụng cờ (tránh chạy lại game mà một ad đang giữ dừng).
 
@@ -152,7 +152,7 @@ view của game để chen xuống dưới.
   (xem README của pack, mục `AdsManagerBase`).
 - Lệnh từ thread khác được post về thread Unity qua `SynchronizationContext`
   bắt ở `BeforeSceneLoad` (`EditorThread`).
-- **Không tái tạo hiểm hoạ của máy**: Editor ở time scale 0 vẫn chạy mọi
+- **Không tái tạo hiểm họa của máy**: Editor ở time scale 0 vẫn chạy mọi
   `Update`; một `Hide` không bao giờ tới trên máy vẫn tới ở đây.
 - asmdef `RiseOn.Ads.Platforms.Editor` là `defineConstraints: ["UNITY_EDITOR"]`
   với `includePlatforms: []`, **không** `includePlatforms: ["Editor"]`: Unity

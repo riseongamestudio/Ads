@@ -23,7 +23,7 @@
         {
             "name": "com.riseon.firebase.remoteconfig",
             "expression": "1.0.0",
-            "define": "RISEON_ADS_REMOTECONFIG"
+            "define": "ADS_SUPPORT_REMOTECONFIG"
         }
     ],
     "noEngineReferences": false

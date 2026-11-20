@@ -9,14 +9,14 @@ namespace RiseOn.Ads.Platforms.Editor {
     // scheduled through the player loop never arrives; here the loop keeps running and every hide arrives. A cover that comes down
     // cleanly in the Editor says nothing about whether it comes down on a device.
     internal sealed class CoverPlatformEditor : ICoverPlatform {
-        private const string FULL_SCREEN_OBJECT_NAME = "Full Screen Cover";
-        private const string HALF_SCREEN_OBJECT_NAME = "Half Screen Cover";
+        private const string FullScreenObjectName = "Full Screen Cover";
+        private const string HalfScreenObjectName = "Half Screen Cover";
 
         private EditorCover fullScreen;
         private EditorCover halfScreen;
 
         public void ShowFullScreen(Color color) => EditorThread.Run(() => {
-            if (!fullScreen) fullScreen = EditorCover.Create(FULL_SCREEN_OBJECT_NAME, AdsEditorLayers.FullScreenCover);
+            if (!fullScreen) fullScreen = EditorCover.Create(FullScreenObjectName, AdsEditorLayers.FullScreenCover);
             fullScreen.Apply(color, 0f);
             fullScreen.SetRevealed(true);
         });
@@ -30,7 +30,7 @@ namespace RiseOn.Ads.Platforms.Editor {
         // and the one a half-screen ad's preview publishes its height in.
         public void PrepareHalfScreen(Color color, float panelHeight)
             => EditorThread.Run(() => {
-                if (!halfScreen) halfScreen = EditorCover.Create(HALF_SCREEN_OBJECT_NAME, AdsEditorLayers.HalfScreenCover);
+                if (!halfScreen) halfScreen = EditorCover.Create(HalfScreenObjectName, AdsEditorLayers.HalfScreenCover);
                 halfScreen.Apply(color, panelHeight);
             });
 

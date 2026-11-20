@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RiseOn.Ads {
     /// <summary>
-    /// A native ad in a rect the game places, a native MRec or an in-feed cell, which the game switches on and off; the pack fills it with an ad while it is on, and rotates it.
+    /// A native ad in a rect the game places, a native MRec or an in-feed cell, which the game switches on and off; the pack fills it with an ad while it is on, and rotates it.<br/>
     /// Off, it holds no ad another placement could use.<br/>
     /// A handle made while the format is off holds no cell and shows nothing, so the game uses it the same way either way.<br/>
     /// A cell the canShow it was made with turns down, such as the manager's remove-ads, stays off until its next show, or the manager's <see cref="AdsManagerBase.RefreshAdsRemoved"/>, finds it allowed again.

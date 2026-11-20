@@ -3,28 +3,27 @@ using UnityEngine.UI;
 
 namespace RiseOn.Ads.Platforms.Editor {
     /// <summary>
-    /// The pack's placeholders as Play mode draws them, each on a canvas of its own at its layer of <see cref="AdsEditorLayers"/>, sized in device points as on a phone 360 points across:<br/>
-    /// a full-screen ad with its close button, held back five seconds for a rewarding format, which then rewards; a banner and an MRec where the page's Formats section places them in the safe area.<br/>
+    /// The pack's placeholders as Play mode draws them, each on a canvas of its own at its layer of <see cref="AdsEditorLayers"/>, sized in device points as on a phone 360 points across: a full-screen ad with its close button, held back five seconds for a rewarding format, which then rewards; a banner and an MRec where the page's Formats section places them in the safe area.<br/>
     /// Each shows the name of the mediation that would serve it, and nothing else.
     /// </summary>
     internal sealed class EditorPlaceholdersUI : IEditorPlaceholders {
         private const float RewardSeconds = 5;
 
-        private static readonly Color Ground = new(.13f, .13f, .15f, 1);
-        private static readonly Color Ink    = new(.92f, .92f, .94f, 1);
-        private static readonly Color Paper  = new(.95f, .95f, .96f, 1);
-        private static readonly Color Line   = new(.2f, .2f, .22f, 1);
+        private static readonly Color ground = new(.13f, .13f, .15f, 1);
+        private static readonly Color ink    = new(.92f, .92f, .94f, 1);
+        private static readonly Color paper  = new(.95f, .95f, .96f, 1);
+        private static readonly Color line   = new(.2f, .2f, .22f, 1);
 
         private GameObject banner;
         private GameObject mRec;
 
         public void ShowFullScreen(string mediation, AdFormat format, IAdShowListener listener) => EditorThread.Run(() => {
             var root = Canvas("Ad Placeholder", AdsEditorLayers.FullScreenAd);
-            var panel = Box(root.transform, Ground);
+            var panel = Box(root.transform, ground);
             Stretch(panel.rectTransform, Vector2.zero, Vector2.one);
             panel.raycastTarget = true;
 
-            var label = Label(panel.transform, mediation, 40, Ink);
+            var label = Label(panel.transform, mediation, 40, ink);
             Stretch(label.rectTransform, Vector2.zero, Vector2.one);
 
             var close = root.AddComponent<EditorFullScreenPlaceholder>();
@@ -58,7 +57,7 @@ namespace RiseOn.Ads.Platforms.Editor {
             var root   = Canvas(name, AdsEditorLayers.OverGame);
             var area   = SafeArea(root.transform);
             var scale  = Points();
-            var box    = Box(area, Paper);
+            var box    = Box(area, paper);
             var rect   = box.rectTransform;
             var anchor = Anchor(position);
             rect.anchorMin        = fullWidth ? new Vector2(0, anchor.y) : anchor;
@@ -67,9 +66,9 @@ namespace RiseOn.Ads.Platforms.Editor {
             rect.sizeDelta        = new Vector2(fullWidth ? 0 : points.x * scale, points.y * scale);
             rect.anchoredPosition = Vector2.zero;
             box.raycastTarget     = true;
-            box.gameObject.AddComponent<Outline>().effectColor = Line;
+            box.gameObject.AddComponent<Outline>().effectColor = line;
 
-            var label = Label(box.transform, mediation, fontPoints, Line);
+            var label = Label(box.transform, mediation, fontPoints, line);
             Stretch(label.rectTransform, Vector2.zero, Vector2.one);
             return root;
         }
@@ -136,7 +135,7 @@ namespace RiseOn.Ads.Platforms.Editor {
             rect.anchoredPosition = new Vector2(-12, -12) * scale;
             image.raycastTarget   = true;
 
-            var label = Label(image.transform, "", 22, Ink);
+            var label = Label(image.transform, "", 22, ink);
             Stretch(label.rectTransform, Vector2.zero, Vector2.one);
             return (image.gameObject.AddComponent<Button>(), label);
         }
@@ -149,7 +148,9 @@ namespace RiseOn.Ads.Platforms.Editor {
 
         // Pixels per device point, as on a phone 360 points across, the most common width: the Game view's dpi is the monitor's,
         // which would draw a phone-sized view's placeholders a third of their size.
-        private static float Points() => Mathf.Min(Screen.width, Screen.height) / 360f;
+        private static float Points() {
+            return Mathf.Min(Screen.width, Screen.height) / 360f;
+        }
     }
 
     /// <summary>A full-screen placeholder's close: a countdown on the button first for a rewarding format, in real time, as the game is paused under it.</summary>

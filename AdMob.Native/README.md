@@ -1,4 +1,4 @@
-# RiseOn Ads AdMob Native
+# RiseOn.Ads.AdMob.Native
 
 Native ad của AdMob hiển thị theo ba kiểu: toàn màn hình, nửa màn hình
 (collapsible) và ô hình chữ nhật game đặt chỗ (ô trong danh sách, MRec). Chạy trên
@@ -32,17 +32,19 @@ Ads, và không biết gì về thứ được vẽ trên dưới nó ngoài b�
 |---|---|---|
 | Unity 6000.3 | | Bản đang dùng để phát triển |
 | [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Pack không dùng Odin, nhưng mọi pack RiseOn đều cần nó, để cài đặt như nhau |
-| `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json` (trên OpenUPM cần scope `com.google`) | Plugin Google Mobile Ads cho Unity. Plugin này mang theo SDK native (Android `play-services-ads`, iOS pod `Google-Mobile-Ads-SDK`) |
+| `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json`, từ OpenUPM | Plugin Google Mobile Ads cho Unity. Plugin này mang theo SDK native (Android `play-services-ads`, iOS pod `Google-Mobile-Ads-SDK`) |
 | `com.unity.ugui` 2.0.0 | Tự cài theo `package.json` | Bản xem trước trong Editor |
 
-Odin không có trên UPM nên phải cài vào project trước. Thiếu Odin thì project
-báo một lỗi từ `RiseOn.Ads.AdMob.Native.Requirements`.
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ
+`RiseOn.Ads.AdMob.Native.Requirements`.
 
 ## Cài đặt
 
-**Registry RiseOn**: thêm registry RiseOn với scope `com.riseon`, và registry OpenUPM với scope `com.google` (để
-kéo được plugin Google Mobile Ads) vào `Packages/manifest.json`, rồi thêm
-package:
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`, và
+OpenUPM với scope `com.google` (plugin Google Mobile Ads), vào `Packages/manifest.json`,
+rồi thêm package:
 
 ```json
 {
@@ -59,22 +61,20 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob.native": "2.0.0"
+    "com.riseon.ads.admob.native": "2.0.1"
   }
 }
 ```
 
-**Git URL**: *Package Manager → + → Add package from git URL*:
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM như ví
+dụ trên. Rồi *Package Manager → + → Add package from git URL*:
 
 ```
 https://github.com/riseongamestudio/Ads.git?path=/AdMob.Native
 ```
 
-Cài bằng git thì plugin Google Mobile Ads vẫn phải lấy được từ một registry (vd.
-OpenUPM như trên), vì Package Manager không tự kéo phụ thuộc qua git.
-
-**Thư mục local** (khi đang sửa pack): `"com.riseon.ads.admob.native":
-"file:<đường dẫn repo>/AdMob.Native"`.
+**Thư mục local**:
+`"com.riseon.ads.admob.native": "file:D:/path/to/Ads/AdMob.Native"`.
 
 ## Tổng quan
 

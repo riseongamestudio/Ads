@@ -6,7 +6,7 @@ using Cysharp.Threading.Tasks;
 using RiseOn.Consent;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
 using RiseOn.Firebase.RemoteConfig;
 #endif
 
@@ -203,7 +203,7 @@ namespace RiseOn.Ads {
         private async UniTask ResolvePrioritiesAsync() {
             foreach (var (format, list) in settings.Priorities) priorities[format] = list == null ? Array.Empty<string>() : ToArray(list.MediationIds);
 
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
             if (!settings.HasRemoteKeys) return;
 
             await RemoteConfigInit.WaitUntilCompleteAsync();
@@ -258,7 +258,8 @@ namespace RiseOn.Ads {
 
         /// <summary>
         /// The format's next started mediation of this type, best first, from <paramref name="index"/> on; null past the last.<br/>
-        /// In the Editor, a format that is not native gets the mediation's stand-in. Allocates nothing, for the ready checks a game makes every frame.
+        /// In the Editor, a format that is not native gets the mediation's stand-in.<br/>
+        /// Allocates nothing, for the ready checks a game makes every frame.
         /// </summary>
         private TMediation NextCandidate<TMediation>(AdFormat format, ref int index) where TMediation : class, IAdMediation {
             if (!priorities.TryGetValue(format, out var order)) return null;

@@ -289,7 +289,9 @@ namespace RiseOn.Ads.AdMob {
             }
         }
 
-        private static AdError ToCore(Native.AdError error) => new(error.Code, error.Message);
+        private static AdError ToCore(Native.AdError error) {
+            return new(error.Code, error.Message);
+        }
 
         private static Native.CloseSettings ToNative(in AdCloseSettings close) {
             return new Native.CloseSettings {

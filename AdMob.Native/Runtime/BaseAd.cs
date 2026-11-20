@@ -7,7 +7,7 @@ namespace RiseOn.Ads.AdMob.Native {
     /// Each format keeps its state machine here in the core and talks to its platform through an internal client created by the one platform assembly present in the build.
     /// </summary>
     public abstract class BaseAd {
-        private const int LOAD_SUCCESS_CODE = 0;
+        private const int LoadSuccessCode = 0;
 
         private protected readonly object nativeAdStateLock = new();
         private protected bool releasedManaged;
@@ -56,7 +56,7 @@ namespace RiseOn.Ads.AdMob.Native {
           , string errorMessage
           , int cachedCount
           , int cacheSize) {
-            if (errorCode is LOAD_SUCCESS_CODE) {
+            if (errorCode is LoadSuccessCode) {
                 var loaded = OnAdLoaded;
                 if (loaded == null) return;
 

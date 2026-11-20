@@ -30,15 +30,15 @@ namespace RiseOn.Ads {
 
         /// <summary>The formats the ad on return can be, best first: the first loaded shows, else the last; empty for no ad.</summary>
         public IReadOnlyList<AdFullScreenFormat> Formats => format switch {
-            AdReturnFormat.AppOpen                  => AppOpenOnly
-          , AdReturnFormat.NativeAppOpen            => NativeAppOpenOnly
-          , AdReturnFormat.NativeAppOpenElseAppOpen => NativeAppOpenElseAppOpen
+            AdReturnFormat.AppOpen                  => appOpenOnly
+          , AdReturnFormat.NativeAppOpen            => nativeAppOpenOnly
+          , AdReturnFormat.NativeAppOpenElseAppOpen => nativeAppOpenElseAppOpen
           , _                                       => Array.Empty<AdFullScreenFormat>()
         };
 
-        private static readonly AdFullScreenFormat[] AppOpenOnly              = { AdFullScreenFormat.AppOpen };
-        private static readonly AdFullScreenFormat[] NativeAppOpenOnly        = { AdFullScreenFormat.NativeAppOpen };
-        private static readonly AdFullScreenFormat[] NativeAppOpenElseAppOpen = { AdFullScreenFormat.NativeAppOpen, AdFullScreenFormat.AppOpen };
+        private static readonly AdFullScreenFormat[] appOpenOnly              = { AdFullScreenFormat.AppOpen };
+        private static readonly AdFullScreenFormat[] nativeAppOpenOnly        = { AdFullScreenFormat.NativeAppOpen };
+        private static readonly AdFullScreenFormat[] nativeAppOpenElseAppOpen = { AdFullScreenFormat.NativeAppOpen, AdFullScreenFormat.AppOpen };
 
         /// <summary>The launch of the game on the device from which the ad shows, 1 for the first.</summary>
         public int FromLaunch => Mathf.Max(1, fromLaunch);

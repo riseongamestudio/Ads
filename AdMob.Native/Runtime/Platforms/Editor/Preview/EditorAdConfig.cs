@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     internal sealed class EditorAdConfig {
-        private const float DEFAULT_HEIGHT_RATIO      = 0.5f;
+        private const float DefaultHeightRatio      = 0.5f;
 
         internal string                    AdUnitId          { get; }
         internal EditorAdMode Mode              { get; }
@@ -50,7 +50,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     ? EditorAdMode.FullScreen
                     : EditorAdMode.Collapsible
               , controls
-              , ResolveRatio(heightRatio, DEFAULT_HEIGHT_RATIO)
+              , ResolveRatio(heightRatio, DefaultHeightRatio)
               , backgroundColor
               , 0
               , default

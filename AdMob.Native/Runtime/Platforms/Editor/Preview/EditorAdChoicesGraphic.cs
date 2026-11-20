@@ -4,21 +4,21 @@ using UnityEngine.UI;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     internal sealed class EditorAdChoicesGraphic : MaskableGraphic {
-        private const int INFO_DOT_SEGMENTS = 12;
-        private const float ICON_SIZE_RATIO = 0.72f;
-        private const float HALF = 0.5f;
-        private const float INFO_X_OFFSET_RATIO = 0.24f;
-        private const float INFO_BAR_WIDTH_RATIO = 0.12f;
-        private const float INFO_BAR_HEIGHT_RATIO = 0.34f;
-        private const float INFO_BAR_Y_OFFSET_RATIO = 0.34f;
-        private const float INFO_DOT_Y_OFFSET_RATIO = 0.28f;
-        private const float INFO_DOT_RADIUS_RATIO = 0.62f;
+        private const int InfoDotSegments = 12;
+        private const float IconSizeRatio = 0.72f;
+        private const float Half = 0.5f;
+        private const float InfoXOffsetRatio = 0.24f;
+        private const float InfoBarWidthRatio = 0.12f;
+        private const float InfoBarHeightRatio = 0.34f;
+        private const float InfoBarYOffsetRatio = 0.34f;
+        private const float InfoDotYOffsetRatio = 0.28f;
+        private const float InfoDotRadiusRatio = 0.62f;
 
-        private static readonly Color BackgroundColor =
+        private static readonly Color backgroundColor =
                 new(1f, 1f, 1f, 0.92f);
-        private static readonly Color IconColor =
+        private static readonly Color iconColor =
                 new(0.10f, 0.56f, 0.82f, 1f);
-        private static readonly Color InfoColor =
+        private static readonly Color infoColor =
                 Color.white;
 
         protected override void OnPopulateMesh(VertexHelper vertexHelper) {
@@ -27,42 +27,42 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             EditorGraphicUtility.AddSolidQuad(
                 vertexHelper
               , rect
-              , BackgroundColor);
+              , backgroundColor);
 
             var size =
                     Mathf.Min(rect.width, rect.height)
-                            * ICON_SIZE_RATIO;
+                            * IconSizeRatio;
             var center = rect.center;
-            var half = size * HALF;
+            var half = size * Half;
             EditorGraphicUtility.AddTriangle(
                 vertexHelper
               , new(center.x - half, center.y - half)
               , new(center.x + half, center.y)
               , new(center.x - half, center.y + half)
-              , IconColor);
+              , iconColor);
 
-            var barWidth = size * INFO_BAR_WIDTH_RATIO;
-            var barHeight = size * INFO_BAR_HEIGHT_RATIO;
+            var barWidth = size * InfoBarWidthRatio;
+            var barHeight = size * InfoBarHeightRatio;
             EditorGraphicUtility.AddSolidQuad(
                 vertexHelper
               , new Rect(
                     center.x
-                            - half * INFO_X_OFFSET_RATIO
-                            - barWidth * HALF
+                            - half * InfoXOffsetRatio
+                            - barWidth * Half
                   , center.y
-                            - half * INFO_BAR_Y_OFFSET_RATIO
+                            - half * InfoBarYOffsetRatio
                   , barWidth
                   , barHeight)
-              , InfoColor);
+              , infoColor);
             EditorGraphicUtility.AddCircle(
                 vertexHelper
               , new(
-                    center.x - half * INFO_X_OFFSET_RATIO
+                    center.x - half * InfoXOffsetRatio
                   , center.y
-                            + half * INFO_DOT_Y_OFFSET_RATIO)
-              , barWidth * INFO_DOT_RADIUS_RATIO
-              , InfoColor
-              , INFO_DOT_SEGMENTS);
+                            + half * InfoDotYOffsetRatio)
+              , barWidth * InfoDotRadiusRatio
+              , infoColor
+              , InfoDotSegments);
         }
     }
 }

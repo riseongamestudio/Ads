@@ -1,9 +1,10 @@
 {
   "name": "com.riseon.ads.admob.native",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "displayName": "RiseOn Ads AdMob Native",
   "description": "AdMob native ads for Unity in full-screen, half-screen (collapsible) and in-feed layouts",
-  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads.admob.native/2.0.0/AdMob.Native/README.md",
+  "unity": "6000.3",
+  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads.admob.native/2.0.1/AdMob.Native/README.md",
   "author": {
     "name": "RiseOn"
   },

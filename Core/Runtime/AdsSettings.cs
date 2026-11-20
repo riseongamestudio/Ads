@@ -6,8 +6,7 @@ using UnityEngine;
 
 namespace RiseOn.Ads {
     /// <summary>
-    /// The project's ads setup, edited in Project Settings > RiseOn > Ads and kept in a Resources asset: the game's manager, the mediations, and for each format
-    /// its mediations, the Remote Config key that may replace them at launch, and how it shows.
+    /// The project's ads setup, edited in Project Settings > RiseOn > Ads and kept in a Resources asset: the game's manager, the mediations, and for each format its mediations, the Remote Config key that may replace them at launch, and how it shows.
     /// </summary>
     internal sealed class AdsSettings : ScriptableObject {
         public const string ResourceName = "RiseOnAdsSettings";

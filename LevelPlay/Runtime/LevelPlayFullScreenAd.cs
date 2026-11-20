@@ -8,7 +8,7 @@ using AOT;
 
 namespace RiseOn.Ads.LevelPlay {
     /// <summary>
-    /// What a LevelPlay full-screen ad tells, in order, on the bridge's own event thread (a serial queue on iOS), never through Unity's player loop.
+    /// What a LevelPlay full-screen ad tells, in order, on the bridge's own event thread (a serial queue on iOS), never through Unity's player loop.<br/>
     /// The reward comes before the close.
     /// </summary>
     internal interface ILevelPlayFullScreenEvents {
@@ -24,8 +24,7 @@ namespace RiseOn.Ads.LevelPlay {
     }
 
     /// <summary>
-    /// A LevelPlay interstitial or rewarded ad, through the pack's own bridge to LevelPlay's native API on Android and iOS, so that its events, the close
-    /// above all, arrive while a full-screen cover keeps Unity paused: Unity's LevelPlay API hands every event to the player loop.
+    /// A LevelPlay interstitial or rewarded ad, through the pack's own bridge to LevelPlay's native API on Android and iOS, so that its events, the close above all, arrive while a full-screen cover keeps Unity paused: Unity's LevelPlay API hands every event to the player loop.
     /// </summary>
     internal abstract class LevelPlayFullScreenAd {
         public static LevelPlayFullScreenAd Create(string adUnitId, bool rewarding, ILevelPlayFullScreenEvents events) {

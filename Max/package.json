@@ -1,16 +1,16 @@
 {
   "name": "com.riseon.ads.max",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "RiseOn Ads MAX",
   "description": "AppLovin MAX provider for com.riseon.ads: banner, MRec, interstitial, rewarded and app open",
-  "unity": "6000.0",
-  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads.max/1.0.0/Max/README.md",
+  "unity": "6000.3",
+  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads.max/1.0.1/Max/README.md",
   "author": {
     "name": "RiseOn"
   },
   "dependencies": {
-    "com.riseon.ads": "1.0.0",
-    "com.riseon.utils": "1.0.17",
+    "com.riseon.ads": "2.0.0",
+    "com.riseon.utils": "1.0.18",
     "com.applovin.mediation.ads": "8.6.5"
   }
 }

@@ -7,7 +7,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     // is reported through OnStateChanged like the device platforms, so the
     // wrapper's cache flags are the one source of truth.
     internal sealed class OverlayAdClient : IOverlayAdClient {
-        private const string AD_NOT_READY_ERROR = "Ad not ready";
+        private const string AdNotReadyError = "Ad not ready";
 
         private readonly IOverlayAdCallbacks callbacks;
         private readonly EditorAdConfig config;
@@ -51,7 +51,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         public void Show(int showId, bool slideIn, bool slideOutOnClose) {
             if (!adReady) {
-                callbacks.OnShowCompleted(showId, AD_NOT_READY_ERROR, false, 0);
+                callbacks.OnShowCompleted(showId, AdNotReadyError, false, 0);
                 return;
             }
 

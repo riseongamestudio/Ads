@@ -9,10 +9,10 @@ using UnityEngine.SceneManagement;
 namespace RiseOn.Ads {
     /// <summary>
     /// The game's ads manager: the one partial class deriving from this, which the rest of the game calls for every ad.<br/>
-    /// It wraps all of <see cref="AdsSdk"/>, applying the rules most games share, set in Project Settings > RiseOn > Ads: in the Formats section remove-ads,
-    /// the full-screen formats' pacing and end card and the collapsible's plans, in the On Return To Game section the ad on return.<br/>
+    /// It wraps all of <see cref="AdsSdk"/>, applying the rules most games share, set in Project Settings > RiseOn > Ads: in the Formats section remove-ads, the full-screen formats' pacing and end card and the collapsible's plans, in the On Return To Game section the ad on return.<br/>
     /// Each rule is a virtual member the game's class can replace with its own, reading the page's values from <see cref="Formats"/> and <see cref="ReturnToGame"/>.<br/>
-    /// The pack makes it just before the first scene; a second class deriving from this does not compile. The pack's source generator adds <c>Ins</c>, the running instance.<br/>
+    /// The pack makes it just before the first scene; a second class deriving from this does not compile.<br/>
+    /// The pack's source generator adds <c>Ins</c>, the running instance.<br/>
     /// Unity's thread only; every event comes on it.
     /// </summary>
     [Serializable]
@@ -79,8 +79,7 @@ namespace RiseOn.Ads {
         protected virtual bool IsRemoved(AdFormat format) => AdsRemoved && Formats.RemoveAdsTakes(format);
 
         /// <summary>
-        /// Past the format's pacing on the page: its first show not before First After from launch, then each at least Min Interval after its last display, and at least After Rewarded
-        /// after a rewarded ad's; always for the rewarded, which has none.<br/>
+        /// Past the format's pacing on the page: its first show not before First After from launch, then each at least Min Interval after its last display, and at least After Rewarded after a rewarded ad's; always for the rewarded, which has none.<br/>
         /// Each format has its own: an end card chained after another ad keeps to its own pacing, and its display does not count for that ad's.
         /// </summary>
         protected virtual bool PacingAllows(AdFullScreenFormat format) => Paced(Formats.PacingOf(format), format.ToFormat());
@@ -96,7 +95,9 @@ namespace RiseOn.Ads {
         }
 
         /// <summary>Whether a native end card follows the format's ad in <see cref="ShowAsync"/>, never asked for the end card itself; the format's Use Native End Card on the page by default.</summary>
-        protected virtual bool EndCardFollows(AdFullScreenFormat format) => Formats.EndCardFollows(format);
+        protected virtual bool EndCardFollows(AdFullScreenFormat format) {
+            return Formats.EndCardFollows(format);
+        }
 
         /// <summary>The format shown when the player comes back, none for no ad; the page's On Return To Game section by default.</summary>
         protected virtual AdFullScreenFormat? ReturnFormat {
@@ -117,8 +118,8 @@ namespace RiseOn.Ads {
         protected virtual bool ShowsOnLaunch => ReturnToGame.OnLaunch;
 
         /// <summary>
-        /// Whether the manager shows the banner as it starts, just before <see cref="OnAttached"/>, and keeps it, so that <see cref="ShowBanner"/> only warns and <see cref="HideBanner"/>
-        /// logs an error; the page's Banner Auto Show by default. Read once.
+        /// Whether the manager shows the banner as it starts, just before <see cref="OnAttached"/>, and keeps it, so that <see cref="ShowBanner"/> only warns and <see cref="HideBanner"/> logs an error; the page's Banner Auto Show by default.<br/>
+        /// Read once.
         /// </summary>
         protected virtual bool AutoShowsBanner => Formats.Banner.AutoShow;
 
@@ -126,8 +127,7 @@ namespace RiseOn.Ads {
         protected virtual double ReturnAfterAwaySeconds => ReturnToGame.AfterAwaySeconds;
 
         /// <summary>
-        /// The page's Formats section, with Remote Config's values where the page picks a key, for the game's own rules:
-        /// each format's Included In Remove Ads, Use Native End Card, pacing and settings.
+        /// The page's Formats section, with Remote Config's values where the page picks a key, for the game's own rules: each format's Included In Remove Ads, Use Native End Card, pacing and settings.
         /// </summary>
         protected static AdFormatSettings Formats => AdsSdk.Formats;
 
@@ -153,8 +153,7 @@ namespace RiseOn.Ads {
         protected bool IsReady(AdFullScreenFormat format) => !IsRemoved(format.ToFormat()) && PacingAllows(format) && AdsSdk.IsReady(format);
 
         /// <summary>
-        /// One full-screen ad under the game's rules, the path every typed <c>Show</c> member takes, for the game's own rules: nothing for a removed format,
-        /// or a removed rewarding one rewarded with no ad; nothing within its pacing; followed by a native end card when <see cref="EndCardFollows"/>.
+        /// One full-screen ad under the game's rules, the path every typed <c>Show</c> member takes, for the game's own rules: nothing for a removed format, or a removed rewarding one rewarded with no ad; nothing within its pacing; followed by a native end card when <see cref="EndCardFollows"/>.
         /// </summary>
         protected UniTask<AdChainResult> ShowAsync(AdFullScreenFormat format, string placement = null, Action onDisplayed = null) {
             Guard(() => OnShowRequested(format, placement));
@@ -222,7 +221,8 @@ namespace RiseOn.Ads {
 
         /// <summary>
         /// The collapsible under the game's rules: nothing while removed or within its pacing; else a plan drawn by weight, its steps one after the other.<br/>
-        /// <paramref name="onDisplayed"/> comes once, when the first ad displays. Resolves to how many ads displayed.
+        /// <paramref name="onDisplayed"/> comes once, when the first ad displays.<br/>
+        /// Resolves to how many ads displayed.
         /// </summary>
         public UniTask<int> ShowCollapsibleAsync(Action onDisplayed = null) {
             if (IsRemoved(AdFormat.NativeCollapsible) || !CollapsiblePacingAllows()) return UniTask.FromResult(0);
@@ -269,7 +269,9 @@ namespace RiseOn.Ads {
             static bool IsDrawable(AdCollapsiblePlan plan) => plan is { Steps: { Length: > 0 } } && plan.Weight > 0;
         }
 
-        public void HideCollapsible() => AdsSdk.HideCollapsible();
+        public void HideCollapsible() {
+            AdsSdk.HideCollapsible();
+        }
 
         #endregion
 
@@ -367,7 +369,8 @@ namespace RiseOn.Ads {
 
         /// <summary>
         /// The Editor's stand-in for the pause a device makes while a full-screen ad is up, where no SDK pauses Unity: true as the first ad of a chain shows, false once the last one closed.<br/>
-        /// Only the game knows what pausing stops for it. By default the time scale goes to zero and the audio pauses, both back as they were after.
+        /// Only the game knows what pausing stops for it.<br/>
+        /// By default the time scale goes to zero and the audio pauses, both back as they were after.
         /// </summary>
         protected virtual void PauseInEditor(bool paused) => EditorGamePause.Apply(paused);
 
@@ -382,11 +385,10 @@ namespace RiseOn.Ads {
         }
 
         /// <summary>
-        /// Shows the ad at launch by default, when <see cref="ShowsOnLaunch"/> and <see cref="ReturnFormat"/> give one: once the mediations started and the ad loaded,
-        /// while the game's first scene is still the active one, under the format's own rules as <see cref="ShowAsync"/>; leaving that scene first ends the wait.
+        /// Shows the ad at launch by default, when <see cref="ShowsOnLaunch"/> and <see cref="ReturnFormat"/> give one: once the mediations started and the ad loaded, while the game's first scene is still the active one, under the format's own rules as <see cref="ShowAsync"/>; leaving that scene first ends the wait.
         /// </summary>
         protected virtual async UniTask ShowLaunchAdAsync() {
-            if (!ShowsOnLaunch || ReturnFormat is null) return;
+            if (!ShowsOnLaunch || ReturnFormat == null) return;
 
             // The pack runs before the first scene loads, which is active from the next frame.
             await UniTask.NextFrame();
@@ -437,7 +439,9 @@ namespace RiseOn.Ads {
             ShowLaunchAdAsync().Forget();
         }
 
-        internal void RunPauseInEditor(bool paused) => Guard(() => PauseInEditor(paused));
+        internal void RunPauseInEditor(bool paused) {
+            Guard(() => PauseInEditor(paused));
+        }
 
         private static void Guard(Action hook) {
             try {

@@ -32,7 +32,9 @@ namespace RiseOn.Ads.Editor {
             rest = members.Where(member => member != found).ToList();
         }
 
-        private static bool IsIds(InspectorProperty property) => property.ValueEntry?.TypeOfValue == typeof(AdUnitId);
+        private static bool IsIds(InspectorProperty property) {
+            return property.ValueEntry?.TypeOfValue == typeof(AdUnitId);
+        }
 
         // A class of a mediation's that holds a format's ids and settings, not a value such as a color.
         private static bool IsSettingsObject(InspectorProperty property) {

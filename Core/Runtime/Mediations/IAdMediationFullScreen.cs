@@ -1,6 +1,6 @@
 ﻿namespace RiseOn.Ads {
     /// <summary>
-    /// The full-screen formats a mediation serves (<see cref="AdFormatExt.IsFullScreen"/>).<br/>
+    /// The full-screen formats a mediation serves (<see cref="AdFormatUtils.IsFullScreen"/>).<br/>
     /// <see cref="AdChain"/> runs them, under the full-screen cover when they are chained.
     /// </summary>
     public interface IAdMediationFullScreen : IAdMediation {

@@ -16,11 +16,11 @@ namespace RiseOn.Ads.Generator {
         private const string PackAssembly = "RiseOn.Ads";
         private const string ManagerType   = "RiseOn.Ads.AdsManagerBase";
 
-        private static readonly DiagnosticDescriptor NotPartial = new(
+        private static readonly DiagnosticDescriptor notPartial = new(
             "RISEONADS001", "Ads manager not partial", "{0} derives from AdsManagerBase, so it must be a partial class, neither generic nor nested, for the Ads pack to find it and give it Ins",
             "RiseOn.Ads", DiagnosticSeverity.Error, true);
 
-        private static readonly DiagnosticDescriptor NotAlone = new(
+        private static readonly DiagnosticDescriptor notAlone = new(
             "RISEONADS003", "Several ads managers", "{0} derives from AdsManagerBase, and so does {1}; the Ads pack runs one manager, so only one class may",
             "RiseOn.Ads", DiagnosticSeverity.Error, true);
 
@@ -29,7 +29,7 @@ namespace RiseOn.Ads.Generator {
         }
 
         public void Execute(GeneratorExecutionContext context) {
-            if (context.Compilation.AssemblyName == PackAssembly) return;
+            if (context.Compilation.AssemblyName is PackAssembly) return;
 
             var manager = context.Compilation.GetTypeByMetadataName(ManagerType);
             if (manager == null || context.SyntaxReceiver is not Receiver receiver) return;
@@ -52,14 +52,14 @@ namespace RiseOn.Ads.Generator {
                 var declaration = found[type];
                 var other       = all.FirstOrDefault(each => !SymbolEqualityComparer.Default.Equals(each, type));
                 if (other != null) {
-                    context.ReportDiagnostic(Diagnostic.Create(NotAlone, declaration.Identifier.GetLocation(), type.ToDisplayString(), other.ToDisplayString()));
+                    context.ReportDiagnostic(Diagnostic.Create(notAlone, declaration.Identifier.GetLocation(), type.ToDisplayString(), other.ToDisplayString()));
                     continue;
                 }
 
                 var partial = type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax()).OfType<ClassDeclarationSyntax>()
                     .All(each => each.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
                 if (!partial || type.IsGenericType || type.ContainingType != null) {
-                    context.ReportDiagnostic(Diagnostic.Create(NotPartial, declaration.Identifier.GetLocation(), type.Name));
+                    context.ReportDiagnostic(Diagnostic.Create(notPartial, declaration.Identifier.GetLocation(), type.Name));
                     continue;
                 }
 
@@ -70,7 +70,7 @@ namespace RiseOn.Ads.Generator {
         // Only assemblies that reference the pack can hold a manager, which keeps the search off the engine's own.
         private static IEnumerable<INamedTypeSymbol> Referenced(Compilation compilation, INamedTypeSymbol manager) {
             foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols) {
-                if (assembly.Name == PackAssembly || !assembly.Modules.Any(module => module.ReferencedAssemblySymbols.Any(each => each.Name == PackAssembly))) continue;
+                if (assembly.Name is PackAssembly || !assembly.Modules.Any(module => module.ReferencedAssemblySymbols.Any(each => each.Name is PackAssembly))) continue;
 
                 foreach (var type in Types(assembly.GlobalNamespace)) {
                     if (!type.IsAbstract && Derives(type, manager)) yield return type;
@@ -105,7 +105,9 @@ namespace RiseOn.Ads.Generator {
         }
 
         // A second [Serializable] would not compile.
-        private static bool IsSerializable(INamedTypeSymbol type) => type.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.SerializableAttribute");
+        private static bool IsSerializable(INamedTypeSymbol type) {
+            return type.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.SerializableAttribute");
+        }
 
         private static bool Derives(INamedTypeSymbol type, INamedTypeSymbol root) {
             for (var current = type.BaseType; current != null; current = current.BaseType) {

@@ -55,8 +55,8 @@ namespace RiseOn.Ads {
 
     /// <summary>
     /// Full-screen ads shown one after the other, such as an interstitial and the end card after it.<br/>
-    /// The full-screen cover lies under them, so the game never shows where an ad does not reach nor between two steps, and keeps it paused; each step starts from the previous one's callback without the player loop,
-    /// and the cover comes down after the last step, whatever failed. A first step whose mediation calls back through the player loop shows alone and without the cover, which its close could never take down.<br/>
+    /// The full-screen cover lies under them, so the game never shows where an ad does not reach nor between two steps, and keeps it paused; each step starts from the previous one's callback without the player loop, and the cover comes down after the last step, whatever failed.<br/>
+    /// A first step whose mediation calls back through the player loop shows alone and without the cover, which its close could never take down.<br/>
     /// A chain whose first step is not ready shows nothing; a later step that is not ready is skipped.
     /// </summary>
     public sealed class AdChain {

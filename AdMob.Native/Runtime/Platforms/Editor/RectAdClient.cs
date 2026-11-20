@@ -4,7 +4,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     // The wrapper serializes every call under its own lock and the Editor is
     // single-threaded, so this client needs no locking of its own.
     internal sealed class RectAdClient : IRectAdClient {
-        private const int EDITOR_AD_SUCCESS_CODE = 0;
+        private const int EditorAdSuccessCode = 0;
 
         private readonly IRectAdCallbacks callbacks;
         private readonly string adUnitId;
@@ -52,7 +52,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // asked for, so "one warm ad, room for one" is the honest
             // reading of a state that never had a queue.
             callbacks.OnLoadingCompleted(
-                EDITOR_AD_SUCCESS_CODE
+                EditorAdSuccessCode
               , string.Empty
               , 1
               , 1);
@@ -60,7 +60,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         }
 
         // A hidden rect holds no ad, so the next show builds a fresh one.
-        public void Hide() => ReleasePreview();
+        public void Hide() {
+            ReleasePreview();
+        }
 
         public void Release() {
             config = null;

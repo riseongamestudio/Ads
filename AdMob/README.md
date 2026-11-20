@@ -1,16 +1,71 @@
-# RiseOn Ads AdMob
+# RiseOn.Ads.AdMob
 
 Mediation Google AdMob cho `com.riseon.ads`.
 
 Package `com.riseon.ads.admob`, namespace `RiseOn.Ads.AdMob`, mediation id `admob`.
 
+## Mục lục
+
+- [Yêu cầu](#yêu-cầu)
+- [Cài đặt](#cài-đặt)
+- [Định dạng](#định-dạng)
+- [Những điều cần biết](#những-điều-cần-biết)
+- [Setting của SDK](#setting-của-sdk)
+- [Network](#network)
+- [Lịch sử thay đổi](#lịch-sử-thay-đổi)
+- [Giấy phép](#giấy-phép)
+
 ## Yêu cầu
 
-| Phụ thuộc | Cách có |
-|---|---|
-| `com.riseon.ads` | Tự cài theo `package.json` |
-| `com.riseon.ads.admob.native` | Tự cài theo `package.json` |
-| `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json` (OpenUPM, scope `com.google`) |
+| Phụ thuộc | Cách có | Dùng cho |
+|---|---|---|
+| Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của AdMob trên trang Ads |
+| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.ads.admob.native` 2.0.1 | Tự cài theo `package.json` | Các format native |
+| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của AdMob trên trang Ads |
+| `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json`, từ OpenUPM | Google Mobile Ads SDK |
+
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ `RiseOn.Ads.AdMob.Requirements`.
+
+## Cài đặt
+
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`, và
+OpenUPM với scope `com.google`, `com.cysharp`, vào `Packages/manifest.json`, rồi thêm
+package:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "RiseOn",
+      "url": "https://upm.riseongamestudio.com",
+      "scopes": ["com.riseon"]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.google", "com.cysharp"]
+    }
+  ],
+  "dependencies": {
+    "com.riseon.ads.admob": "1.0.1"
+  }
+}
+```
+
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM như ví
+dụ trên; `com.riseon.utils`, `com.riseon.consent`, `com.riseon.serializables`,
+`com.riseon.ads` và `com.riseon.ads.admob.native` lấy từ registry RiseOn, hoặc cài bằng
+git URL trước theo thứ tự này. Rồi *Package Manager → + → Add package from git URL*:
+
+```
+https://github.com/riseongamestudio/Ads.git?path=/AdMob
+```
+
+**Thư mục local**: `"com.riseon.ads.admob": "file:D:/path/to/Ads/AdMob"`.
 
 ## Định dạng
 
@@ -112,6 +167,10 @@ Google. Mỗi network là một package `com.google.ads.mobile.mediation.*` trê
   **Missing Signature**. Đó là hộp của Unity, không phải của pack.
 - Không tìm được registry (ví dụ offline) thì mục ghi lỗi và chỉ còn các adapter
   đã cài, không kèm bản mới.
+
+## Lịch sử thay đổi
+
+Xem [CHANGELOG.md](CHANGELOG.md).
 
 ## Giấy phép
 

@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
 using RiseOn.Firebase.RemoteConfig;
 #endif
 
@@ -26,7 +26,7 @@ namespace RiseOn.Ads {
         /// <summary>The key's value once one is picked, Remote Config's in-app default until that pack completes; else the page's.</summary>
         public T Value {
             get {
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
                 // The page reports a key removed from Remote Config, or of another type, and stops the build.
                 if (key.Id != 0) return ((RemoteKey) key.Id).Get<T>().Value;
 #endif

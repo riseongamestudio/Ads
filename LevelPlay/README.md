@@ -1,16 +1,72 @@
-# RiseOn Ads LevelPlay
+# RiseOn.Ads.LevelPlay
 
 Mediation Unity LevelPlay cho `com.riseon.ads`.
 
 Package `com.riseon.ads.levelplay`, namespace `RiseOn.Ads.LevelPlay`, mediation id
 `levelplay`.
 
+## Mục lục
+
+- [Yêu cầu](#yêu-cầu)
+- [Cài đặt](#cài-đặt)
+- [Định dạng](#định-dạng)
+- [Những điều cần biết](#những-điều-cần-biết)
+- [Setting của SDK](#setting-của-sdk)
+- [Network](#network)
+- [Lịch sử thay đổi](#lịch-sử-thay-đổi)
+- [Giấy phép](#giấy-phép)
+
 ## Yêu cầu
 
-| Phụ thuộc | Cách có |
-|---|---|
-| `com.riseon.ads` | Tự cài theo `package.json` |
-| `com.unity.services.levelplay` 9.5.1 | Tự cài theo `package.json` (Unity Registry, tên hiển thị "Ads Mediation") |
+| Phụ thuộc | Cách có | Dùng cho |
+|---|---|---|
+| Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của LevelPlay trên trang Ads |
+| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của LevelPlay trên trang Ads |
+| `com.unity.services.levelplay` 9.5.1 | Tự cài theo `package.json`, từ Unity Registry (tên hiển thị "Ads Mediation") | LevelPlay SDK |
+
+"Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
+trong manifest, cả khi cài pack bằng git URL. Odin không có trên UPM nên phải cài vào
+project trước. Thiếu Odin thì project báo một lỗi từ
+`RiseOn.Ads.LevelPlay.Requirements`.
+
+## Cài đặt
+
+**Registry RiseOn** (khuyên dùng): thêm registry RiseOn với scope `com.riseon`, và
+OpenUPM với scope `com.cysharp`, `com.google` (phụ thuộc của `com.riseon.ads`), vào
+`Packages/manifest.json`, rồi thêm package:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "RiseOn",
+      "url": "https://upm.riseongamestudio.com",
+      "scopes": ["com.riseon"]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.cysharp", "com.google"]
+    }
+  ],
+  "dependencies": {
+    "com.riseon.ads.levelplay": "1.0.1"
+  }
+}
+```
+
+**Git URL**: phụ thuộc vẫn lấy theo version từ registry, nên manifest cần OpenUPM như ví
+dụ trên; `com.riseon.utils`, `com.riseon.consent`, `com.riseon.serializables` và
+`com.riseon.ads` lấy từ registry RiseOn, hoặc cài bằng git URL trước theo thứ tự này.
+Rồi *Package Manager → + → Add package from git URL*:
+
+```
+https://github.com/riseongamestudio/Ads.git?path=/LevelPlay
+```
+
+**Thư mục local**: `"com.riseon.ads.levelplay": "file:D:/path/to/Ads/LevelPlay"`.
 
 ## Định dạng
 
@@ -20,12 +76,12 @@ Package `com.riseon.ads.levelplay`, namespace `RiseOn.Ads.LevelPlay`, mediation 
 ## Những điều cần biết
 
 - API LevelPlay của Unity đưa mọi sự kiện qua player loop, mà màn che dưới ad
-  full-screen dừng player loop. Interstitial và rewarded trên Android và iOS vì vậy
-  đi qua cầu nối của pack tới API native của LevelPlay
-  (`Plugins/Android/RiseOnAdsLevelPlay.androidlib`, `Plugins/iOS/ROLevelPlayFullScreenAd.m`):
-  sự kiện đến theo thứ tự trên thread riêng của cầu nối (iOS: hàng đợi tuần tự), nên
-  ad có màn che và nối được với các bước khác trong `AdChain`. Banner và MRec vẫn dùng
-  API của Unity.
+  full-screen dừng player loop. Interstitial và rewarded trên Android và iOS vì vậy đi
+  qua cầu nối của pack tới API native của LevelPlay
+  (`Plugins/Android/RiseOnAdsLevelPlay.androidlib`,
+  `Plugins/iOS/ROLevelPlayFullScreenAd.m`): sự kiện đến theo thứ tự trên thread riêng
+  của cầu nối (iOS: hàng đợi tuần tự), nên ad có màn che và nối được với các bước khác
+  trong `AdChain`. Banner và MRec vẫn dùng API của Unity.
 - LevelPlay không đảm bảo thưởng đến trước sự kiện đóng. Cầu nối giữ sự kiện đóng
   của rewarded tối đa 1 giây chờ thưởng.
 - Unity dừng dưới interstitial và rewarded nhờ màn che của pack. Cờ
@@ -61,6 +117,10 @@ Mục con **Networks** của mediation (gập sẵn) có nút ↗ trên thanh, m
 Manager của LevelPlay (**Ads Mediation > Network Manager**). Cài và cập nhật adapter
 của LevelPlay làm trong cửa sổ đó: LevelPlay không cho package khác gọi phần cài
 adapter của nó.
+
+## Lịch sử thay đổi
+
+Xem [CHANGELOG.md](CHANGELOG.md).
 
 ## Giấy phép
 

@@ -8,6 +8,8 @@
             Message = message;
         }
 
-        public override string ToString() => $"{Code}: {Message}";
+        public override string ToString() {
+            return $"{Code}: {Message}";
+        }
     }
 }

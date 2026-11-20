@@ -7,14 +7,15 @@ namespace RiseOn.Ads.AdMob.Native {
     /// The bottom-slice sibling is HalfScreenAd.
     /// </summary>
     public sealed class FullScreenAd : OverlayAd {
-        private const string DEFAULT_FORMAT = "NATIVE_FULL_SCREEN";
+        private const string DefaultFormat = "NATIVE_FULL_SCREEN";
         
         [Serializable]
         public struct Settings {
             public string AdUnitId;
 
             /// <summary>
-            /// How many ads this placement asks its pool to keep warm; 0 means 1, always a spare. The pool keeps the most any of its formats asks for.<br/>
+            /// How many ads this placement asks its pool to keep warm; 0 means 1, always a spare.<br/>
+            /// The pool keeps the most any of its formats asks for.<br/>
             /// Raise it where one show is followed straight by another, so the second is already in hand.
             /// </summary>
             public int CacheSize;
@@ -34,7 +35,7 @@ namespace RiseOn.Ads.AdMob.Native {
             public string Format {
                 // A struct cannot initialize a field, so the default lives in
                 // the reading of it rather than in an assignment.
-                readonly get => string.IsNullOrEmpty(format) ? DEFAULT_FORMAT : format;
+                readonly get => string.IsNullOrEmpty(format) ? DefaultFormat : format;
                 set => format = value;
             }
 

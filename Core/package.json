@@ -1,17 +1,17 @@
 {
   "name": "com.riseon.ads",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "displayName": "RiseOn Ads",
   "description": "Ad manager for Unity: providers behind priority lists, started after the consent flow, full-screen chains under a native cover, collapsible chains",
-  "unity": "6000.0",
-  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads/1.0.1/Core/README.md",
+  "unity": "6000.3",
+  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads/2.0.0/Core/README.md",
   "author": {
     "name": "RiseOn"
   },
   "dependencies": {
-    "com.riseon.consent": "1.0.0",
-    "com.riseon.utils": "1.0.17",
-    "com.riseon.serializables": "1.0.4",
+    "com.riseon.consent": "1.0.2",
+    "com.riseon.utils": "1.0.18",
+    "com.riseon.serializables": "1.0.5",
     "com.cysharp.unitask": "2.5.11",
     "com.unity.ugui": "2.0.0"
   }

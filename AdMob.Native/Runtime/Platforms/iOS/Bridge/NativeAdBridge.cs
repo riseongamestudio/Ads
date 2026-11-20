@@ -126,7 +126,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
             = OnLoadingStarted;
         internal static readonly LoadingCompletedDelegate OnLoadingCompletedCallback
             = OnLoadingCompleted;
-        internal static readonly AdPaidDelegate OnAdPaidCallback = OnAdPaid;
+        internal static readonly AdPaidDelegate onAdPaidCallback = OnAdPaid;
         internal static readonly DisplayedDelegate OnDisplayedCallback
             = OnDisplayed;
         internal static readonly PresentationFailedDelegate

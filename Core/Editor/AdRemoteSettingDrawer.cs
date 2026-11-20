@@ -12,11 +12,11 @@ namespace RiseOn.Ads.Editor {
     internal sealed class AdRemoteSettingDrawer<T> : OdinValueDrawer<AdRemoteSetting<T>> {
         private const float Gap = 4;
 
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
         // As wide as leaves a key's name readable, and no wider, so the value keeps its room.
         private const float KeyWidth = 160;
 
-        private static readonly string KeyTooltip = $"A Remote Config {(typeof(T) == typeof(bool) ? "bool" : "float")} key whose value replaces this setting; No Remote Key keeps the page's value.";
+        private static readonly string keyTooltip = $"A Remote Config {(typeof(T) == typeof(bool) ? "bool" : "float")} key whose value replaces this setting; No Remote Key keeps the page's value.";
 #endif
 
         protected override void DrawPropertyLayout(GUIContent label) {
@@ -25,7 +25,7 @@ namespace RiseOn.Ads.Editor {
             var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
             var remote = false;
-#if RISEON_ADS_REMOTECONFIG
+#if ADS_SUPPORT_REMOTECONFIG
             var id      = Property.Children["key"].Children["id"];
             var current = (int) id.ValueEntry.WeakSmartValue;
             var key     = new Rect(field.xMax - KeyWidth, field.y, KeyWidth, field.height);
@@ -38,7 +38,7 @@ namespace RiseOn.Ads.Editor {
                 id.ValueEntry.WeakSmartValue = picked;
                 if (window) window.Repaint();
             }, search: false);
-            GUI.Label(key, new GUIContent("", KeyTooltip));
+            GUI.Label(key, new GUIContent("", keyTooltip));
 #endif
             using (new EditorGUI.DisabledScope(remote)) Value(field);
             EditorGUI.indentLevel = indent;

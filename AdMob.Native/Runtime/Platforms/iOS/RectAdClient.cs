@@ -24,7 +24,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
                 handle
               , NativeAdBridge.OnLoadingStartedCallback
               , NativeAdBridge.OnLoadingCompletedCallback
-              , NativeAdBridge.OnAdPaidCallback
+              , NativeAdBridge.onAdPaidCallback
               , NativeAdBridge.OnRectAdDisplayedCallback
               , NativeAdBridge.OnRectAdShowNotReadyCallback
               , NativeAdBridge.OnRectAdPresentationFailedCallback);

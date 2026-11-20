@@ -8,12 +8,12 @@ namespace RiseOn.Ads.AdMob.Native {
     /// The constructor is assembly-locked: those two are its only faces.
     /// </summary>
     public abstract class OverlayAd : BaseAd, IOverlayAdCallbacks {
-        private const int INVALID_GENERATION = 0;
-        private const string AD_RELEASED_ERROR        = "Ad released";
-        private const string AD_ALREADY_SHOWING_ERROR = "Ad already showing";
+        private const int InvalidGeneration        = 0;
+        private const string AdReleasedError       = "Ad released";
+        private const string AdAlreadyShowingError = "Ad already showing";
         // A show that never reached the screen. The native side owns its own
         // codes; this one is raised on this side of the boundary.
-        private const int SHOW_REJECTED_CODE = -1;
+        private const int ShowRejectedCode = -1;
 
         /// <summary>Presentation-side events of this placement.</summary>
         public event Action OnAdDisplayed;
@@ -77,13 +77,13 @@ namespace RiseOn.Ads.AdMob.Native {
         // The two faces name their own Show and Hide: only the half-screen
         // one slides, so only it takes the slide flags.
         private protected void ShowOverlay(bool slideIn, bool slideOutOnClose) {
-            int    generation = INVALID_GENERATION;
+            int    generation = InvalidGeneration;
             string rejectedError = null;
             lock (nativeAdStateLock) {
                 if (releasedManaged || client == null) {
-                    rejectedError = AD_RELEASED_ERROR;
+                    rejectedError = AdReleasedError;
                 } else if (showPendingOrActive) {
-                    rejectedError = AD_ALREADY_SHOWING_ERROR;
+                    rejectedError = AdAlreadyShowingError;
                 } else {
                     showPendingOrActive = true;
                     generation          = ++showGeneration;
@@ -93,7 +93,7 @@ namespace RiseOn.Ads.AdMob.Native {
             // A show that is turned away never reaches the screen, which is
             // the same news as one that breaks on the way there.
             if (rejectedError != null) {
-                RaiseDisplayFailed(SHOW_REJECTED_CODE, rejectedError);
+                RaiseDisplayFailed(ShowRejectedCode, rejectedError);
                 return;
             }
 
@@ -164,7 +164,7 @@ namespace RiseOn.Ads.AdMob.Native {
             releasedClient?.Release();
             // A show still in flight can no longer land.
             if (showWasPending) {
-                RaiseDisplayFailed(SHOW_REJECTED_CODE, AD_RELEASED_ERROR);
+                RaiseDisplayFailed(ShowRejectedCode, AdReleasedError);
             }
         }
 
@@ -227,7 +227,7 @@ namespace RiseOn.Ads.AdMob.Native {
             if (string.IsNullOrEmpty(errorMessage)) {
                 InvokeSafely(OnAdHidden);
             } else {
-                RaiseDisplayFailed(SHOW_REJECTED_CODE, errorMessage);
+                RaiseDisplayFailed(ShowRejectedCode, errorMessage);
             }
             if (adConsumed) Load();
         }

@@ -45,9 +45,9 @@ không biết lớp nào khác:
 
 | Tầng | Field | Mặc định |
 |---|---|---|
-| `FULL_SCREEN_AD` | `FullScreen` | `short.MaxValue` |
-| `HALF_SCREEN_AD` | `HalfScreen` | `short.MaxValue - 2` |
-| `RECT_AD` | `RectAd` | `short.MaxValue - 4` |
+| `FullScreenAd` | `FullScreen` | `short.MaxValue` |
+| `HalfScreenAd` | `HalfScreen` | `short.MaxValue - 2` |
+| `RectAd` | `RectAd` | `short.MaxValue - 4` |
 
 Mặc định giữ ad xem trước trên game vẽ từ 0 trở lên, ad toàn màn hình trên tất
 cả. Mediation `com.riseon.ads.admob` đặt ba số theo **Editor Sorting Order**
@@ -78,7 +78,7 @@ canvas của game.
   (`RoundedRectSprite(radius)`, cache theo bán kính texel); `Mask` cắt con
   theo cung, `showMaskGraphic = false`; nền nhìn thấy chuyển sang con
   `Backdrop` vì Mask đọc alpha của chính graphic — màu trong suốt (câu trả lời
-  thật trên máy) sẽ xoá luôn mask.
+  thật trên máy) sẽ xóa luôn mask.
 - **`pixelsPerUnitMultiplier = canvas.referencePixelsPerUnit`**: uGUI chia
   border của sliced sprite cho `sprite.pixelsPerUnit / canvas.referencePixelsPerUnit`
   trước khi vẽ; sprite rasterize vài texel/unit nên tỉ lệ đó thổi border lên
