@@ -1,0 +1,16 @@
+{
+    "name": "RiseOn.Ads.Max.Requirements",
+    "rootNamespace": "RiseOn.Ads.Max.Requirements",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

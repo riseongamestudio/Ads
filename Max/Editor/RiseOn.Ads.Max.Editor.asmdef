@@ -1,0 +1,26 @@
+{
+    "name": "RiseOn.Ads.Max.Editor",
+    "rootNamespace": "RiseOn.Ads.Max.Editor",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Ads.Editor",
+        "RiseOn.Utils.Editor",
+        "RiseOn.Consent.Editor",
+        "RiseOn.Ads.Max",
+        "MaxSdk.Scripts",
+        "MaxSdk.Scripts.IntegrationManager.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

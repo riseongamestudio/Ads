@@ -1,0 +1,95 @@
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
+using RiseOn.Consent;
+using UnityEngine;
+
+namespace RiseOn.Ads {
+    /// <summary>
+    /// The Editor's side of the pack's placeholders: what a full-screen ad, a banner and an MRec look like in Play mode, labelled with the mediation that would serve them.<br/>
+    /// Every member may be called from any thread.
+    /// </summary>
+    internal interface IEditorPlaceholders {
+        void ShowFullScreen(string mediation, AdFormat format, IAdShowListener listener);
+        void ShowBanner(string mediation, AdBannerSettings settings);
+        void HideBanner();
+        void ShowMRec(string mediation, AdMRecSettings settings);
+        void HideMRec();
+    }
+
+    internal static class EditorPlaceholders {
+        public static IEditorPlaceholders Installed { get; private set; }
+
+        public static void Install(IEditorPlaceholders placeholders) {
+            Installed = placeholders;
+        }
+    }
+
+    /// <summary>
+    /// A mediation as the Editor plays it: the pack's placeholders in place of its SDK's for the formats it serves that are not native, ready as soon as it starts.<br/>
+    /// The native formats keep the mediation's own preview.
+    /// </summary>
+    internal sealed class EditorStandIn : IAdMediationFullScreen, IAdMediationBanner, IAdMediationMRec {
+        private readonly IAdMediation     mediation;
+        private readonly AdFormatSettings formats;
+        private readonly string           name;
+
+        public EditorStandIn(IAdMediation mediation, AdFormatSettings formats) {
+            this.mediation = mediation;
+            this.formats   = formats;
+            name           = AdMediationNames.Of(mediation.GetType());
+        }
+
+        public string Id => mediation.Id;
+        public bool IsInitialized => true;
+
+        public void ApplyConsent(in ConsentState consent) { }
+
+        public UniTask InitializeAsync(IAdMediationContext context, System.Collections.Generic.IReadOnlyCollection<AdFormat> formats, CancellationToken cancellationToken) => UniTask.CompletedTask;
+
+        public void Dispose() { }
+
+        public bool Supports(AdFormat format) => mediation is IAdMediationFullScreen fullScreen && fullScreen.Supports(format);
+        public bool IsReady(AdFormat format) => Supports(format);
+
+        // The Editor's player loop never stops, so whatever thread a placeholder calls back on, the call arrives.
+        public bool CallsBackOffLoop(AdFormat format) => true;
+        public bool ShowsFromAnyThread(AdFormat format) => true;
+
+        public void Show(AdFormat format, IAdShowListener listener) {
+            if (EditorPlaceholders.Installed is { } placeholders) placeholders.ShowFullScreen(name, format, listener);
+            else listener.OnFailed(new AdError(-1, "no Editor placeholders"));
+        }
+
+        public void ShowBanner() => EditorPlaceholders.Installed?.ShowBanner(name, formats.Banner);
+        public void HideBanner() => EditorPlaceholders.Installed?.HideBanner();
+        public void ShowMRec() => EditorPlaceholders.Installed?.ShowMRec(name, formats.MRec);
+        public void HideMRec() => EditorPlaceholders.Installed?.HideMRec();
+    }
+
+    /// <summary>
+    /// The default of <see cref="AdsManagerBase"/>'s pause in the Editor, where no SDK pauses Unity under a full-screen ad: the time scale at zero and the audio paused, both back as they were.
+    /// </summary>
+    internal static class EditorGamePause {
+        private static float timeScale = 1;
+        private static bool  audioPaused;
+
+        public static void Apply(bool paused) {
+            if (paused) {
+                timeScale            = Time.timeScale;
+                audioPaused          = AudioListener.pause;
+                Time.timeScale       = 0;
+                AudioListener.pause  = true;
+            } else {
+                Time.timeScale      = timeScale;
+                AudioListener.pause = audioPaused;
+            }
+        }
+
+        // Static state outlives a play session when the Editor skips the domain reload.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() {
+            timeScale   = 1;
+            audioPaused = false;
+        }
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "name": "RiseOn.Ads.Platforms.Editor",
+    "rootNamespace": "RiseOn.Ads.Platforms.Editor",
+    "references": [
+        "RiseOn.Ads",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

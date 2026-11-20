@@ -1,0 +1,35 @@
+{
+    "name": "RiseOn.Ads",
+    "rootNamespace": "RiseOn.Ads",
+    "references": [
+        "RiseOn.Consent",
+        "RiseOn.Utils",
+        "RiseOn.Serializables",
+        "UniTask",
+        "RiseOn.Firebase.RemoteConfig",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.riseon.firebase.remoteconfig",
+            "expression": "1.0.0",
+            "define": "RISEON_ADS_REMOTECONFIG"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "RISEON_ADS_INPUTSYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}

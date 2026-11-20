@@ -1,0 +1,18 @@
+{
+    "name": "RiseOn.Ads.Platforms.IOS",
+    "rootNamespace": "RiseOn.Ads.Platforms.IOS",
+    "references": [
+        "RiseOn.Ads"
+    ],
+    "includePlatforms": [
+        "iOS"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

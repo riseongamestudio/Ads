@@ -1,0 +1,30 @@
+{
+    "name": "RiseOn.Ads.Editor",
+    "rootNamespace": "RiseOn.Ads.Editor",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Serializables",
+        "RiseOn.Utils",
+        "RiseOn.Utils.Editor",
+        "RiseOn.Firebase.RemoteConfig"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.riseon.firebase.remoteconfig",
+            "expression": "1.0.0",
+            "define": "RISEON_ADS_REMOTECONFIG"
+        }
+    ],
+    "noEngineReferences": false
+}

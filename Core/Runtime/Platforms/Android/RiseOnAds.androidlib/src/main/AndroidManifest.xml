@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- The full-screen cover. An Activity because only an Activity on
+             top pauses the game below; the half-screen cover is a window and
+             deliberately pauses nothing. Opaque, see res/values/styles.xml.
+
+             Deliberately NOT android:noHistory. That flag finishes an
+             Activity as soon as it stops, and an ad Activity opening on top
+             stops this one - so the cover would be destroyed at exactly the
+             moment it is covering the seam it was raised for, and be gone
+             when the ad closes. Finish() owns the lifetime instead.
+
+             singleTop: a cover already up is repainted, never stacked under a
+             second one. enableOnBackInvokedCallback: back is swallowed on
+             purpose, through the predictive-back callback as well as
+             onBackPressed. -->
+        <activity
+            android:name="com.riseon.ads.FullScreenCoverActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:hardwareAccelerated="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            android:theme="@style/RiseOnFullScreenCoverTheme" />
+    </application>
+</manifest>

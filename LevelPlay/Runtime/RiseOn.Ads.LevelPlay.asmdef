@@ -1,0 +1,22 @@
+{
+    "name": "RiseOn.Ads.LevelPlay",
+    "rootNamespace": "RiseOn.Ads.LevelPlay",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Utils",
+        "RiseOn.Consent",
+        "Unity.LevelPlay",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

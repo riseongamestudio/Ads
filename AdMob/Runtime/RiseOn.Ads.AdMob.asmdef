@@ -1,0 +1,22 @@
+{
+    "name": "RiseOn.Ads.AdMob",
+    "rootNamespace": "RiseOn.Ads.AdMob",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Utils",
+        "RiseOn.Consent",
+        "RiseOn.Ads.AdMob.Native",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,26 @@
+{
+    "name": "RiseOn.Ads.LevelPlay.Editor",
+    "rootNamespace": "RiseOn.Ads.LevelPlay.Editor",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Ads.Editor",
+        "RiseOn.Consent.Editor",
+        "RiseOn.Utils.Editor",
+        "RiseOn.Ads.LevelPlay",
+        "Unity.LevelPlay",
+        "Unity.LevelPlay.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

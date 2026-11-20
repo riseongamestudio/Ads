@@ -1,0 +1,22 @@
+{
+    "name": "RiseOn.Ads.Max",
+    "rootNamespace": "RiseOn.Ads.Max",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Utils",
+        "RiseOn.Consent",
+        "MaxSdk.Scripts",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.riseon.ads.admobnative"
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 34
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // compileOnly: the app already carries Google Mobile Ads through the GMA
+    // Unity plugin, and packaging it a second time would clash. Keep the
+    // version in step with the one the host project resolves.
+    compileOnly "com.google.android.gms:play-services-ads:25.3.0"
+}

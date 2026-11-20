@@ -1,0 +1,24 @@
+{
+    "name": "RiseOn.Ads.AdMob.Editor",
+    "rootNamespace": "RiseOn.Ads.AdMob.Editor",
+    "references": [
+        "RiseOn.Ads",
+        "RiseOn.Ads.Editor",
+        "RiseOn.Utils.Editor",
+        "RiseOn.Consent.Editor",
+        "RiseOn.Ads.AdMob"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "ODIN_INSPECTOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

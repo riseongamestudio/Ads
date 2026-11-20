@@ -1,0 +1,27 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.riseon.ads.levelplay"
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 34
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // compileOnly: the app already carries the LevelPlay SDK through Unity's Ads Mediation package, and packaging it a
+    // second time would clash. Only its public interstitial and rewarded API is used, which every 9.x version has.
+    compileOnly "com.unity3d.ads-mediation:mediation-sdk:9.6.0"
+}

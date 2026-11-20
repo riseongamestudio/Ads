@@ -1,0 +1,18 @@
+{
+    "name": "RiseOn.Ads.AdMob.Native.Platforms.Android",
+    "rootNamespace": "RiseOn.Ads.AdMob.Native.Platforms.Android",
+    "references": [
+        "RiseOn.Ads.AdMob.Native"
+    ],
+    "includePlatforms": [
+        "Android"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
