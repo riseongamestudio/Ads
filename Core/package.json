@@ -1,10 +1,10 @@
 {
   "name": "com.riseon.ads",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "RiseOn Ads",
   "description": "Ad manager for Unity: providers behind priority lists, started after the consent flow, full-screen chains under a native cover, collapsible chains",
   "unity": "6000.0",
-  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads/1.0.0/Core/README.md",
+  "documentationUrl": "https://github.com/riseongamestudio/Ads/blob/com.riseon.ads/1.0.1/Core/README.md",
   "author": {
     "name": "RiseOn"
   },

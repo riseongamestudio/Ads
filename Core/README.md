@@ -27,7 +27,7 @@ Package `com.riseon.ads`, namespace `RiseOn.Ads`.
 
 Thêm registry RiseOn (`https://upm.riseongamestudio.com`) với scope `com.riseon`, và
 OpenUPM với scope `com.google`, `com.cysharp`, rồi thêm
-`"com.riseon.ads": "1.0.0"` và adapter cần dùng. Bản local:
+`"com.riseon.ads": "1.0.1"` và adapter cần dùng. Bản local:
 `"com.riseon.ads": "file:<thư mục repo Ads>/Core"`.
 
 ## Tổng quan
