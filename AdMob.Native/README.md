@@ -31,8 +31,12 @@ Ads, và không biết gì về thứ được vẽ trên dưới nó ngoài b�
 | Phụ thuộc | Cách có | Dùng cho |
 |---|---|---|
 | Unity 6000.3 | | Bản đang dùng để phát triển |
+| [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Pack không dùng Odin, nhưng mọi pack RiseOn đều cần nó, để cài đặt như nhau |
 | `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json` (trên OpenUPM cần scope `com.google`) | Plugin Google Mobile Ads cho Unity. Plugin này mang theo SDK native (Android `play-services-ads`, iOS pod `Google-Mobile-Ads-SDK`) |
 | `com.unity.ugui` 2.0.0 | Tự cài theo `package.json` | Bản xem trước trong Editor |
+
+Odin không có trên UPM nên phải cài vào project trước. Thiếu Odin thì project
+báo một lỗi từ `RiseOn.Ads.AdMob.Native.Requirements`.
 
 ## Cài đặt
 
@@ -55,7 +59,7 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob.native": "1.0.0"
+    "com.riseon.ads.admob.native": "2.0.0"
   }
 }
 ```

@@ -11,6 +11,7 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [
+        "ODIN_INSPECTOR",
         "UNITY_EDITOR"
     ],
     "versionDefines": [],

@@ -1,0 +1,16 @@
+{
+    "name": "RiseOn.Ads.AdMob.Native.Requirements",
+    "rootNamespace": "RiseOn.Ads.AdMob.Native.Requirements",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
