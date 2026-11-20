@@ -295,7 +295,7 @@ using RiseOn.Ads;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-public sealed partial class GameAds : AdsManagerBase {
+public sealed partial class AdsManager : AdsManagerBase {
     [SerializeField, LabelText("In Level After Away (s)"), Tooltip("After Away for a return in the middle of a level.")]
     private AdRemoteSetting<float> inLevelAfterAwaySeconds = new(600);
 
@@ -359,7 +359,7 @@ using Cysharp.Threading.Tasks;
 using RiseOn.Ads;
 using RiseOn.Analytics;
 
-public sealed partial class GameAds : AdsManagerBase {
+public sealed partial class AdsManager : AdsManagerBase {
     protected override bool AdsRemoved => Save.AdsRemoved;
 
     public async UniTask ShowInterstitialThenEndCard(string placement) {
@@ -377,7 +377,7 @@ public sealed partial class GameAds : AdsManagerBase {
 }
 
 // Ở chỗ khác của game
-var rewarded = await GameAds.Ins.ShowRewardedAsync("revive");
+var rewarded = await AdsManager.Ins.ShowRewardedAsync("revive");
 ```
 
 ## Consent của SDK
