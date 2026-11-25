@@ -20,14 +20,11 @@ namespace RiseOn.Ads {
         [Tooltip("The lowest sorting order of the Editor's ad layers: banners and MRecs, then native in-feed cells and MRecs, the collapsible's cover, the collapsible, the full-screen cover and full-screen ads, each one higher. Keep the game's canvases below it.")]
         private int editorSortingOrder = 1000;
 
-        [SerializeField, SectionGroup("On Return To Game"), HideLabel, InlineProperty]
-        private AdReturnSettings returnToGame = new();
-
         // The Editor keeps it an instance of the game's one manager class, so the page offers no type to pick; a game
         // without one has none.
         [SerializeReference, SectionReference, ShowIf("@manager != null"), LabelText("Manager")]
-        [Tooltip("The project's one partial AdsManagerBase class, taken by the pack, with its fields.")]
-        private AdsManagerBase manager;
+        [Tooltip("The project's one partial IAdsManager class, taken by the pack, with its fields.")]
+        private IAdsManager manager;
 
         [SerializeField, MediationList, LabelText("Mediations")]
         private List<SerRef<IAdMediation>> mediations = new();
@@ -37,21 +34,10 @@ namespace RiseOn.Ads {
         private AdFormatSetup formats = new();
 
         /// <summary>The game's manager with the fields the page edited; the pack runs it.</summary>
-        public AdsManagerBase Manager => manager;
+        public IAdsManager Manager => manager;
 
         /// <summary>How each format shows.</summary>
         public AdFormatSettings Formats => formats.Settings;
-
-        /// <summary>The ad shown when the player comes back to the game.</summary>
-        public AdReturnSettings ReturnToGame => returnToGame;
-
-        // Each rule's Remote Config key with the type its value needs, for the page's check.
-        internal IEnumerable<(string Setting, int KeyId, System.Type Type)> RemoteKeyUses {
-            get {
-                foreach (var use in Formats.RemoteKeyUses) yield return use;
-                foreach (var use in returnToGame.RemoteKeyUses) yield return use;
-            }
-        }
 
         public IEnumerable<IAdMediation> Mediations {
             get {
@@ -83,7 +69,7 @@ namespace RiseOn.Ads {
             mediations.RemoveAll(entry => entry.Value != null && !seen.Add(entry.Value.Id));
         }
 
-        /// <summary>The running platform's mediations per format, best first; in the Editor, each split list's picked platform's.</summary>
+        /// <summary>The running platform's mediations per format, best first; in the Editor, the active build target's.</summary>
         public IEnumerable<(AdFormat Format, AdPriorityList List)> Priorities {
             get {
                 foreach (var (format, value) in formats.Priorities) yield return (format, value?.Current);

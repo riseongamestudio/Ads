@@ -4,6 +4,13 @@ Mọi thay đổi đáng kể của `com.riseon.ads.max` được ghi ở đây.
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo
 [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Đổi
+
+- Theo `com.riseon.ads` mới: `Show` của mediation nhận placement.
+- Placement của lần show đi tới `MaxSdk` (`ShowInterstitial`, `ShowRewardedAd`, `ShowAppOpenAd`) và về `AdImpression.Placement` từ `AdInfo.Placement`.
+
 ## [1.0.1] - 2026-11-20
 
 ### Đổi

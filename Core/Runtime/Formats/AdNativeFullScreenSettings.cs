@@ -2,12 +2,9 @@
 using UnityEngine;
 
 namespace RiseOn.Ads {
-    /// <summary>How a full-screen native format (interstitial, app open, end card) shows, whichever mediation serves it, on both platforms, and how often the game's manager lets it.</summary>
+    /// <summary>How a full-screen native format (interstitial, app open, end card) shows, whichever mediation serves it, on both platforms.</summary>
     [Serializable]
     public sealed class AdNativeFullScreenSettings {
-        [SerializeField]
-        private AdPacingSettings pacing;
-
         [SerializeField]
         [Tooltip("The ad's backdrop where the creative does not reach, alpha included.")]
         private Color backgroundColor;
@@ -15,13 +12,11 @@ namespace RiseOn.Ads {
         [SerializeField]
         private AdCloseSettings close;
 
-        public AdNativeFullScreenSettings(AdPacingSettings pacing, Color backgroundColor, AdCloseSettings close) {
-            this.pacing          = pacing;
+        public AdNativeFullScreenSettings(Color backgroundColor, AdCloseSettings close) {
             this.backgroundColor = backgroundColor;
             this.close           = close;
         }
 
-        public AdPacingSettings Pacing => pacing;
         public Color BackgroundColor => backgroundColor;
         public AdCloseSettings Close => close;
     }

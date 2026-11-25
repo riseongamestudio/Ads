@@ -150,7 +150,16 @@ namespace RiseOn.Ads.AdMob {
 
         private void ReportPaid(AdFormat format, string unitId, AdValue value, ResponseInfo responseInfo) {
             var network = responseInfo?.GetLoadedAdapterResponseInfo()?.AdSourceName;
-            context?.ReportPaid(new AdImpression(format, MediationId, network, unitId, value.Value * 1e-6, value.CurrencyCode));
+            context?.ReportPaid(new AdImpression(format, MediationId, network, unitId, value.Value * 1e-6, value.CurrencyCode, PlacementOf(format)));
+        }
+
+        // Each full-screen format's last show's placement; a show and its paid event may come on any thread.
+        private readonly Dictionary<AdFormat, string> showPlacements = new();
+
+        private string PlacementOf(AdFormat format) {
+            if (!format.IsFullScreen()) return null;
+
+            lock (showPlacements) return showPlacements.TryGetValue(format, out var placement) ? placement : null;
         }
 
         /// <summary>Waits 2, 4, 8... up to 32 seconds before a reload, as the SDKs recommend.</summary>

@@ -42,7 +42,10 @@ namespace RiseOn.Ads.AdMob {
             return format.IsNative();
         }
 
-        public void Show(AdFormat format, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, IAdShowListener listener) {
+            // Google's SDK takes no placement, so its paid event gets the show's from here.
+            lock (showPlacements) showPlacements[format] = placement;
+
             var slot = SlotOf(format);
             if (slot == null) {
                 listener.OnFailed(new AdError(-1, $"{format} is not loaded by {MediationId}"));

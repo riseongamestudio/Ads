@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using RiseOn.Utils;
 using UnityEngine;
 
 namespace RiseOn.Ads {
     /// <summary>
-    /// One way <see cref="AdsManagerBase.ShowCollapsibleAsync"/> may run the collapsible: its steps one after the other, each closing as its settings say.<br/>
-    /// Each show draws a plan, each plan's chance its weight over all the weights.
+    /// A tool for the game's collapsible: one way to run it, its steps one after the other, each closing as its settings say, for <see cref="AdsSdk.ShowCollapsibleAsync"/>.<br/>
+    /// A list of them in the game's manager, edited on the page, is drawn from with <see cref="Pick"/>, each plan's chance its weight over all the weights.
     /// </summary>
     [Serializable]
     public sealed class AdCollapsiblePlan {
@@ -30,6 +31,32 @@ namespace RiseOn.Ads {
         public float Weight => weight.Value;
         public AdCloseSettings[] Steps => steps;
 
-        internal int WeightKeyId => weight.KeyId;
+        /// <summary>
+        /// A plan with steps, each one's chance its weight over all the weights; none when no plan has steps and a weight above 0.
+        /// </summary>
+        public static AdCollapsiblePlan Pick(IReadOnlyList<AdCollapsiblePlan> plans) {
+            var total = 0f;
+            if (plans != null) {
+                foreach (var plan in plans) {
+                    if (IsDrawable(plan)) total += plan.Weight;
+                }
+            }
+
+            if (total <= 0) return null;
+
+            var draw = UnityEngine.Random.value * total;
+            AdCollapsiblePlan last = null;
+            foreach (var plan in plans) {
+                if (!IsDrawable(plan)) continue;
+
+                last =  plan;
+                draw -= plan.Weight;
+                if (draw < 0) break;
+            }
+
+            return last;
+
+            static bool IsDrawable(AdCollapsiblePlan plan) => plan is { Steps: { Length: > 0 } } && plan.Weight > 0;
+        }
     }
 }

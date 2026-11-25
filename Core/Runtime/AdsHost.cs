@@ -45,12 +45,26 @@ namespace RiseOn.Ads {
         // What the game wants on screen, shown once a mediation serving it starts.
         private bool    bannerWanted;
         private bool    mRecWanted;
+        private readonly List<NativeRectHandle> handles = new();
+        private readonly List<NativeRectHandle> unbound = new();
+
+        // Each format's last display, realtime since startup: a full-screen format's every display, the collapsible's first of each chain.
+        private readonly Dictionary<AdFormat, double> lastDisplays = new();
 
         private DateTime pausedAt;
 
         public AdsHost(AdsSettings settings, UniTaskCompletionSource initialized) {
             this.settings    = settings;
             this.initialized = initialized;
+
+            // The page's lists from the start, for Serves before the first scene; Remote Config's replace them before any mediation starts.
+            foreach (var (format, list) in settings.Priorities) priorities[format] = list == null ? Array.Empty<string>() : ToArray(list.MediationIds);
+
+            static string[] ToArray(IReadOnlyList<string> ids) {
+                var array = new string[ids.Count];
+                for (var i = 0; i < ids.Count; i++) array[i] = ids[i];
+                return array;
+            }
         }
 
         public bool IsInitialized { get; private set; }
@@ -73,6 +87,8 @@ namespace RiseOn.Ads {
 
             running.Clear();
             started.Clear();
+            handles.Clear();
+            unbound.Clear();
         }
 
         public void OnApplicationPause(bool paused) {
@@ -119,6 +135,7 @@ namespace RiseOn.Ads {
             } finally {
                 if (!cancellationToken.IsCancellationRequested) {
                     IsInitialized = true;
+                    BindUnbound();
                     initialized.TrySetResult();
                 }
             }
@@ -201,8 +218,6 @@ namespace RiseOn.Ads {
 
         // Fixed before any mediation starts, so each loads the formats it serves from the start; a change published later shows from the next launch.
         private async UniTask ResolvePrioritiesAsync() {
-            foreach (var (format, list) in settings.Priorities) priorities[format] = list == null ? Array.Empty<string>() : ToArray(list.MediationIds);
-
 #if ADS_SUPPORT_REMOTECONFIG
             if (!settings.HasRemoteKeys) return;
 
@@ -216,13 +231,9 @@ namespace RiseOn.Ads {
 #else
             await UniTask.CompletedTask;
 #endif
-
-            static string[] ToArray(IReadOnlyList<string> ids) {
-                var array = new string[ids.Count];
-                for (var i = 0; i < ids.Count; i++) array[i] = ids[i];
-                return array;
-            }
         }
+
+        public bool Serves(AdFormat format) => priorities.TryGetValue(format, out var ids) && ids.Length > 0;
 
         /// <summary>A remote value's mediations: null for an empty value, which keeps the page's list; none for <c>off</c>; else the ids split by commas, those the page lacks left out.</summary>
         private string[] Parse(AdFormat format, string text) {
@@ -333,9 +344,17 @@ namespace RiseOn.Ads {
         Color IAdChainHost.CoverColor => settings.CoverColor;
         Color IAdCollapsibleHost.CoverColor => settings.CoverColor;
 
-        void IAdChainHost.Displayed(AdFormat format, string placement) => AdsSdk.RaiseDisplayed(format, placement);
+        void IAdChainHost.Displayed(AdFormat format, string placement) {
+            lastDisplays[format] = Time.realtimeSinceStartupAsDouble;
+            AdsSdk.RaiseDisplayed(format, placement);
+        }
 
-        void IAdCollapsibleHost.Displayed() => AdsSdk.RaiseCollapsibleDisplayed();
+        void IAdCollapsibleHost.Displayed(bool first) {
+            if (first) lastDisplays[AdFormat.NativeCollapsible] = Time.realtimeSinceStartupAsDouble;
+            AdsSdk.RaiseCollapsibleDisplayed();
+        }
+
+        public double? SecondsSinceDisplay(AdFormat format) => lastDisplays.TryGetValue(format, out var last) ? Time.realtimeSinceStartupAsDouble - last : null;
 
         #endregion
 
@@ -380,6 +399,8 @@ namespace RiseOn.Ads {
 
         public void ShowBanner() {
             bannerWanted = true;
+            if (AdsSdk.IsSuppressed(AdFormat.Banner)) return;
+
             var mediation = First<IAdMediationBanner>(AdFormat.Banner);
             if (mediation == null) return;
 
@@ -390,12 +411,18 @@ namespace RiseOn.Ads {
 
         public void HideBanner() {
             bannerWanted = false;
+            TakeDownBanner();
+        }
+
+        private void TakeDownBanner() {
             shownBanner?.HideBanner();
             shownBanner = null;
         }
 
         public void ShowMRec() {
             mRecWanted = true;
+            if (AdsSdk.IsSuppressed(AdFormat.MRec)) return;
+
             var mediation = First<IAdMediationMRec>(AdFormat.MRec);
             if (mediation == null) return;
 
@@ -406,15 +433,54 @@ namespace RiseOn.Ads {
 
         public void HideMRec() {
             mRecWanted = false;
+            TakeDownMRec();
+        }
+
+        private void TakeDownMRec() {
             shownMRec?.HideMRec();
             shownMRec = null;
         }
 
-        public NativeRectHandle CreateNativeRect(AdFormat format, Vector2Int sizePx, int roundCornerPx, Func<bool> canShow, Action<NativeRectHandle> disposed) {
-            var cell = format is AdFormat.NativeMRec
-                ? First<IAdMediationNativeMRec>(format)?.CreateNativeMRec(sizePx, roundCornerPx)
-                : First<IAdMediationNativeInFeed>(format)?.CreateInFeed(sizePx, roundCornerPx);
-            return new NativeRectHandle(cell, canShow, disposed);
+        public NativeRectHandle CreateNativeRect(AdFormat format, Vector2Int sizePx, int roundCornerPx) {
+            var handle = new NativeRectHandle(format, sizePx, roundCornerPx, () => !AdsSdk.IsSuppressed(format), disposed => handles.Remove(disposed));
+            handles.Add(handle);
+            if (!TryBind(handle)) unbound.Add(handle);
+            return handle;
+        }
+
+        // A format suppressed or let through again: off screen now, or back as the game wants it.
+        public void ApplySuppressed(AdFormat format) {
+            var on = AdsSdk.IsSuppressed(format);
+            switch (format) {
+                case AdFormat.Banner when on: TakeDownBanner(); break;
+                case AdFormat.Banner when bannerWanted: ShowBanner(); break;
+                case AdFormat.MRec when on: TakeDownMRec(); break;
+                case AdFormat.MRec when mRecWanted: ShowMRec(); break;
+                case AdFormat.NativeCollapsible when on: HideCollapsible(); break;
+                case AdFormat.NativeMRec or AdFormat.NativeInFeed:
+                    foreach (var handle in handles.ToArray()) {
+                        if (handle.Format == format) handle.Refresh();
+                    }
+
+                    break;
+            }
+        }
+
+        // Not before the mediations started, so that the cell goes to the best one rather than the first to start.
+        private bool TryBind(NativeRectHandle handle) {
+            if (!IsInitialized) return false;
+
+            var cell = handle.Format is AdFormat.NativeMRec
+                ? First<IAdMediationNativeMRec>(handle.Format)?.CreateNativeMRec(handle.SizePx, handle.RoundCornerPx)
+                : First<IAdMediationNativeInFeed>(handle.Format)?.CreateInFeed(handle.SizePx, handle.RoundCornerPx);
+            if (cell == null) return false;
+
+            handle.Bind(cell);
+            return true;
+        }
+
+        private void BindUnbound() {
+            unbound.RemoveAll(handle => handle.IsDisposed || TryBind(handle));
         }
 
         private TMediation First<TMediation>(AdFormat format) where TMediation : class, IAdMediation {
@@ -426,10 +492,11 @@ namespace RiseOn.Ads {
         }
 
         // What the game wants on screen, on the best mediation now: one asked for before any mediation started, or
-        // moved to a better one that started since.
+        // moved to a better one that started since. A native rect waits for the launch's mediations, then takes one started later.
         private void ShowWanted() {
             if (bannerWanted) ShowBanner();
             if (mRecWanted) ShowMRec();
+            if (IsInitialized) BindUnbound();
         }
 
         #endregion

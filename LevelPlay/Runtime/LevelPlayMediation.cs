@@ -251,7 +251,7 @@ namespace RiseOn.Ads.LevelPlay {
           , _                     => null
         };
 
-        public void Show(AdFormat format, IAdShowListener showListener) {
+        public void Show(AdFormat format, string placement, IAdShowListener showListener) {
             if (!IsReady(format)) {
                 showListener.OnFailed(new AdError(-1, $"{format} not ready"));
                 return;
@@ -259,6 +259,9 @@ namespace RiseOn.Ads.LevelPlay {
 
             listener     = showListener;
             rewardEarned = false;
+
+            // Not to the SDK: a LevelPlay placement is one set up on its dashboard, with its own capping, and the game's names are not.
+            lock (showPlacements) showPlacements[format] = placement;
             Ad(format).Show(null);
         }
 
@@ -333,7 +336,16 @@ namespace RiseOn.Ads.LevelPlay {
 
         private void ReportPaid(AdFormat format, string adNetwork, string adUnitId, double revenue) {
             // LevelPlay reports revenue in US dollars.
-            context?.ReportPaid(new AdImpression(format, MediationId, adNetwork, adUnitId, revenue, "USD"));
+            context?.ReportPaid(new AdImpression(format, MediationId, adNetwork, adUnitId, revenue, "USD", PlacementOf(format)));
+        }
+
+        // Each full-screen format's last show's placement; the paid event comes on the bridge's thread.
+        private readonly Dictionary<AdFormat, string> showPlacements = new();
+
+        private string PlacementOf(AdFormat format) {
+            if (!format.IsFullScreen()) return null;
+
+            lock (showPlacements) return showPlacements.TryGetValue(format, out var placement) ? placement : null;
         }
     }
 }

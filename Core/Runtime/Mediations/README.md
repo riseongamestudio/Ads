@@ -14,7 +14,8 @@ assembly của mediation phải sửa asset của từng project.
   đã lưu trỏ vào khoảng trống.
 - `InitializeAsync` chỉ được nhận các định dạng có tên mediation trong danh sách ưu
   tiên: trên máy là danh sách của nền tảng đang chạy; trong Editor, danh sách tách
-  nền tảng thì là danh sách của nền tảng chọn ở ô **Editor uses** trên trang.
+  nền tảng thì là danh sách của build target đang chọn (iOS, hay Android cho mọi
+  target khác).
   Mediation chỉ tải những định dạng đó. `AdUnitId.Value` trả unit id của nền tảng
   đang chạy; trong Editor là của Android, ô Android trống thì của iOS.
 - Cách định dạng hiện (vị trí, adaptive của banner, màu nền và nút đóng của
@@ -29,7 +30,10 @@ assembly của mediation phải sửa asset của từng project.
   `com.riseon.ads.admob.native` tự retry bên trong, adapter không retry chồng.
 - Revenue báo bằng tiền thật (không phải micros) qua
   `IAdMediationContext.ReportPaid`, từ thread nào cũng được; pack đưa về thread
-  Unity rồi báo `AdsSdk.Paid` và `AdsManagerBase.OnPaid`.
+  Unity rồi báo `AdsSdk.Paid`. Placement truyền vào show đi cùng
+  `AdImpression.Placement`: SDK nhận placement khi show (như MAX) thì lấy từ
+  impression của SDK, không thì mediation nhớ placement của lần show gần nhất của
+  format.
 - `CallsBackOffLoop`, `ShowsFromAnyThread`: xem [Chain](../Chain/README.md). SDK
   nào chỉ báo sự kiện qua player loop thì không có màn che và không nối được.
 - Trong Editor, pack không giao cho mediation các định dạng không phải native

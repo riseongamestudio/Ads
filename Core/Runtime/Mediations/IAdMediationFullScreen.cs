@@ -18,6 +18,7 @@
         /// <summary>Whether <see cref="IsReady"/> and <see cref="Show"/> work from any thread. Only then can the format follow another step.</summary>
         bool ShowsFromAnyThread(AdFormat format);
 
-        void Show(AdFormat format, IAdShowListener listener);
+        /// <param name="placement">What the game passed to the show, null for none: for the SDK where it takes one, and for <see cref="AdImpression.Placement"/>.</param>
+        void Show(AdFormat format, string placement, IAdShowListener listener);
     }
 }

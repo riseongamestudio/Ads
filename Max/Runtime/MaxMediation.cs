@@ -223,7 +223,7 @@ namespace RiseOn.Ads.Max {
         // MAX documents its calls for Unity's thread only.
         public bool ShowsFromAnyThread(AdFormat format) => false;
 
-        public void Show(AdFormat format, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, IAdShowListener listener) {
             var unit = UnitOf(format);
             if (unit == null || !IsReady(format)) {
                 listener.OnFailed(new AdError(-1, $"{format} not ready"));
@@ -233,15 +233,15 @@ namespace RiseOn.Ads.Max {
             Volatile.Write(ref unit.Listener, listener);
             switch (format) {
                 case AdFormat.Interstitial:
-                    MaxSdk.ShowInterstitial(unit.UnitId);
+                    MaxSdk.ShowInterstitial(unit.UnitId, placement);
                     break;
 
                 case AdFormat.Rewarded:
-                    MaxSdk.ShowRewardedAd(unit.UnitId);
+                    MaxSdk.ShowRewardedAd(unit.UnitId, placement);
                     break;
 
                 case AdFormat.AppOpen:
-                    MaxSdk.ShowAppOpenAd(unit.UnitId);
+                    MaxSdk.ShowAppOpenAd(unit.UnitId, placement);
                     break;
 
                 default:
@@ -426,7 +426,9 @@ namespace RiseOn.Ads.Max {
 
         private void ReportPaid(AdFormat format, MaxSdkBase.AdInfo info) {
             // MAX reports revenue in US dollars.
-            context?.ReportPaid(new AdImpression(format, MediationId, info.NetworkName, info.AdUnitIdentifier, info.Revenue, "USD"));
+            // MAX hands back the placement its show took; an empty one is none.
+            var placement = string.IsNullOrEmpty(info.Placement) ? null : info.Placement;
+            context?.ReportPaid(new AdImpression(format, MediationId, info.NetworkName, info.AdUnitIdentifier, info.Revenue, "USD", placement));
         }
     }
 }

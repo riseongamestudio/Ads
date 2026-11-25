@@ -17,8 +17,8 @@ namespace RiseOn.Ads {
         /// <summary>The page's cover color.</summary>
         Color CoverColor { get; }
 
-        /// <summary>Unity's thread, once an ad of the current run slid in or swapped in.</summary>
-        void Displayed();
+        /// <summary>Unity's thread, once an ad of the current run slid in or swapped in; <paramref name="first"/> for the run's first.</summary>
+        void Displayed(bool first);
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ namespace RiseOn.Ads {
         private readonly List<Step>         steps = new();
         private          bool               ran;
 
-        /// <param name="off">The manager's remove-ads holds the collapsible back: the chain shows nothing.</param>
+        /// <param name="off">The collapsible is suppressed: the chain shows nothing.</param>
         internal AdCollapsibleChain(IAdCollapsibleHost host, bool off) {
             this.host = host;
             this.off  = off;
@@ -162,7 +162,7 @@ namespace RiseOn.Ads {
                         if (!runner.host.IsCurrentCollapsible(runner.session)) return;
 
                         ++runner.displayed;
-                        runner.host.Displayed();
+                        runner.host.Displayed(runner.displayed == 1);
 
                         // The cover only shows under an ad that another will replace in place.
                         if (runner.usesCover) {

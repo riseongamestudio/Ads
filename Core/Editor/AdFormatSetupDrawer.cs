@@ -15,25 +15,22 @@ namespace RiseOn.Ads.Editor {
     [DrawerPriority(0, 0, 2)]
     internal sealed class AdFormatSetupDrawer : OdinValueDrawer<AdFormatSetup> {
 #if ADS_SUPPORT_REMOTECONFIG
-        private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; the Remote Config key that can replace them at launch; "
-                                 + "whether remove-ads takes it; how it shows and the manager's rules for it. The mediations can split into a list per platform, the Editor using the one its row picks.";
+        private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; the Remote Config key that can replace them at launch; and how it shows. "
+                                 + "The mediations can split into a list per platform, the Editor playing the active build target's.";
 #else
-        private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; whether remove-ads takes it; how it shows and the manager's rules for it. "
-                                 + "The mediations can split into a list per platform, the Editor using the one its row picks.";
+        private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; and how it shows. "
+                                 + "The mediations can split into a list per platform, the Editor playing the active build target's.";
 #endif
 
         private static readonly GUIContent mediations = new("Mediations", "Which mediations serve the format, tried left to right; with none the format is off.");
-        private static readonly GUIContent remoteKey  = new("Mediations Remote Key", AdRemoteKeyDrawer.Tooltip);
-        private static readonly GUIContent removeAds  = new("Included In Remove Ads", "The remove-ads purchase takes this format away: once the player bought it, the format no longer shows, and a rewarding one grants its reward with no ad.");
-        private static readonly GUIContent endCard    = new("Use Native End Card", "After the format's ad, a native end card in the same chain when one is loaded and its own pacing allows, for ShowAsync and the Show methods of the game's manager.");
+#if ADS_SUPPORT_REMOTECONFIG
+        private static readonly GUIContent remoteKey = new("Mediations Remote Key", AdRemoteKeyDrawer.Tooltip);
+#endif
 
         // Each format's settings, by the field of AdFormatSettings that holds them; the formats with nothing to set are not here.
         private static readonly Dictionary<AdFormat, string> settingsFields = new() {
             { AdFormat.Banner, "banner" }
           , { AdFormat.MRec, "mRec" }
-          , { AdFormat.Interstitial, "interstitial" }
-          , { AdFormat.RewardedInterstitial, "rewardedInterstitial" }
-          , { AdFormat.AppOpen, "appOpen" }
           , { AdFormat.NativeInterstitial, "nativeInterstitial" }
           , { AdFormat.NativeAppOpen, "nativeAppOpen" }
           , { AdFormat.NativeEndCard, "nativeEndCard" }
@@ -62,11 +59,10 @@ namespace RiseOn.Ads.Editor {
                 return;
             }
 
+#if ADS_SUPPORT_REMOTECONFIG
             var settings = Property.Tree.WeakTargets.OfType<AdsSettings>().FirstOrDefault();
-            var looks    = Property.Children["settings"];
-            // A map saved before the enum gained a format leaves that one without the row, not taken, until the map takes the key.
-            var removes  = Entries(looks.Children["removeAds"]);
-            var endCards = Entries(looks.Children["endCards"]);
+#endif
+            var looks = Property.Children["settings"];
             foreach (var format in formats) {
                 using var sub = Section.Foldout(entries[format], ChoiceFieldUtils.NameOf(format));
                 if (!sub.Open) continue;
@@ -76,23 +72,11 @@ namespace RiseOn.Ads.Editor {
                 // One key for both platforms, so no split button.
                 if (settings) AdButtonRow.Draw(() => AdRemoteKeyDrawer.Draw(EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(), remoteKey), settings, format));
 #endif
-                if (removes.TryGetValue(format, out var remove)) AdButtonRow.Draw(() => remove.Draw(removeAds));
-                if (AdFormatSettings.TakesEndCard(format) && endCards.TryGetValue(format, out var card)) AdButtonRow.Draw(() => card.Draw(endCard));
                 if (!settingsFields.TryGetValue(format, out var field)) continue;
 
-                // One value for both platforms; the empty square keeps each row's end in line with the Mediations row's. A pacing is its rows, After Rewarded on the interstitials only.
-                var own = looks.Children[field];
-                foreach (var child in own.ValueEntry.WeakSmartValue is AdPacingSettings ? new[] { own } : own.Children.ToArray()) {
-                    var rows = child.ValueEntry.WeakSmartValue is AdPacingSettings
-                        ? child.Children.Where(row => row.Name != "afterRewardedSeconds" || AdPacingSettings.TakesAfterRewarded(format)).ToArray()
-                        : new[] { child };
-                    foreach (var row in rows) AdButtonRow.Draw(() => row.Draw());
-                }
+                // One value for both platforms; the empty square keeps each row's end in line with the Mediations row's.
+                foreach (var row in looks.Children[field].Children) AdButtonRow.Draw(() => row.Draw());
             }
-
-            static Dictionary<AdFormat, InspectorProperty> Entries(InspectorProperty map) =>
-                map.Children["entries"].Children.Where(entry => entry.Children["key"].ValueEntry.WeakSmartValue is AdFormat)
-                   .ToDictionary(entry => (AdFormat) entry.Children["key"].ValueEntry.WeakSmartValue, entry => entry.Children["value"]);
         }
     }
 }

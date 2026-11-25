@@ -55,7 +55,7 @@ namespace RiseOn.Ads {
         public bool CallsBackOffLoop(AdFormat format) => true;
         public bool ShowsFromAnyThread(AdFormat format) => true;
 
-        public void Show(AdFormat format, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, IAdShowListener listener) {
             if (EditorPlaceholders.Installed is { } placeholders) placeholders.ShowFullScreen(name, format, listener);
             else listener.OnFailed(new AdError(-1, "no Editor placeholders"));
         }
@@ -67,12 +67,14 @@ namespace RiseOn.Ads {
     }
 
     /// <summary>
-    /// The default of <see cref="AdsManagerBase"/>'s pause in the Editor, where no SDK pauses Unity under a full-screen ad: the time scale at zero and the audio paused, both back as they were.
+    /// A pause for the Editor, where no SDK pauses Unity under a full-screen ad: the time scale at zero and the audio paused, both back as they were.<br/>
+    /// What the pack does with no manager, and what a manager's <see cref="IAdsManager.PauseInEditor"/> calls when that is all pausing means for its game.
     /// </summary>
-    internal static class EditorGamePause {
+    public static class EditorGamePause {
         private static float timeScale = 1;
         private static bool  audioPaused;
 
+        /// <summary>True pauses, false brings back what the pause changed.</summary>
         public static void Apply(bool paused) {
             if (paused) {
                 timeScale            = Time.timeScale;

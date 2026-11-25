@@ -260,7 +260,7 @@ namespace RiseOn.Ads.AdMob {
         }
 
         private void ReportNativePaid(AdFormat format, Native.AdInfo info) {
-            context?.ReportPaid(new AdImpression(format, MediationId, info.Source, info.UnitId, info.Value, info.Currency));
+            context?.ReportPaid(new AdImpression(format, MediationId, info.Source, info.UnitId, info.Value, info.Currency, PlacementOf(format)));
         }
 
         /// <summary>The placement name the native pack reports with its impressions.</summary>

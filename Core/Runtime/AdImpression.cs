@@ -16,17 +16,21 @@
 
         public readonly string Currency;
 
-        public AdImpression(AdFormat format, string mediation, string network, string unitId, double value, string currency) {
+        /// <summary>A full-screen impression's placement, as the game passed it to the show; null for the formats on screen, and when the game passed none.</summary>
+        public readonly string Placement;
+
+        public AdImpression(AdFormat format, string mediation, string network, string unitId, double value, string currency, string placement = null) {
             Format    = format;
             Mediation = mediation;
             Network   = network;
             UnitId    = unitId;
             Value     = value;
             Currency  = currency;
+            Placement = placement;
         }
 
         public override string ToString() {
-            return $"{Mediation}/{Network} {Format} {UnitId}: {Value} {Currency}";
+            return $"{Mediation}/{Network} {Format} {UnitId}{(Placement != null ? $" at {Placement}" : "")}: {Value} {Currency}";
         }
     }
 }

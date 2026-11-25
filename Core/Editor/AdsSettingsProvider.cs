@@ -59,9 +59,9 @@ namespace RiseOn.Ads.Editor {
 
             var candidates = Candidates();
             if (candidates.Count > 1) {
-                yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{string.Join(", ", candidates.Select(type => type.FullName))} all derive from AdsManagerBase, so none runs; keep one.");
+                yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{string.Join(", ", candidates.Select(type => type.FullName))} all implement IAdsManager, so none runs; keep one.");
             } else if (candidates.Count == 0) {
-                yield return new SettingsIssue(BuildTarget.NoTarget, false, "No partial class derives from AdsManagerBase, so the game shows ads through AdsSdk alone, with no rule of its own.", "New script", CreateScript);
+                yield return new SettingsIssue(BuildTarget.NoTarget, false, "No partial class implements IAdsManager, so the game has no place for its ad rules on this page; the pack's AdsManager sample holds the rules most games run.", "New script", CreateScript);
             } else if (Problem(candidates[0]) is { } problem) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, problem + ".");
             } else if (settings.Manager?.GetType() != candidates[0]) {
@@ -88,7 +88,7 @@ namespace RiseOn.Ads.Editor {
 
             if (lost.Count > 0) yield return new SettingsIssue(BuildTarget.NoTarget, true, $"Formats: the Remote Config keys of {string.Join(", ", lost)} are no longer string keys of Remote Config, which removed them or changed their type; pick others.");
 
-            var lostSettings = settings.RemoteKeyUses.Where(use => use.KeyId != 0 && !AdRemoteKeys.Is(use.KeyId, use.Type)).Select(use => use.Setting).ToList();
+            var lostSettings = RemoteKeyUses(settings).Where(use => use.KeyId != 0 && !AdRemoteKeys.Is(use.KeyId, use.Type)).Select(use => use.Setting).ToList();
             if (lostSettings.Count > 0) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, $"The Remote Config keys of {string.Join(", ", lostSettings)} are no longer keys of the setting's type in Remote Config, which removed them or changed their type; pick others.");
             }
@@ -101,6 +101,26 @@ namespace RiseOn.Ads.Editor {
             if (SerializationUtility.HasManagedReferencesWithMissingTypes(settings)) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, "A class the settings hold (a mediation, or a manager since replaced) was renamed or deleted.", "Clear it", () => SerializationUtility.ClearAllManagedReferencesWithMissingTypes(settings));
             }
+        }
+
+        // Every AdRemoteSetting the asset holds, the manager's fields included, with its key and the type its value needs.
+        private static IEnumerable<(string Setting, int KeyId, Type Type)> RemoteKeyUses(AdsSettings settings) {
+            var property = new SerializedObject(settings).GetIterator();
+            while (property.Next(true)) {
+                if (!property.type.StartsWith("AdRemoteSetting") || property.FindPropertyRelative("key.id") is not { } key || property.FindPropertyRelative("value") is not { } value) continue;
+
+                var type = value.propertyType switch {
+                    SerializedPropertyType.Float   => typeof(float)
+                  , SerializedPropertyType.Boolean => typeof(bool)
+                  , SerializedPropertyType.Integer => typeof(int)
+                  , SerializedPropertyType.String  => typeof(string)
+                  , _                              => null
+                };
+                if (type != null) yield return (Nice(property.propertyPath), key.intValue, type);
+            }
+
+            // "manager.interstitialPacing.firstSeconds" as "Manager Interstitial Pacing First Seconds".
+            static string Nice(string path) => string.Join(" ", path.Replace(".Array.data[", "[").Split('.').Select(ObjectNames.NicifyVariableName));
         }
 
         // Each ad unit id whose Test is on, as "admob Banner (Android)".
@@ -131,7 +151,7 @@ namespace RiseOn.Ads.Editor {
 
         /// <summary>Every class the pack could run; the source generator lets only one compile in an assembly.</summary>
         internal static List<Type> Candidates() {
-            return TypeCache.GetTypesDerivedFrom<AdsManagerBase>().Where(type => !type.IsAbstract).ToList();
+            return TypeCache.GetTypesDerivedFrom<IAdsManager>().Where(type => type.IsClass && !type.IsAbstract).ToList();
         }
 
         private static string Problem(Type type) {
@@ -194,10 +214,11 @@ namespace RiseOn.Ads.Editor {
             var lines  = new List<string> { "using RiseOn.Ads;", "" };
             if (indent.Length > 0) lines.Add($"namespace {space} {{");
             lines.AddRange(new[] {
-                $"{indent}// The project's one ads manager, which the game calls for every ad. Partial: the Ads pack compiles {name}.Ins, the running instance, into it."
-              , $"{indent}public sealed partial class {name} : AdsManagerBase {{"
-              , $"{indent}    // The player bought remove-ads; call RefreshAdsRemoved() when it changes."
-              , $"{indent}    protected override bool AdsRemoved => false;"
+                $"{indent}// The project's one ads manager: the game's ad rules, calling AdsSdk under them; its fields show on Project Settings > RiseOn > Ads."
+              , $"{indent}// Partial: the Ads pack seals it and compiles {name}.Ins, the running instance, into it. The pack's AdsManager sample holds the rules most games run."
+              , $"{indent}public partial class {name} : IAdsManager {{"
+              , $"{indent}    // The Editor's pause under a full-screen ad, where no SDK pauses Unity: the time scale and the audio by default."
+              , $"{indent}    void IAdsManager.PauseInEditor(bool paused) => EditorGamePause.Apply(paused);"
               , $"{indent}}}"
             });
             if (indent.Length > 0) lines.Add("}");

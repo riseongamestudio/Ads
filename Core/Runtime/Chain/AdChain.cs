@@ -10,18 +10,15 @@ namespace RiseOn.Ads {
       , NoStep
       , NotReady
 
-        /// <summary>The manager's remove-ads holds the format back.</summary>
-      , Removed
-
-        /// <summary>The manager's pacing holds the format back: its First After or Min Interval has not passed.</summary>
-      , Pacing
+        /// <summary><see cref="AdsSdk.SetSuppressed"/> holds the format back.</summary>
+      , Suppressed
     }
 
     public readonly struct AdChainResult {
         /// <summary>How many steps displayed.</summary>
         public readonly int Displayed;
 
-        /// <summary>A rewarding step earned its reward, or remove-ads held a rewarding step back and so granted it.</summary>
+        /// <summary>A rewarding step earned its reward, or a rewarding step was suppressed and so granted it.</summary>
         public readonly bool Rewarded;
 
         /// <summary>Why nothing showed, when nothing did.</summary>
@@ -67,13 +64,13 @@ namespace RiseOn.Ads {
         private          bool                        rewardedWithoutAd;
         private          bool                        ran;
 
-        /// <param name="skip">Why the manager's rules hold a format back, <see cref="AdChainSkip.None"/> when they do not; such steps are left out as they are added. Null for no rules.</param>
+        /// <param name="skip">Why a format is held back, <see cref="AdChainSkip.None"/> when it is not; such steps are left out as they are added.</param>
         internal AdChain(IAdChainHost host, Func<AdFullScreenFormat, AdChainSkip> skip) {
             this.host = host;
             this.skip = skip;
         }
 
-        /// <param name="placement">Reaches <see cref="AdsSdk.Displayed"/>, for the game's analytics.</param>
+        /// <param name="placement">Reaches <see cref="AdsSdk.Displayed"/> and the mediation, which reports it with the impression where its SDK takes one.</param>
         /// <param name="onDisplayed">Called on Unity's thread once the step displays.</param>
         public AdChain Then(AdFullScreenFormat fullScreenFormat, string placement = null, Action onDisplayed = null) {
             var format = fullScreenFormat.ToFormat();
@@ -85,8 +82,8 @@ namespace RiseOn.Ads {
 
             if (skipped is AdChainSkip.None) skipped = reason;
 
-            // Remove-ads takes the ad away, not the reward.
-            if (reason is AdChainSkip.Removed && format.IsRewarding()) rewardedWithoutAd = true;
+            // Suppression takes the ad away, not the reward.
+            if (reason is AdChainSkip.Suppressed && format.IsRewarding()) rewardedWithoutAd = true;
             return this;
         }
 
@@ -174,7 +171,7 @@ namespace RiseOn.Ads {
             private void ShowStep(int index, IAdMediationFullScreen mediation) {
                 var listener = new StepListener(this, index);
                 try {
-                    mediation.Show(steps[index].Format, listener);
+                    mediation.Show(steps[index].Format, steps[index].Placement, listener);
                 } catch (Exception exception) {
                     Debug.LogException(exception);
                     listener.OnFailed(new AdError(-1, exception.Message));

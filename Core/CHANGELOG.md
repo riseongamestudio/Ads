@@ -4,6 +4,50 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo
 [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Đổi
+
+- Pack không còn luật của game: `AdsSdk` hiện đúng cái được gọi, như API của một SDK
+  mediation. Remove-ads, giãn cách (First After, Min Interval, After Rewarded), end
+  card nối sau ad, ad khi quay lại game và lúc mở game (mục On Return To Game), Auto
+  Show của banner và các plan collapsible rời trang settings và lớp nền; chúng nằm
+  trong sample `AdsManager`, game chép về và sửa. Ô **Included In Remove Ads**, **Use
+  Native End Card** và các ô giãn cách của mục Formats không còn; giá trị đã đặt trên
+  trang không chuyển sang sample, game đặt lại trong mục Manager.
+- `AdsManagerBase` thay bằng interface `IAdsManager`. Lớp manager cài nó (`public
+  partial class AdsManager : IAdsManager`) và cài tường minh `PauseInEditor`
+  (`void IAdsManager.PauseInEditor(bool paused)`), member duy nhất, mà chỉ pack gọi
+  được. Source generator gắn thêm `sealed`. Các member `virtual` của lớp nền
+  (`AdsRemoved`, `PacingAllows`, `OnDisplayed`...) không còn: game viết luật của mình
+  trong lớp, và nghe sự kiện thẳng từ `AdsSdk`.
+- `AdsSdk` có hàm show riêng cho từng format full-screen, nhận placement:
+  `ShowInterstitialAsync`, `ShowRewardedAsync`, `ShowRewardedInterstitialAsync`,
+  `ShowAppOpenAsync`, `ShowNativeInterstitialAsync`, `ShowNativeAppOpenAsync`,
+  `ShowNativeEndCardAsync`; `ShowCollapsibleAsync(plan, onDisplayed)` hiện các bước
+  của một plan.
+- `CreateNativeMRec`, `CreateNativeInFeed` gọi trước `IsInitialized` không còn ném:
+  ô nhận khối khi mediation phục vụ format khởi động xong, giữ chỗ và trạng thái bật
+  game đã đặt.
+- Danh sách mediation tách nền tảng không còn ô **Editor uses**: Editor dùng danh
+  sách của build target đang chọn (iOS, hay Android cho mọi target khác).
+
+### Thêm
+
+- `AdsSdk.SetSuppressed(format, on)`, `IsSuppressed(format)`: chặn một format, như
+  khi người chơi mua remove-ads. Format full-screen bị chặn thì bị bỏ khỏi mọi chuỗi,
+  format có thưởng thì thưởng luôn; banner, MRec, collapsible và ô native rời màn
+  hình và quay lại khi thả.
+- `AdPacing`: field giãn cách một format cho lớp manager, mỗi ô có key Remote Config;
+  `AdCollapsiblePlan.Pick(plans)` bốc một plan theo weight.
+- `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)`, và `EditorGamePause.Apply`
+  (cách dừng game mặc định trong Editor) thành public.
+- Sample `AdsManager` (Package Manager → Samples): các luật phần lớn game của studio
+  chạy, với giá trị mặc định cũ của trang.
+- `AdImpression.Placement`: placement của lần show đi cùng doanh thu.
+- Mọi field `AdRemoteSetting` của lớp manager có ô chọn key Remote Config, và build
+  dừng khi key của nó không còn trong Remote Config.
+
 ## [2.0.0] - 2026-11-20
 
 ### Đổi

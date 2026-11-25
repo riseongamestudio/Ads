@@ -4,6 +4,13 @@ Mọi thay đổi đáng kể của `com.riseon.ads.levelplay` được ghi ở 
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo
 [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [Unreleased]
+
+### Đổi
+
+- Theo `com.riseon.ads` mới: `Show` của mediation nhận placement.
+- Placement của lần show gần nhất của mỗi format đi cùng `AdImpression.Placement`; pack không truyền nó cho SDK LevelPlay.
+
 ## [1.0.1] - 2026-11-20
 
 ### Đổi
