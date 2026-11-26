@@ -12,7 +12,7 @@ namespace RiseOn.Ads.Editor {
     /// <summary>
     /// A format's Remote Config key for its mediations, the Mediations Remote Key row of its section under Formats: a drop-down of that pack's string keys, No Remote Key first; a key since removed shows as missing.<br/>
     /// One key for every platform.<br/>
-    /// Nothing without the pack.
+    /// Without the pack the drop-down stays, locked, saying why, as every Remote Config key of the page does.
     /// </summary>
     internal static class AdRemoteKeyDrawer {
         public const string Tooltip = "A Remote Config string key whose value replaces this format's mediations at launch: mediation ids best first, split by commas, such as \"max,admob\", or \"off\" to turn the format off. "
@@ -28,8 +28,20 @@ namespace RiseOn.Ads.Editor {
                 EditorUtility.SetDirty(settings);
             });
             GUI.Label(rect, new GUIContent("", Tooltip));
+#else
+            DrawNoPack(rect);
 #endif
         }
+
+#if !ADS_SUPPORT_REMOTECONFIG
+        private static readonly GUIContent noRemoteConfig = new("No Remote Config", "The project lacks com.riseon.firebase.remoteconfig, so there is no Remote Config key to pick and the page's value holds. Install that pack to pick one.");
+
+        /// <summary>A Remote Config key's drop-down in a project without that pack: locked, saying why.</summary>
+        public static void DrawNoPack(Rect rect) {
+            using (new EditorGUI.DisabledScope(true)) EditorGUI.DropdownButton(rect, noRemoteConfig, FocusType.Passive, EditorStyles.popup);
+            GUI.Label(rect, new GUIContent("", noRemoteConfig.tooltip));
+        }
+#endif
 
     }
 

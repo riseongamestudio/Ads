@@ -14,18 +14,11 @@ namespace RiseOn.Ads.Editor {
     /// </summary>
     [DrawerPriority(0, 0, 2)]
     internal sealed class AdFormatSetupDrawer : OdinValueDrawer<AdFormatSetup> {
-#if ADS_SUPPORT_REMOTECONFIG
         private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; the Remote Config key that can replace them at launch; and how it shows. "
                                  + "The mediations can split into a list per platform, the Editor playing the active build target's.";
-#else
-        private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; and how it shows. "
-                                 + "The mediations can split into a list per platform, the Editor playing the active build target's.";
-#endif
 
         private static readonly GUIContent mediations = new("Mediations", "Which mediations serve the format, tried left to right; with none the format is off.");
-#if ADS_SUPPORT_REMOTECONFIG
         private static readonly GUIContent remoteKey = new("Mediations Remote Key", AdRemoteKeyDrawer.Tooltip);
-#endif
 
         // Each format's settings, by the field of AdFormatSettings that holds them; the formats with nothing to set are not here.
         private static readonly Dictionary<AdFormat, string> settingsFields = new() {
@@ -59,19 +52,15 @@ namespace RiseOn.Ads.Editor {
                 return;
             }
 
-#if ADS_SUPPORT_REMOTECONFIG
             var settings = Property.Tree.WeakTargets.OfType<AdsSettings>().FirstOrDefault();
-#endif
             var looks = Property.Children["settings"];
             foreach (var format in formats) {
                 using var sub = Section.Foldout(entries[format], ChoiceFieldUtils.NameOf(format));
                 if (!sub.Open) continue;
 
                 entries[format].Children["value"].Draw(mediations);
-#if ADS_SUPPORT_REMOTECONFIG
-                // One key for both platforms, so no split button.
+                // One key for both platforms, so no split button; locked without the Remote Config pack.
                 if (settings) AdButtonRow.Draw(() => AdRemoteKeyDrawer.Draw(EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(), remoteKey), settings, format));
-#endif
                 if (!settingsFields.TryGetValue(format, out var field)) continue;
 
                 // One value for both platforms; the empty square keeps each row's end in line with the Mediations row's.

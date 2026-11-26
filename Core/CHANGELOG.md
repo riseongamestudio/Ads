@@ -49,7 +49,8 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
 - `AdImpression.Placement`: placement của lần show đi cùng doanh thu.
 - Mọi field `AdRemoteSetting` của lớp manager có ô chọn key Remote Config, và build
   dừng khi key của nó không còn trong Remote Config. Project không có
-  `com.riseon.firebase.remoteconfig` thì ô đó mờ, ghi **No Remote Config**.
+  `com.riseon.firebase.remoteconfig` thì ô đó mờ, ghi **No Remote Config**, như dòng
+  **Mediations Remote Key** của từng format, trước đây bị ẩn khi thiếu pack.
 
 ## [2.0.0] - 2026-11-20
 

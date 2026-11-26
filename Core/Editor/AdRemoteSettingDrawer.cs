@@ -17,8 +17,6 @@ namespace RiseOn.Ads.Editor {
 
 #if ADS_SUPPORT_REMOTECONFIG
         private static readonly string keyTooltip = $"A Remote Config {(typeof(T) == typeof(bool) ? "bool" : "float")} key whose value replaces this setting; No Remote Key keeps the page's value.";
-#else
-        private static readonly GUIContent noRemoteConfig = new("No Remote Config", "The project lacks com.riseon.firebase.remoteconfig, so this setting takes no Remote Config key and runs with the page's value. Install that pack to pick one.");
 #endif
 
         protected override void DrawPropertyLayout(GUIContent label) {
@@ -44,10 +42,12 @@ namespace RiseOn.Ads.Editor {
 #else
             var key = new Rect(field.xMax - KeyWidth, field.y, KeyWidth, field.height);
             field.xMax = key.x - Gap;
-            using (new EditorGUI.DisabledScope(true)) EditorGUI.DropdownButton(key, noRemoteConfig, FocusType.Passive, EditorStyles.popup);
-            GUI.Label(key, new GUIContent("", noRemoteConfig.tooltip));
 #endif
             using (new EditorGUI.DisabledScope(remote)) Value(field);
+#if !ADS_SUPPORT_REMOTECONFIG
+            // After the value: the row's label draws with the control after it, and would dim with a locked one.
+            AdRemoteKeyDrawer.DrawNoPack(key);
+#endif
             EditorGUI.indentLevel = indent;
         }
 
