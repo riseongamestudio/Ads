@@ -6,7 +6,7 @@ namespace RiseOn.Ads {
     /// <summary>
     /// A tool for the game's own pacing of a format: not before some seconds from launch, then not again before some seconds from its last display, nor before some seconds from a rewarded ad's.<br/>
     /// A field of the game's manager, so the page edits it, and each value takes a Remote Config key there while that pack is installed.<br/>
-    /// It counts from <see cref="AdsSdk.SecondsSinceDisplay"/>, so it holds no state: two formats that share a pacing, such as an interstitial and a native interstitial shown at the same break, ask it for both.
+    /// It counts from <see cref="AdsSdk.SecondsSinceDisplay"/>, so it holds no state. Two formats that fill the same moment, such as an interstitial and a native interstitial at the same break, share one: <see cref="Allows(AdFormat, AdFormat)"/> counts from whichever of them showed last.
     /// </summary>
     [Serializable]
     public sealed class AdPacing {
@@ -40,5 +40,15 @@ namespace RiseOn.Ads {
 
         /// <summary>As <see cref="Allows(AdFormat)"/>.</summary>
         public bool Allows(AdFullScreenFormat format) => Allows(format.ToFormat());
+
+        /// <summary>As <see cref="Allows(AdFormat)"/> for two formats that fill the same moment: Min Interval counts from whichever of them displayed last, First After holds until either has.</summary>
+        public bool Allows(AdFormat format, AdFormat sharing) {
+            if (AdsSdk.SecondsSinceDisplay(AdFormat.Rewarded) is { } sinceRewarded && sinceRewarded < AfterRewardedSeconds) return false;
+
+            var since = Latest(AdsSdk.SecondsSinceDisplay(format), AdsSdk.SecondsSinceDisplay(sharing));
+            return since is { } seconds ? seconds >= MinIntervalSeconds : Time.realtimeSinceStartupAsDouble >= FirstSeconds;
+
+            static double? Latest(double? a, double? b) => a is null ? b : b is null ? a : Math.Min(a.Value, b.Value);
+        }
     }
 }

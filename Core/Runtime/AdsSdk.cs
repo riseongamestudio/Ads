@@ -284,14 +284,31 @@ namespace RiseOn.Ads {
         }
 
         // The settings keep the fields the page edited; a class without them, never opened there, starts as written.
+        // A project with no class of its own runs the pack's.
         private static IAdsManager CreateManager(AdsSettings settings) {
-            if (managerConflict || managerType == null) return null;
+            if (managerConflict) return null;
+
+            if (managerType == null) {
+                managerType   = typeof(DefaultAdsManager);
+                createManager = () => new DefaultAdsManager();
+            }
 
             var saved = settings.Manager;
             if (saved != null && saved.GetType() == managerType) return saved;
 
             if (saved != null) Debug.LogWarning($"{nameof(AdsSdk)}: the settings hold the fields of {saved.GetType().Name}, not {managerType.Name}, so {managerType.Name} runs with its own defaults; open Project Settings > RiseOn > Ads to take it in");
             return createManager();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void StartManager() {
+            if (Manager == null) return;
+
+            try {
+                Manager.Started();
+            } catch (Exception exception) {
+                Debug.LogException(exception);
+            }
         }
 
         // Static state outlives a play session when the Editor skips the domain reload.

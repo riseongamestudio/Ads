@@ -8,13 +8,15 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace RiseOn.Ads.Generator {
     /// <summary>
-    /// Compiles into the game's assembly, for the one class implementing IAdsManager, <c>sealed</c>, an <c>Ins</c> and the registration the pack starts it from; a second such class is an error.<br/>
+    /// Compiles into the game's assembly, for the one class implementing IAdsManager, <c>sealed</c>, an <c>Ins</c> and the registration the pack starts it from.<br/>
+    /// A second such class is an error, and so are an interface extending IAdsManager, an abstract class implementing it, and DefaultAdsManager named where the game has a manager of its own.<br/>
     /// Nothing is written to disk, so nobody can edit it.
     /// </summary>
     [Generator]
     public sealed class RiseOnAdsGenerator : ISourceGenerator {
         private const string PackAssembly = "RiseOn.Ads";
         private const string ManagerType   = "RiseOn.Ads.IAdsManager";
+        private const string DefaultType   = "RiseOn.Ads.DefaultAdsManager";
 
         private static readonly DiagnosticDescriptor notPartial = new(
             "RISEONADS001", "Ads manager not partial", "{0} implements IAdsManager, so it must be a partial class, neither generic nor nested, for the Ads pack to find it and give it Ins",
@@ -22,6 +24,18 @@ namespace RiseOn.Ads.Generator {
 
         private static readonly DiagnosticDescriptor notAlone = new(
             "RISEONADS003", "Several ads managers", "{0} implements IAdsManager, and so does {1}; the Ads pack runs one manager, so only one class may",
+            "RiseOn.Ads", DiagnosticSeverity.Error, true);
+
+        private static readonly DiagnosticDescriptor subInterface = new(
+            "RISEONADS004", "Interface extends IAdsManager", "{0} extends IAdsManager; the manager class implements IAdsManager itself, so no interface may extend it",
+            "RiseOn.Ads", DiagnosticSeverity.Error, true);
+
+        private static readonly DiagnosticDescriptor isAbstract = new(
+            "RISEONADS005", "Abstract ads manager", "{0} implements IAdsManager but is abstract; the Ads pack makes the manager itself, so it must be a class it can make",
+            "RiseOn.Ads", DiagnosticSeverity.Error, true);
+
+        private static readonly DiagnosticDescriptor defaultUsed = new(
+            "RISEONADS006", "DefaultAdsManager named beside the game's", "DefaultAdsManager runs only while the project has no ads manager of its own, and {0} is one; call {0} here",
             "RiseOn.Ads", DiagnosticSeverity.Error, true);
 
         public void Initialize(GeneratorInitializationContext context) {
@@ -37,9 +51,21 @@ namespace RiseOn.Ads.Generator {
             // Every class of this assembly that the pack could run, with the declaration that names it first.
             var found = new Dictionary<INamedTypeSymbol, ClassDeclarationSyntax>(SymbolEqualityComparer.Default);
             var mine  = new List<INamedTypeSymbol>();
+            foreach (var declaration in receiver.Interfaces) {
+                var model = context.Compilation.GetSemanticModel(declaration.SyntaxTree);
+                if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol type && Implements(type, manager)) {
+                    context.ReportDiagnostic(Diagnostic.Create(subInterface, declaration.Identifier.GetLocation(), type.ToDisplayString()));
+                }
+            }
+
             foreach (var declaration in receiver.Classes) {
                 var model = context.Compilation.GetSemanticModel(declaration.SyntaxTree);
-                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || type.IsAbstract || !Implements(type, manager)) continue;
+                if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || !Implements(type, manager)) continue;
+                if (type.IsAbstract) {
+                    context.ReportDiagnostic(Diagnostic.Create(isAbstract, declaration.Identifier.GetLocation(), type.ToDisplayString()));
+                    continue;
+                }
+
                 if (found.ContainsKey(type)) continue;
 
                 found.Add(type, declaration);
@@ -48,6 +74,16 @@ namespace RiseOn.Ads.Generator {
 
             // Assemblies this one references can hold one too; sibling assemblies the Editor checks.
             var all = mine.Concat(Referenced(context.Compilation, manager)).ToList();
+
+            // Once the game has its own, DefaultAdsManager.Ins would throw at run time, so a leftover call fails to compile instead.
+            if (all.Count > 0 && context.Compilation.GetTypeByMetadataName(DefaultType) is { } fallback) {
+                foreach (var name in receiver.DefaultNames) {
+                    var model = context.Compilation.GetSemanticModel(name.SyntaxTree);
+                    if (SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(name).Symbol, fallback)) {
+                        context.ReportDiagnostic(Diagnostic.Create(defaultUsed, name.GetLocation(), all[0].ToDisplayString()));
+                    }
+                }
+            }
             foreach (var type in mine) {
                 var declaration = found[type];
                 var other       = all.FirstOrDefault(each => !SymbolEqualityComparer.Default.Equals(each, type));
@@ -116,9 +152,21 @@ namespace RiseOn.Ads.Generator {
 
         private sealed class Receiver : ISyntaxReceiver {
             public readonly List<ClassDeclarationSyntax> Classes = new();
+            public readonly List<InterfaceDeclarationSyntax> Interfaces = new();
+            public readonly List<IdentifierNameSyntax> DefaultNames = new();
 
             public void OnVisitSyntaxNode(SyntaxNode node) {
-                if (node is ClassDeclarationSyntax { BaseList: not null } declaration) Classes.Add(declaration);
+                switch (node) {
+                    case ClassDeclarationSyntax { BaseList: not null } declaration:
+                        Classes.Add(declaration);
+                        break;
+                    case InterfaceDeclarationSyntax { BaseList: not null } declaration:
+                        Interfaces.Add(declaration);
+                        break;
+                    case IdentifierNameSyntax name when name.Identifier.ValueText == "DefaultAdsManager":
+                        DefaultNames.Add(name);
+                        break;
+                }
             }
         }
     }

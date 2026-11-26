@@ -61,7 +61,8 @@ namespace RiseOn.Ads.Editor {
             if (candidates.Count > 1) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, $"{string.Join(", ", candidates.Select(type => type.FullName))} all implement IAdsManager, so none runs; keep one.");
             } else if (candidates.Count == 0) {
-                yield return new SettingsIssue(BuildTarget.NoTarget, false, "No partial class implements IAdsManager, so the game has no place for its ad rules on this page; the pack's AdsManager sample holds the rules most games run.", "New script", CreateScript);
+                yield return SettingsIssue.Info("The project has no ads manager of its own, so the pack's DefaultAdsManager runs, with the Manager section's values. "
+                                              + "Create Own, on the Manager bar, copies it into the game, with those values, for rules the game changes.");
             } else if (Problem(candidates[0]) is { } problem) {
                 yield return new SettingsIssue(BuildTarget.NoTarget, true, problem + ".");
             } else if (settings.Manager?.GetType() != candidates[0]) {
@@ -149,9 +150,9 @@ namespace RiseOn.Ads.Editor {
             }
         }
 
-        /// <summary>Every class the pack could run; the source generator lets only one compile in an assembly.</summary>
+        /// <summary>Every class of the game's the pack could run, DefaultAdsManager aside; the source generator lets only one compile in an assembly.</summary>
         internal static List<Type> Candidates() {
-            return TypeCache.GetTypesDerivedFrom<IAdsManager>().Where(type => type.IsClass && !type.IsAbstract).ToList();
+            return TypeCache.GetTypesDerivedFrom<IAdsManager>().Where(type => type.IsClass && !type.IsAbstract && type != typeof(DefaultAdsManager)).ToList();
         }
 
         private static string Problem(Type type) {
@@ -171,7 +172,8 @@ namespace RiseOn.Ads.Editor {
         private static HashSet<string> playerAssemblies;
 
         /// <summary>
-        /// Makes the settings hold an instance of the game's one manager class, keeping the fields when it already does, and one of every mediation class in the project, so an adapter installed is on the page without a step of its own; a mediation no format lists serves nothing.<br/>
+        /// Makes the settings hold an instance of the game's one manager class, or DefaultAdsManager while there is none, keeping the fields when it already does; the game's class taking over from DefaultAdsManager takes the fields of the same names, as Create Own promises.<br/>
+        /// And one of every mediation class in the project, so an adapter installed is on the page without a step of its own; a mediation no format lists serves nothing.<br/>
         /// Leaves them alone while scripts fail to compile, when a class could be missing only for now; a class gone is the page's to report.
         /// </summary>
         internal static void Adopt(AdsSettings settings) {
@@ -183,9 +185,13 @@ namespace RiseOn.Ads.Editor {
             if (missing.Count > 0) EditorUtility.SetDirty(settings);
 
             var candidates = Candidates();
-            if (candidates.Count == 1 && Problem(candidates[0]) == null && settings.Manager?.GetType() != candidates[0]) {
+            var runs       = candidates.Count == 0 ? typeof(DefaultAdsManager) : candidates.Count == 1 && Problem(candidates[0]) == null ? candidates[0] : null;
+            if (runs != null && settings.Manager?.GetType() != runs) {
+                var manager = Activator.CreateInstance(runs);
+                if (settings.Manager is DefaultAdsManager taken) JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(taken), manager);
+
                 var asset = new SerializedObject(settings);
-                asset.FindProperty("manager").managedReferenceValue = Activator.CreateInstance(candidates[0]);
+                asset.FindProperty("manager").managedReferenceValue = manager;
                 asset.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -199,32 +205,162 @@ namespace RiseOn.Ads.Editor {
 
         internal static AdsSettings LoadOrCreate() => SettingsAssetUtils.LoadOrCreate<AdsSettings>(AdsSettings.ResourceName);
 
-        private static void CreateScript() {
-            var path = EditorUtility.SaveFilePanelInProject("New ads manager", "AdsManager", "cs", "The class takes the file's name.");
-            if (string.IsNullOrEmpty(path)) return;
+        // DefaultAdsManager.cs as the game's own class: its name, in the project's root namespace or none, a header saying whose it is.
+        // The game's scripts that called DefaultAdsManager call it instead; the settings' values follow in Adopt once it compiles.
+        // Writes nothing when the pack's file is not as expected, or when the copy or a turned call would not compile: see Unreachable.
+        internal static void CreateOwnManager() {
+            var path = EditorUtility.SaveFilePanelInProject("Own ads manager", "AdsManager", "cs", "A copy of the pack's DefaultAdsManager, the class taking the file's name; the Manager section's values go with it, and the game's calls to DefaultAdsManager turn to it.");
+            if (!string.IsNullOrEmpty(path)) CreateOwnManager(path);
+        }
 
+        internal static void CreateOwnManager(string path) {
             var name = Path.GetFileNameWithoutExtension(path);
             if (!Regex.IsMatch(name, "^[A-Za-z_][A-Za-z0-9_]*$")) {
                 Debug.LogError($"{nameof(AdsSettingsProvider)}: {name} cannot be a class name");
                 return;
             }
 
-            var space  = EditorSettings.projectGenerationRootNamespace;
-            var indent = string.IsNullOrEmpty(space) ? "" : "    ";
-            var lines  = new List<string> { "using RiseOn.Ads;", "" };
-            if (indent.Length > 0) lines.Add($"namespace {space} {{");
-            lines.AddRange(new[] {
-                $"{indent}// The project's one ads manager: the game's ad rules, calling AdsSdk under them; its fields show on Project Settings > RiseOn > Ads."
-              , $"{indent}// Partial: the Ads pack seals it and compiles {name}.Ins, the running instance, into it. The pack's AdsManager sample holds the rules most games run."
-              , $"{indent}public partial class {name} : IAdsManager {{"
-              , $"{indent}    // The Editor's pause under a full-screen ad, where no SDK pauses Unity: the time scale and the audio by default."
-              , $"{indent}    void IAdsManager.PauseInEditor(bool paused) => EditorGamePause.Apply(paused);"
-              , $"{indent}}}"
-            });
-            if (indent.Length > 0) lines.Add("}");
+            var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(DefaultAdsManager).Assembly);
+            var source  = package == null ? null : Path.Combine(package.resolvedPath, "Runtime", nameof(DefaultAdsManager) + ".cs");
+            if (source == null || !File.Exists(source)) {
+                Debug.LogError($"{nameof(AdsSettingsProvider)}: the pack's {nameof(DefaultAdsManager)}.cs is not where the pack keeps it, so there is nothing to copy");
+                return;
+            }
 
-            File.WriteAllText(path, string.Join("\r\n", lines), new UTF8Encoding(true));
-            AssetDatabase.ImportAsset(path);
+            var space = EditorSettings.projectGenerationRootNamespace;
+            var own   = OwnManagerSource(File.ReadAllText(source), name, space);
+            if (own == null) {
+                Debug.LogError($"{nameof(AdsSettingsProvider)}: the pack's {nameof(DefaultAdsManager)}.cs is not in the shape Create Own copies, so it wrote nothing");
+                return;
+            }
+
+            // The copy has DefaultAdsManager's members, so a call turned to it compiles as it did.
+            var turned = new List<(string file, string text, bool bom)>();
+            foreach (var file in Directory.GetFiles("Assets", "*.cs", SearchOption.AllDirectories)) {
+                var bytes = File.ReadAllBytes(file);
+                var bom   = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+                var calls = CallsTurned(Encoding.UTF8.GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0)), name, space);
+                if (calls != null) turned.Add((file.Replace('\\', '/'), calls, bom));
+            }
+
+            if (Unreachable(path, name, own, turned.Select(call => call.file)) is { } reason) {
+                Debug.LogError($"Ads: Create Own wrote nothing: {reason}");
+                return;
+            }
+
+            File.WriteAllText(path, own, new UTF8Encoding(true));
+            foreach (var (file, text, bom) in turned) File.WriteAllText(file, text, new UTF8Encoding(bom));
+            AssetDatabase.Refresh();
+            if (turned.Count > 0) Debug.Log($"Ads: these scripts called {nameof(DefaultAdsManager)} and now call {name}:\n{string.Join("\n", turned.Select(call => call.file))}");
+        }
+
+        // Why the copy at path, or a script calling it, would not compile, or the copy would miss the build; null when nothing stands in the way.
+        private static string Unreachable(string path, string name, string own, IEnumerable<string> callers) {
+            var player = CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies).ToDictionary(assembly => assembly.name);
+            var target = Path.GetFileNameWithoutExtension(CompilationPipeline.GetAssemblyNameFromScriptPath(path));
+            if (target == null || !player.TryGetValue(target, out var home)) {
+                return $"{path} would compile in {target ?? "no assembly"}, which the build leaves out, such as an Editor folder's; save it where the game's runtime scripts are.";
+            }
+
+            // A type of that name the copy's assembly or a caller's sees would make the copy a second declaration, or the calls ambiguous.
+            var all      = CompilationPipeline.GetAssemblies().ToDictionary(assembly => assembly.name);
+            var origins  = callers.Select(file => Path.GetFileNameWithoutExtension(CompilationPipeline.GetAssemblyNameFromScriptPath(file))).ToList();
+            var visible  = origins.Append(target).Where(origin => origin != null && all.ContainsKey(origin)).SelectMany(origin => References(all[origin]).Append(origin)).ToHashSet();
+            var taken    = AppDomain.CurrentDomain.GetAssemblies().Where(assembly => visible.Contains(assembly.GetName().Name)).SelectMany(Types)
+                                    .Where(type => type.Name == name && !type.IsNested && (type.IsPublic || all.ContainsKey(type.Assembly.GetName().Name)))
+                                    .Select(type => type.FullName).Distinct().ToList();
+            if (taken.Count > 0) return $"the project already has a type named {name} ({string.Join(", ", taken)}); save the file under another name.";
+
+            // What the copy's usings need: the pack, and each assembly of the pack's references that holds one of those namespaces.
+            var spaces  = Regex.Matches(own, @"^using ([\w.]+);", RegexOptions.Multiline).Select(match => match.Groups[1].Value).ToHashSet();
+            var loaded  = AppDomain.CurrentDomain.GetAssemblies().GroupBy(assembly => assembly.GetName().Name).ToDictionary(group => group.Key, group => group.First());
+            var pack    = typeof(DefaultAdsManager).Assembly;
+            var needs   = pack.GetReferencedAssemblies().Select(reference => reference.Name)
+                              .Where(needed => !needed.StartsWith("UnityEngine") && loaded.TryGetValue(needed, out var assembly) && Types(assembly).Any(type => type.IsPublic && spaces.Contains(type.Namespace)))
+                              .Prepend(pack.GetName().Name);
+            var missing = needs.Where(needed => !References(home).Contains(needed)).ToList();
+            if (missing.Count > 0) return $"{path} would compile in {target}, which does not reference {string.Join(", ", missing)}; save it in an assembly that does, or add the references to its assembly definition first.";
+
+            // A turned call's assembly must see the copy's. An assembly definition cannot reference Assembly-CSharp, so then only the copy can move.
+            var blind = callers.Where((file, i) => origins[i] != target && (origins[i] == null || !all.ContainsKey(origins[i]) || !References(all[origins[i]]).Contains(target))).ToList();
+            if (blind.Count > 0) {
+                var fix = target.StartsWith("Assembly-CSharp") ? "save it in an assembly definition they reference" : $"save it in an assembly they reference, or add {target} to their assembly definitions first";
+                return $"these scripts call {nameof(DefaultAdsManager)} from assemblies that do not reference {target}, where {name} would be: {string.Join(", ", blind)}; {fix}.";
+            }
+
+            return null;
+        }
+
+        private static HashSet<string> References(UnityEditor.Compilation.Assembly assembly) {
+            return assembly.allReferences.Select(Path.GetFileNameWithoutExtension).ToHashSet();
+        }
+
+        private static IEnumerable<Type> Types(System.Reflection.Assembly assembly) {
+            try {
+                return assembly.GetTypes();
+            } catch (System.Reflection.ReflectionTypeLoadException e) {
+                return e.Types.Where(type => type != null);
+            }
+        }
+
+        private static readonly Regex defaultName = new(@"(?<![\w.])(?:global::)?(?:RiseOn\.Ads\.)?DefaultAdsManager\b");
+
+        // A using directive, alias or static: it names types from the global namespace, so it takes the class's full name.
+        private static readonly Regex usingDirective = new(@"^\s*using\s+(static\s+)?(\w+\s*=\s*)?[\w.:<>, ]+;");
+
+        /// <summary>A script's text with its every DefaultAdsManager turned to the game's class, with its namespace's using where the script lacks it; null when it names none.</summary>
+        internal static string CallsTurned(string text, string name, string space) {
+            if (!defaultName.IsMatch(text)) return null;
+
+            var newline = text.Contains("\r\n") ? "\r\n" : "\n";
+            var lines   = text.Split(new[] { newline }, StringSplitOptions.None).ToList();
+            var full    = string.IsNullOrEmpty(space) ? name : $"{space}.{name}";
+            var bare    = false;
+            for (var i = 0; i < lines.Count; i++) {
+                if (!defaultName.IsMatch(lines[i])) continue;
+
+                var directive = usingDirective.IsMatch(lines[i]);
+                lines[i] = defaultName.Replace(lines[i], directive ? full : name);
+                bare |= !directive;
+            }
+
+            text = string.Join(newline, lines);
+            if (!bare || string.IsNullOrEmpty(space) || Regex.IsMatch(text, $@"^\s*(using|namespace)\s+{Regex.Escape(space)}\s*[;{{.]", RegexOptions.Multiline)) return text;
+
+            // In the usings' order, System's first, as OwnManagerSource places its own.
+            var line    = $"using {space};";
+            var usings  = lines.FindLastIndex(other => Regex.IsMatch(other, @"^using [\w.]+;$"));
+            var at      = lines.FindIndex(other => Regex.IsMatch(other, @"^using [\w.]+;$") && !other.StartsWith("using System") && string.CompareOrdinal(other, line) > 0);
+            if (usings < 0) lines.InsertRange(0, new[] { line, "" });
+            else lines.Insert(at < 0 || at > usings ? usings + 1 : at, line);
+            return string.Join(newline, lines);
+        }
+
+        private const string PackNamespace = "namespace RiseOn.Ads {";
+        private const string PackHeader    = "/// The pack runs it while the project has no ads manager of its own; Create Own, beside its script on that page, copies it into the game, values and all, to change.";
+
+        /// <summary>The game's copy of DefaultAdsManager's source, or null when the source lacks what the copy rewrites.</summary>
+        internal static string OwnManagerSource(string source, string name, string space) {
+            var lines = source.Replace("\r\n", "\n").Split('\n').ToList();
+            var open  = lines.FindIndex(line => line == PackNamespace);
+            var close = lines.FindLastIndex(line => line == "}");
+            var usings = lines.FindLastIndex(line => line.StartsWith("using "));
+            if (open < 0 || close <= open || usings < 0 || usings > open || !source.Contains(PackHeader)) return null;
+
+            var header = $"/// The game's own, copied from the pack's DefaultAdsManager: change what the game needs. The pack seals it and compiles {name}.Ins, the running instance, into it.";
+            for (var i = open + 1; i < close; i++) lines[i] = lines[i].Replace(nameof(DefaultAdsManager), name).Replace(PackHeader, header);
+            if (string.IsNullOrEmpty(space)) {
+                lines.RemoveAt(close);
+                for (var i = open + 1; i < close; i++) lines[i] = lines[i].StartsWith("    ") ? lines[i].Substring(4) : lines[i];
+                lines.RemoveAt(open);
+            } else {
+                lines[open] = $"namespace {space} {{";
+            }
+
+            // In the usings' order, System's first: before the first other one that sorts after it.
+            var at = lines.FindIndex(line => line.StartsWith("using ") && !line.StartsWith("using System") && string.CompareOrdinal(line, "using RiseOn.Ads;") > 0);
+            lines.Insert(at < 0 || at > usings ? usings + 1 : at, "using RiseOn.Ads;");
+            return string.Join("\r\n", lines);
         }
 
         // After every script reload: a manager class was written, renamed or replaced.
@@ -255,7 +391,7 @@ namespace RiseOn.Ads.Editor {
             var blocking = issues.Where(issue => issue.Blocking).Select(issue => issue.Message).ToList();
             if (blocking.Count > 0) throw new BuildFailedException("Ads: fix these before building, Project Settings > RiseOn > Ads has a button for some:\n- " + string.Join("\n- ", blocking));
 
-            foreach (var issue in issues) Debug.LogWarning("Ads: " + issue.Message);
+            foreach (var issue in issues.Where(issue => !issue.IsInfo)) Debug.LogWarning("Ads: " + issue.Message);
         }
     }
 }

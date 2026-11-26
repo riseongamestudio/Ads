@@ -12,13 +12,17 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
   mediation. Remove-ads, giãn cách (First After, Min Interval, After Rewarded), end
   card nối sau ad, ad khi quay lại game và lúc mở game (mục App Open), Auto
   Show của banner và các plan collapsible rời trang settings và lớp nền; chúng nằm
-  trong sample `AdsManager`, game chép về và sửa. Ô **Included In Remove Ads**, **Use
-  Native End Card** và các ô giãn cách của mục Formats không còn; giá trị đã đặt trên
-  trang không chuyển sang sample, game đặt lại trong mục Manager.
+  trong `DefaultAdsManager`, lớp manager pack chạy khi game không có lớp riêng. Ô
+  **Included In Remove Ads**, **Use Native End Card** và các ô giãn cách của mục
+  Formats không còn; giá trị đã đặt trên trang không chuyển sang, game đặt lại trong
+  mục Manager.
 - `AdsManagerBase` thay bằng interface `IAdsManager`. Lớp manager cài nó (`public
-  partial class AdsManager : IAdsManager`) và cài tường minh `PauseInEditor`
-  (`void IAdsManager.PauseInEditor(bool paused)`), member duy nhất, mà chỉ pack gọi
-  được. Source generator gắn thêm `sealed`. Các member `virtual` của lớp nền
+  partial class AdsManager : IAdsManager`) và cài tường minh hai member mà chỉ pack
+  gọi được: `PauseInEditor` (`void IAdsManager.PauseInEditor(bool paused)`) và
+  `Started`, một lần khi scene đầu đã load. Source generator gắn thêm `sealed`, và báo
+  lỗi khi lớp không `partial`, generic, lồng trong lớp khác, abstract
+  (`RISEONADS005`), khi có hơn một lớp, và khi một interface kế thừa `IAdsManager`
+  (`RISEONADS004`). Các member `virtual` của lớp nền
   (`AdsRemoved`, `PacingAllows`, `OnDisplayed`...) không còn: game viết luật của mình
   trong lớp, và nghe sự kiện thẳng từ `AdsSdk`.
 - `AdsSdk` có hàm show riêng cho từng format full-screen, nhận placement:
@@ -39,13 +43,19 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
   format có thưởng thì thưởng luôn; banner, MRec, collapsible và ô native rời màn
   hình và quay lại khi thả.
 - `AdPacing`: field giãn cách một format cho lớp manager, mỗi ô có key Remote Config,
-  trang vẽ mỗi field một mục gập mở; `AdCollapsiblePlan.Pick(plans)` bốc một plan theo
+  trang vẽ mỗi field một mục gập mở; `Allows(format, sharing)` cho hai format cùng lấp
+  một lúc dùng chung một giãn cách. `AdCollapsiblePlan.Pick(plans)` bốc một plan theo
   weight.
 - `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)`, và `EditorGamePause.Apply`
   (cách dừng game mặc định trong Editor) thành public.
-- Sample `AdsManager` (Package Manager → Samples): các luật phần lớn game của studio
-  chạy, với giá trị mặc định cũ của trang. Remove Ads là một ô tick cho mỗi định dạng;
-  Pacing là `EnumMap<PaceableFormat, AdPacing>`, theo thứ tự định dạng của mục Formats.
+- `DefaultAdsManager`: lớp manager pack chạy khi game không có lớp riêng, các luật
+  phần lớn game của studio chạy, game gọi qua `DefaultAdsManager.Ins`. Ngoài các luật
+  rời lớp nền ở trên: interstitial từ level nào (**From Level**), interstitial và
+  native interstitial chung một giãn cách (app open và native app open cũng vậy),
+  `AdsOff` cho tester, sự kiện `Opportunity` mỗi lần luật cho một lần hiện đi qua.
+  Nút **Create Own**, bên phải ô script trên thanh Manager, chép nó thành lớp của game
+  cùng các giá trị đang đặt, và đổi các chỗ gọi `DefaultAdsManager` trong `Assets` sang
+  lớp đó; lời gọi còn sót ở nơi khác báo lỗi `RISEONADS006`.
 - `AdImpression.Placement`: placement của lần show đi cùng doanh thu.
 - Mọi field `AdRemoteSetting` của lớp manager có ô chọn key Remote Config, và build
   dừng khi key của nó không còn trong Remote Config. Project không có

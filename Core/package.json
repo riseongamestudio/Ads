@@ -14,12 +14,5 @@
     "com.riseon.serializables": "1.0.5",
     "com.cysharp.unitask": "2.5.11",
     "com.unity.ugui": "2.0.0"
-  },
-  "samples": [
-    {
-      "displayName": "Ads Manager",
-      "description": "The ad rules most games run, on top of AdsSdk: remove-ads, pacing, a native end card, the banner from the start, the ad on return and at launch, the collapsible's plans",
-      "path": "Samples~/AdsManager"
-    }
-  ]
+  }
 }
