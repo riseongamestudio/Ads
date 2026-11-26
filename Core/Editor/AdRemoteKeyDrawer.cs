@@ -10,13 +10,19 @@ using RiseOn.Firebase.RemoteConfig;
 
 namespace RiseOn.Ads.Editor {
     /// <summary>
-    /// A format's Remote Config key for its mediations, the Mediations Remote Key row of its section under Formats: a drop-down of that pack's string keys, No Remote Key first; a key since removed shows as missing.<br/>
+    /// A format's Remote Config key for its mediations, at the end of the Mediations row of its section under Formats, as every Remote Config key of the page sits at the end of its value's row: a drop-down of that pack's string keys, No Remote Key first; a key since removed shows as missing.<br/>
     /// One key for every platform.<br/>
     /// Without the pack the drop-down stays, locked, saying why, as every Remote Config key of the page does.
     /// </summary>
     internal static class AdRemoteKeyDrawer {
         public const string Tooltip = "A Remote Config string key whose value replaces this format's mediations at launch: mediation ids best first, split by commas, such as \"max,admob\", or \"off\" to turn the format off. "
                                     + "No Remote Key, or an empty value, keeps the page's. One key for both platforms; a Remote Config condition on the platform gives each its own value.";
+
+        /// <summary>The width of a key's drop-down: as wide as leaves a key's name readable, and no wider, so the value keeps its room.</summary>
+        public const float Width = 160;
+
+        /// <summary>The space between a value and its key's drop-down.</summary>
+        public const float Gap = 4;
 
         /// <summary>Draws <paramref name="format"/>'s key in <paramref name="rect"/>; a pick goes straight into the settings asset, with undo.</summary>
         public static void Draw(Rect rect, AdsSettings settings, AdFormat format) {

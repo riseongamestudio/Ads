@@ -10,11 +10,6 @@ namespace RiseOn.Ads.Editor {
     /// A picked key replaces the value, which then shows dimmed; a key since removed shows as missing. Without that pack the drop-down stays, locked, saying why.
     /// </summary>
     internal sealed class AdRemoteSettingDrawer<T> : OdinValueDrawer<AdRemoteSetting<T>> {
-        private const float Gap = 4;
-
-        // As wide as leaves a key's name readable, and no wider, so the value keeps its room.
-        private const float KeyWidth = 160;
-
 #if ADS_SUPPORT_REMOTECONFIG
         private static readonly string keyTooltip = $"A Remote Config {(typeof(T) == typeof(bool) ? "bool" : "float")} key whose value replaces this setting; No Remote Key keeps the page's value.";
 #endif
@@ -28,8 +23,8 @@ namespace RiseOn.Ads.Editor {
 #if ADS_SUPPORT_REMOTECONFIG
             var id      = Property.Children["key"].Children["id"];
             var current = (int) id.ValueEntry.WeakSmartValue;
-            var key     = new Rect(field.xMax - KeyWidth, field.y, KeyWidth, field.height);
-            field.xMax = key.x - Gap;
+            var key     = new Rect(field.xMax - AdRemoteKeyDrawer.Width, field.y, AdRemoteKeyDrawer.Width, field.height);
+            field.xMax = key.x - AdRemoteKeyDrawer.Gap;
             remote     = current != 0;
             // The pick lands after this draw, from the drop-down's window, so the page repaints to show it.
             var window = GUIHelper.CurrentWindow;
@@ -40,8 +35,8 @@ namespace RiseOn.Ads.Editor {
             }, search: false);
             GUI.Label(key, new GUIContent("", keyTooltip));
 #else
-            var key = new Rect(field.xMax - KeyWidth, field.y, KeyWidth, field.height);
-            field.xMax = key.x - Gap;
+            var key = new Rect(field.xMax - AdRemoteKeyDrawer.Width, field.y, AdRemoteKeyDrawer.Width, field.height);
+            field.xMax = key.x - AdRemoteKeyDrawer.Gap;
 #endif
             using (new EditorGUI.DisabledScope(remote)) Value(field);
 #if !ADS_SUPPORT_REMOTECONFIG

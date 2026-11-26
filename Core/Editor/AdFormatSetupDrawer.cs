@@ -18,7 +18,6 @@ namespace RiseOn.Ads.Editor {
                                  + "The mediations can split into a list per platform, the Editor playing the active build target's.";
 
         private static readonly GUIContent mediations = new("Mediations", "Which mediations serve the format, tried left to right; with none the format is off.");
-        private static readonly GUIContent remoteKey = new("Mediations Remote Key", AdRemoteKeyDrawer.Tooltip);
 
         // Each format's settings, by the field of AdFormatSettings that holds them; the formats with nothing to set are not here.
         private static readonly Dictionary<AdFormat, string> settingsFields = new() {
@@ -58,9 +57,8 @@ namespace RiseOn.Ads.Editor {
                 using var sub = Section.Foldout(entries[format], ChoiceFieldUtils.NameOf(format));
                 if (!sub.Open) continue;
 
-                entries[format].Children["value"].Draw(mediations);
-                // One key for both platforms, so no split button; locked without the Remote Config pack.
-                if (settings) AdButtonRow.Draw(() => AdRemoteKeyDrawer.Draw(EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(), remoteKey), settings, format));
+                // The mediations' Remote Config key at the end of their row, locked without that pack.
+                AdPlatformValueRows.Draw(entries[format].Children["value"], mediations, settings ? rect => AdRemoteKeyDrawer.Draw(rect, settings, format) : null);
                 if (!settingsFields.TryGetValue(format, out var field)) continue;
 
                 // One value for both platforms; the empty square keeps each row's end in line with the Mediations row's.
