@@ -308,21 +308,16 @@ game của studio chạy, trên `AdsSdk`. Game gọi nó qua `DefaultAdsManager.
 của nó trong mục Manager của trang. Luật nào game cần khác đi thì bấm **Create Own**,
 bên phải ô script trên thanh Manager: pack hỏi chỗ lưu, chép mã của `DefaultAdsManager`
 thành lớp của game (tên lớp theo tên file, nằm trong root namespace của project nếu có),
-đổi mọi chỗ gọi `DefaultAdsManager` trong script của `Assets` sang lớp đó (thêm `using`
-namespace của nó khi file thiếu, `using` alias hay `using static` thì ghi tên đầy đủ;
-Console liệt kê các file đã đổi), và khi lớp đó compile xong thì chép các giá trị đang đặt
+đổi mọi chỗ gọi `DefaultAdsManager` trong script của `Assets` sang tên đầy đủ của lớp đó,
+nên phần còn lại của script không đổi (Console liệt kê các file đã đổi), và khi lớp đó compile xong thì chép các giá trị đang đặt
 trong mục Manager sang field cùng tên. Từ đó pack chạy lớp của game. Code ngoài `Assets`
 (package nhúng) còn gọi `DefaultAdsManager` thì compile báo `RISEONADS006`.
 
-Pack không ghi file nào, và Console báo lý do cùng cách chữa, khi lớp mới hay một chỗ gọi
-sẽ không compile:
-
-| Trường hợp | Chữa |
-|---|---|
-| Chỗ lưu thuộc assembly không vào build, như thư mục `Editor` | Lưu cạnh script runtime của game |
-| Assembly của chỗ lưu không tham chiếu những gì lớp chép dùng (`RiseOn.Ads`, `RiseOn.Utils`, `RiseOn.Serializables`, `UniTask`, Odin) | Lưu vào assembly có các tham chiếu đó, hoặc thêm chúng vào assembly definition trước |
-| Một script gọi `DefaultAdsManager` nằm trong assembly không tham chiếu assembly của chỗ lưu (assembly definition không tham chiếu được `Assembly-CSharp`) | Lưu vào assembly mà các script đó tham chiếu |
-| Assembly của chỗ lưu hay của một chỗ gọi đã thấy một kiểu cùng tên, như manager cũ của game | Đặt tên file khác |
+Pack không ghi file nào, và Console báo lý do, khi chỗ lưu thuộc assembly không vào build
+(như thư mục `Editor`), hay khi assembly của chỗ lưu hoặc của một chỗ gọi đã thấy một kiểu
+cùng tên (như manager cũ của game). Chỗ lưu thuộc assembly definition thiếu tham chiếu
+(`RiseOn.Ads`, `RiseOn.Utils`, `RiseOn.Serializables`, `UniTask`) thì compile báo như mọi
+tham chiếu thiếu.
 
 Luật vào `DefaultAdsManager` theo một tiêu chí: phần lớn game của studio cùng có, hoặc
 nhà phát triển SDK khuyến nghị. Chỗ các game chỉ khác nhau con số thì là field trên trang,

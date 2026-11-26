@@ -207,7 +207,7 @@ namespace RiseOn.Ads.Editor {
 
         // DefaultAdsManager.cs as the game's own class: its name, in the project's root namespace or none, a header saying whose it is.
         // The game's scripts that called DefaultAdsManager call it instead; the settings' values follow in Adopt once it compiles.
-        // Writes nothing when the pack's file is not as expected, or when the copy or a turned call would not compile: see Unreachable.
+        // Writes nothing when the pack's file is not as expected, or when the copy would miss the build or clash with a type of its name: see Unreachable.
         internal static void CreateOwnManager() {
             var path = EditorUtility.SaveFilePanelInProject("Own ads manager", "AdsManager", "cs", "A copy of the pack's DefaultAdsManager, the class taking the file's name; the Manager section's values go with it, and the game's calls to DefaultAdsManager turn to it.");
             if (!string.IsNullOrEmpty(path)) CreateOwnManager(path);
@@ -243,7 +243,7 @@ namespace RiseOn.Ads.Editor {
                 if (calls != null) turned.Add((file.Replace('\\', '/'), calls, bom));
             }
 
-            if (Unreachable(path, name, own, turned.Select(call => call.file)) is { } reason) {
+            if (Unreachable(path, name, turned.Select(call => call.file)) is { } reason) {
                 Debug.LogError($"Ads: Create Own wrote nothing: {reason}");
                 return;
             }
@@ -254,39 +254,23 @@ namespace RiseOn.Ads.Editor {
             if (turned.Count > 0) Debug.Log($"Ads: these scripts called {nameof(DefaultAdsManager)} and now call {name}:\n{string.Join("\n", turned.Select(call => call.file))}");
         }
 
-        // Why the copy at path, or a script calling it, would not compile, or the copy would miss the build; null when nothing stands in the way.
-        private static string Unreachable(string path, string name, string own, IEnumerable<string> callers) {
-            var player = CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies).ToDictionary(assembly => assembly.name);
+        // Why the copy at path would miss the build, or clash with a type of its name; null when nothing stands in the way.
+        // An assembly lacking a reference the copy or a turned call needs, the compiler names well enough.
+        private static string Unreachable(string path, string name, IEnumerable<string> callers) {
+            var player = CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies).Select(assembly => assembly.name).ToHashSet();
             var target = Path.GetFileNameWithoutExtension(CompilationPipeline.GetAssemblyNameFromScriptPath(path));
-            if (target == null || !player.TryGetValue(target, out var home)) {
+            if (target == null || !player.Contains(target)) {
                 return $"{path} would compile in {target ?? "no assembly"}, which the build leaves out, such as an Editor folder's; save it where the game's runtime scripts are.";
             }
 
-            // A type of that name the copy's assembly or a caller's sees would make the copy a second declaration, or the calls ambiguous.
+            // A type of that name the copy's assembly or a caller's sees would make the copy a second declaration, or take a call that names the copy in the global namespace.
             var all      = CompilationPipeline.GetAssemblies().ToDictionary(assembly => assembly.name);
-            var origins  = callers.Select(file => Path.GetFileNameWithoutExtension(CompilationPipeline.GetAssemblyNameFromScriptPath(file))).ToList();
+            var origins  = callers.Select(file => Path.GetFileNameWithoutExtension(CompilationPipeline.GetAssemblyNameFromScriptPath(file)));
             var visible  = origins.Append(target).Where(origin => origin != null && all.ContainsKey(origin)).SelectMany(origin => References(all[origin]).Append(origin)).ToHashSet();
             var taken    = AppDomain.CurrentDomain.GetAssemblies().Where(assembly => visible.Contains(assembly.GetName().Name)).SelectMany(Types)
                                     .Where(type => type.Name == name && !type.IsNested && (type.IsPublic || all.ContainsKey(type.Assembly.GetName().Name)))
                                     .Select(type => type.FullName).Distinct().ToList();
             if (taken.Count > 0) return $"the project already has a type named {name} ({string.Join(", ", taken)}); save the file under another name.";
-
-            // What the copy's usings need: the pack, and each assembly of the pack's references that holds one of those namespaces.
-            var spaces  = Regex.Matches(own, @"^using ([\w.]+);", RegexOptions.Multiline).Select(match => match.Groups[1].Value).ToHashSet();
-            var loaded  = AppDomain.CurrentDomain.GetAssemblies().GroupBy(assembly => assembly.GetName().Name).ToDictionary(group => group.Key, group => group.First());
-            var pack    = typeof(DefaultAdsManager).Assembly;
-            var needs   = pack.GetReferencedAssemblies().Select(reference => reference.Name)
-                              .Where(needed => !needed.StartsWith("UnityEngine") && loaded.TryGetValue(needed, out var assembly) && Types(assembly).Any(type => type.IsPublic && spaces.Contains(type.Namespace)))
-                              .Prepend(pack.GetName().Name);
-            var missing = needs.Where(needed => !References(home).Contains(needed)).ToList();
-            if (missing.Count > 0) return $"{path} would compile in {target}, which does not reference {string.Join(", ", missing)}; save it in an assembly that does, or add the references to its assembly definition first.";
-
-            // A turned call's assembly must see the copy's. An assembly definition cannot reference Assembly-CSharp, so then only the copy can move.
-            var blind = callers.Where((file, i) => origins[i] != target && (origins[i] == null || !all.ContainsKey(origins[i]) || !References(all[origins[i]]).Contains(target))).ToList();
-            if (blind.Count > 0) {
-                var fix = target.StartsWith("Assembly-CSharp") ? "save it in an assembly definition they reference" : $"save it in an assembly they reference, or add {target} to their assembly definitions first";
-                return $"these scripts call {nameof(DefaultAdsManager)} from assemblies that do not reference {target}, where {name} would be: {string.Join(", ", blind)}; {fix}.";
-            }
 
             return null;
         }
@@ -305,35 +289,9 @@ namespace RiseOn.Ads.Editor {
 
         private static readonly Regex defaultName = new(@"(?<![\w.])(?:global::)?(?:RiseOn\.Ads\.)?DefaultAdsManager\b");
 
-        // A using directive, alias or static: it names types from the global namespace, so it takes the class's full name.
-        private static readonly Regex usingDirective = new(@"^\s*using\s+(static\s+)?(\w+\s*=\s*)?[\w.:<>, ]+;");
-
-        /// <summary>A script's text with its every DefaultAdsManager turned to the game's class, with its namespace's using where the script lacks it; null when it names none.</summary>
+        /// <summary>A script's text with its every DefaultAdsManager turned to the game's class by its full name, so nothing else of the script changes; null when it names none.</summary>
         internal static string CallsTurned(string text, string name, string space) {
-            if (!defaultName.IsMatch(text)) return null;
-
-            var newline = text.Contains("\r\n") ? "\r\n" : "\n";
-            var lines   = text.Split(new[] { newline }, StringSplitOptions.None).ToList();
-            var full    = string.IsNullOrEmpty(space) ? name : $"{space}.{name}";
-            var bare    = false;
-            for (var i = 0; i < lines.Count; i++) {
-                if (!defaultName.IsMatch(lines[i])) continue;
-
-                var directive = usingDirective.IsMatch(lines[i]);
-                lines[i] = defaultName.Replace(lines[i], directive ? full : name);
-                bare |= !directive;
-            }
-
-            text = string.Join(newline, lines);
-            if (!bare || string.IsNullOrEmpty(space) || Regex.IsMatch(text, $@"^\s*(using|namespace)\s+{Regex.Escape(space)}\s*[;{{.]", RegexOptions.Multiline)) return text;
-
-            // In the usings' order, System's first, as OwnManagerSource places its own.
-            var line    = $"using {space};";
-            var usings  = lines.FindLastIndex(other => Regex.IsMatch(other, @"^using [\w.]+;$"));
-            var at      = lines.FindIndex(other => Regex.IsMatch(other, @"^using [\w.]+;$") && !other.StartsWith("using System") && string.CompareOrdinal(other, line) > 0);
-            if (usings < 0) lines.InsertRange(0, new[] { line, "" });
-            else lines.Insert(at < 0 || at > usings ? usings + 1 : at, line);
-            return string.Join(newline, lines);
+            return defaultName.IsMatch(text) ? defaultName.Replace(text, string.IsNullOrEmpty(space) ? name : $"{space}.{name}") : null;
         }
 
         private const string PackNamespace = "namespace RiseOn.Ads {";
