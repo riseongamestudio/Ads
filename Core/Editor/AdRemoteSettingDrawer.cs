@@ -6,17 +6,19 @@ using UnityEngine;
 
 namespace RiseOn.Ads.Editor {
     /// <summary>
-    /// A format's rule on one row: the page's value, then, with the Remote Config pack, a drop-down of that pack's keys of the setting's type, No Remote Key first.<br/>
-    /// A picked key replaces the value, which then shows dimmed; a key since removed shows as missing.
+    /// A manager setting on one row: the page's value, then a drop-down of the Remote Config pack's keys of the setting's type, No Remote Key first.<br/>
+    /// A picked key replaces the value, which then shows dimmed; a key since removed shows as missing. Without that pack the drop-down stays, locked, saying why.
     /// </summary>
     internal sealed class AdRemoteSettingDrawer<T> : OdinValueDrawer<AdRemoteSetting<T>> {
         private const float Gap = 4;
 
-#if ADS_SUPPORT_REMOTECONFIG
         // As wide as leaves a key's name readable, and no wider, so the value keeps its room.
         private const float KeyWidth = 160;
 
+#if ADS_SUPPORT_REMOTECONFIG
         private static readonly string keyTooltip = $"A Remote Config {(typeof(T) == typeof(bool) ? "bool" : "float")} key whose value replaces this setting; No Remote Key keeps the page's value.";
+#else
+        private static readonly GUIContent noRemoteConfig = new("No Remote Config", "The project lacks com.riseon.firebase.remoteconfig, so this setting takes no Remote Config key and runs with the page's value. Install that pack to pick one.");
 #endif
 
         protected override void DrawPropertyLayout(GUIContent label) {
@@ -39,6 +41,11 @@ namespace RiseOn.Ads.Editor {
                 if (window) window.Repaint();
             }, search: false);
             GUI.Label(key, new GUIContent("", keyTooltip));
+#else
+            var key = new Rect(field.xMax - KeyWidth, field.y, KeyWidth, field.height);
+            field.xMax = key.x - Gap;
+            using (new EditorGUI.DisabledScope(true)) EditorGUI.DropdownButton(key, noRemoteConfig, FocusType.Passive, EditorStyles.popup);
+            GUI.Label(key, new GUIContent("", noRemoteConfig.tooltip));
 #endif
             using (new EditorGUI.DisabledScope(remote)) Value(field);
             EditorGUI.indentLevel = indent;

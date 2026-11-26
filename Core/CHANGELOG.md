@@ -38,15 +38,18 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
   khi người chơi mua remove-ads. Format full-screen bị chặn thì bị bỏ khỏi mọi chuỗi,
   format có thưởng thì thưởng luôn; banner, MRec, collapsible và ô native rời màn
   hình và quay lại khi thả.
-- `AdPacing`: field giãn cách một format cho lớp manager, mỗi ô có key Remote Config;
-  `AdCollapsiblePlan.Pick(plans)` bốc một plan theo weight.
+- `AdPacing`: field giãn cách một format cho lớp manager, mỗi ô có key Remote Config,
+  trang vẽ mỗi field một mục gập mở; `AdCollapsiblePlan.Pick(plans)` bốc một plan theo
+  weight.
 - `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)`, và `EditorGamePause.Apply`
   (cách dừng game mặc định trong Editor) thành public.
 - Sample `AdsManager` (Package Manager → Samples): các luật phần lớn game của studio
-  chạy, với giá trị mặc định cũ của trang.
+  chạy, với giá trị mặc định cũ của trang. Remove Ads là một ô tick cho mỗi định dạng;
+  mục Pacing theo thứ tự định dạng của mục Formats.
 - `AdImpression.Placement`: placement của lần show đi cùng doanh thu.
 - Mọi field `AdRemoteSetting` của lớp manager có ô chọn key Remote Config, và build
-  dừng khi key của nó không còn trong Remote Config.
+  dừng khi key của nó không còn trong Remote Config. Project không có
+  `com.riseon.firebase.remoteconfig` thì ô đó mờ, ghi **No Remote Config**.
 
 ## [2.0.0] - 2026-11-20
 

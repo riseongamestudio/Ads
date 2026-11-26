@@ -277,15 +277,16 @@ khác, và `RISEONADS003` khi có hơn một lớp cài `IAdsManager`.
 
 Field của lớp hiện trong mục Manager của trang và lưu trong asset của pack. Field kiểu
 `AdRemoteSetting<float>` hay `AdRemoteSetting<bool>`, kể cả bên trong `AdPacing` và
-`AdCollapsiblePlan`, có ô chọn key Remote Config ở cuối dòng khi project có
-`com.riseon.firebase.remoteconfig`: **No Remote Key** là dùng giá trị trên trang;
+`AdCollapsiblePlan`, có ô chọn key Remote Config ở cuối dòng. Project không có
+`com.riseon.firebase.remoteconfig` thì ô đó mờ, ghi **No Remote Config**, và lúc chạy
+`Value` là giá trị trên trang. Có pack đó thì **No Remote Key** là dùng giá trị trên trang;
 chọn một key cùng kiểu (float cho số, bool cho bật/tắt) thì lúc chạy
 `Value` là giá trị của key, ô giá trị trên trang mờ đi; trước khi Remote Config xong
 là giá trị mặc định khai trên trang Remote Config.
 
 | Công cụ | Làm gì |
 |---|---|
-| `AdPacing` | Field giãn cách một format: **First After (s)** (số giây từ lúc mở game tới lần hiện đầu), **Min Interval (s)** (số giây từ lần hiện gần nhất), **After Rewarded (s)** (số giây từ lần một ad Rewarded hiện), mỗi ô có key Remote Config. `Allows(format)` đúng khi đã qua cả ba; nó đếm từ `AdsSdk.SecondsSinceDisplay`, không giữ trạng thái riêng, nên hai format dùng chung một `AdPacing` thì hỏi nó cho cả hai |
+| `AdPacing` | Field giãn cách một format, trang vẽ mỗi field một mục gập mở mang tên field: **First After (s)** (số giây từ lúc mở game tới lần hiện đầu), **Min Interval (s)** (số giây từ lần hiện gần nhất), **After Rewarded (s)** (số giây từ lần một ad Rewarded hiện), mỗi ô có key Remote Config. `Allows(format)` đúng khi đã qua cả ba; nó đếm từ `AdsSdk.SecondsSinceDisplay`, không giữ trạng thái riêng, nên hai format dùng chung một `AdPacing` thì hỏi nó cho cả hai |
 | `AdCollapsiblePlan` | Một cách chạy collapsible: tên, **Weight** (có key Remote Config) và **Close** của từng ad trong chuỗi. Gắn `[SectionList]` lên mảng plan thì trang vẽ mỗi plan một dòng gập mở, ô tên và Weight trên thanh. `AdCollapsiblePlan.Pick(plans)` bốc một plan có bước, cơ hội của plan bằng weight chia tổng weight; không plan nào có bước và weight lớn hơn 0 thì trả `null` |
 | `AdsSdk.SetSuppressed(format, on)` | Chặn format, như mọi format gói remove-ads lấy đi (xem `AdsSdk`) |
 | `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)` | Lần mở game thứ mấy, số giây từ lần format hiện gần nhất |
@@ -303,7 +304,7 @@ Field của sample trên trang và giá trị mặc định:
 
 | Field | Mặc định | Nguồn |
 |---|---|---|
-| Remove Ads | Mọi định dạng trừ Rewarded, Rewarded Interstitial | Gói remove-ads thường chỉ bỏ quảng cáo người chơi không tự chọn xem; format có thưởng bị chặn thì người chơi nhận thưởng không cần ad |
+| Remove Ads | Mỗi định dạng một ô tick; tick mọi định dạng trừ Rewarded, Rewarded Interstitial | Gói remove-ads thường chỉ bỏ quảng cáo người chơi không tự chọn xem; format có thưởng bị chặn thì người chơi nhận thưởng không cần ad |
 | Pacing: Interstitial, Native Interstitial | First After 45, Min Interval 25 | Giá trị trên Remote Config của phần lớn game studio (Get In The Bowl, Bounce Adventure, Fish Sort) |
 | Pacing: Native Collapsible | 0, 15 | Như trên |
 | Pacing: Rewarded Interstitial, App Open, Native App Open, Native End Card | 0, 0 | Không game nào của studio giãn cách các format này; 0 là không giãn cách |

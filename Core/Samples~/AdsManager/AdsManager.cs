@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using RiseOn.Ads;
+using RiseOn.Serializables;
 using RiseOn.Utils;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -17,26 +18,32 @@ public partial class AdsManager : IAdsManager {
     #region Fields
 
     // Every format but the rewarding ones, which would otherwise grant their reward with no ad.
-    [SerializeField, SectionList(Item = "format", Foldable = true), LabelText("Remove Ads")]
-    [Tooltip("The formats a remove-ads purchase takes away; SetAdsRemoved suppresses them.")]
-    private List<AdFormat> removeAdsFormats = new() {
-        AdFormat.Banner, AdFormat.MRec, AdFormat.Interstitial, AdFormat.AppOpen, AdFormat.NativeInFeed, AdFormat.NativeCollapsible
-      , AdFormat.NativeInterstitial, AdFormat.NativeAppOpen, AdFormat.NativeEndCard, AdFormat.NativeMRec
-    };
+    [SerializeField, LabelText("Remove Ads")]
+    [Tooltip("The formats a remove-ads purchase takes away, ticked; SetAdsRemoved suppresses them.")]
+    private EnumMap<AdFormat, bool> removeAds = new(new Dictionary<AdFormat, bool> {
+        { AdFormat.Banner, true }, { AdFormat.MRec, true }, { AdFormat.Interstitial, true }, { AdFormat.Rewarded, false }, { AdFormat.RewardedInterstitial, false }
+      , { AdFormat.AppOpen, true }, { AdFormat.NativeInFeed, true }, { AdFormat.NativeCollapsible, true }, { AdFormat.NativeInterstitial, true }
+      , { AdFormat.NativeAppOpen, true }, { AdFormat.NativeEndCard, true }, { AdFormat.NativeMRec, true }
+    });
 
-    // What most of the studio's games run in Remote Config (Get In The Bowl, Bounce Adventure, Fish Sort).
+    // In the order of AdFormat, as the Formats section lists them.
+    // Interstitial and Native Interstitial: what most of the studio's games run in Remote Config (Get In The Bowl, Bounce Adventure, Fish Sort).
     [SerializeField, SectionGroup("Pacing", Foldable = true), LabelText("Interstitial")]
     private AdPacing interstitialPacing = new(45, 25);
 
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native Interstitial")]
-    private AdPacing nativeInterstitialPacing = new(45, 25);
-
-    // No game of the studio paces these; 0 is no pacing.
+    // No game of the studio paces Rewarded Interstitial, App Open or Native App Open; 0 is no pacing.
     [SerializeField, SectionGroup("Pacing"), LabelText("Rewarded Interstitial")]
     private AdPacing rewardedInterstitialPacing = new();
 
     [SerializeField, SectionGroup("Pacing"), LabelText("App Open")]
     private AdPacing appOpenPacing = new();
+
+    // What most of the studio's games run: the first at once, then 15 seconds apart.
+    [SerializeField, SectionGroup("Pacing"), LabelText("Native Collapsible")]
+    private AdPacing collapsiblePacing = new(0, 15);
+
+    [SerializeField, SectionGroup("Pacing"), LabelText("Native Interstitial")]
+    private AdPacing nativeInterstitialPacing = new(45, 25);
 
     [SerializeField, SectionGroup("Pacing"), LabelText("Native App Open")]
     private AdPacing nativeAppOpenPacing = new();
@@ -44,10 +51,6 @@ public partial class AdsManager : IAdsManager {
     // 0, so the end card follows the ad it is chained after each time that one shows.
     [SerializeField, SectionGroup("Pacing"), LabelText("Native End Card")]
     private AdPacing nativeEndCardPacing = new();
-
-    // What most of the studio's games run: the first at once, then 15 seconds apart.
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native Collapsible")]
-    private AdPacing collapsiblePacing = new(0, 15);
 
     // After the interstitial and the rewarded, as most of the studio's games run it.
     [SerializeField, SectionGroup("End Card", Foldable = true), LabelText("After Interstitial")]
@@ -122,7 +125,9 @@ public partial class AdsManager : IAdsManager {
 
     /// <summary>The player owns remove-ads: suppresses the formats it takes, or lets them through. Call it at launch from the save, and after a purchase or its refund.</summary>
     public void SetAdsRemoved(bool removed) {
-        foreach (var format in removeAdsFormats) AdsSdk.SetSuppressed(format, removed);
+        foreach (var (format, takes) in removeAds) {
+            if (takes) AdsSdk.SetSuppressed(format, removed);
+        }
     }
 
     #endregion
