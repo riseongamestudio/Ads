@@ -18,13 +18,13 @@ namespace RiseOn.Ads {
 
     /// <summary>The formats that take the whole screen and run as steps of an <see cref="AdChain"/>, each with its <see cref="AdFormat"/>'s value.</summary>
     public enum AdFullScreenFormat {
-        Interstitial         = (int)AdFormat.Interstitial
-      , Rewarded             = (int)AdFormat.Rewarded
-      , RewardedInterstitial = (int)AdFormat.RewardedInterstitial
-      , AppOpen              = (int)AdFormat.AppOpen
-      , NativeInterstitial   = (int)AdFormat.NativeInterstitial
-      , NativeAppOpen        = (int)AdFormat.NativeAppOpen
-      , NativeEndCard        = (int)AdFormat.NativeEndCard
+        Interstitial         = AdFormat.Interstitial
+      , Rewarded             = AdFormat.Rewarded
+      , RewardedInterstitial = AdFormat.RewardedInterstitial
+      , AppOpen              = AdFormat.AppOpen
+      , NativeInterstitial   = AdFormat.NativeInterstitial
+      , NativeAppOpen        = AdFormat.NativeAppOpen
+      , NativeEndCard        = AdFormat.NativeEndCard
     }
 
     public static class AdFormatUtils {

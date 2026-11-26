@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using RiseOn.Ads;
 using RiseOn.Serializables;
@@ -23,11 +22,20 @@ public partial class AdsManager : IAdsManager {
     // Every format but the rewarding ones, which would otherwise grant their reward with no ad.
     [SerializeField, LabelText("Remove Ads")]
     [Tooltip("The formats a remove-ads purchase takes away, ticked; SetAdsRemoved suppresses them.")]
-    private EnumMap<AdFormat, bool> removeAds = new(new Dictionary<AdFormat, bool> {
-        { AdFormat.Banner, true }, { AdFormat.MRec, true }, { AdFormat.Interstitial, true }, { AdFormat.Rewarded, false }, { AdFormat.RewardedInterstitial, false }
-      , { AdFormat.AppOpen, true }, { AdFormat.NativeInFeed, true }, { AdFormat.NativeCollapsible, true }, { AdFormat.NativeInterstitial, true }
-      , { AdFormat.NativeAppOpen, true }, { AdFormat.NativeEndCard, true }, { AdFormat.NativeMRec, true }
-    });
+    private EnumMap<AdFormat, bool> removeAds = new() {
+        [AdFormat.Banner]               = true
+      , [AdFormat.MRec]                 = true
+      , [AdFormat.Interstitial]         = true
+      , [AdFormat.Rewarded]             = false
+      , [AdFormat.RewardedInterstitial] = false
+      , [AdFormat.AppOpen]              = true
+      , [AdFormat.NativeInFeed]         = true
+      , [AdFormat.NativeCollapsible]    = true
+      , [AdFormat.NativeInterstitial]   = true
+      , [AdFormat.NativeAppOpen]        = true
+      , [AdFormat.NativeEndCard]        = true
+      , [AdFormat.NativeMRec]           = true
+    };
 
     // Interstitial and Native Interstitial: what most of the studio's games run in Remote Config (Get In The Bowl, Bounce Adventure, Fish Sort).
     // Native Collapsible: what most of them run, the first at once, then 15 seconds apart.
@@ -35,11 +43,15 @@ public partial class AdsManager : IAdsManager {
     // Native End Card at 0, so it follows the ad it is chained after each time that one shows.
     [SerializeField, LabelText("Pacing"), NoRowShade]
     [Tooltip("Each paced format's spacing, in seconds: from launch to its first show, from its last show, and from the last rewarded ad.")]
-    private EnumMap<PaceableFormat, AdPacing> pacing = new(new Dictionary<PaceableFormat, AdPacing> {
-        { PaceableFormat.Interstitial, new(45, 25) }, { PaceableFormat.RewardedInterstitial, new() }, { PaceableFormat.AppOpen, new() }
-      , { PaceableFormat.NativeCollapsible, new(0, 15) }, { PaceableFormat.NativeInterstitial, new(45, 25) }, { PaceableFormat.NativeAppOpen, new() }
-      , { PaceableFormat.NativeEndCard, new() }
-    });
+    private EnumMap<PaceableFormat, AdPacing> pacing = new() {
+        [PaceableFormat.Interstitial]         = new(45, 25)
+      , [PaceableFormat.RewardedInterstitial] = new()
+      , [PaceableFormat.AppOpen]              = new()
+      , [PaceableFormat.NativeCollapsible]    = new(0, 15)
+      , [PaceableFormat.NativeInterstitial]   = new(45, 25)
+      , [PaceableFormat.NativeAppOpen]        = new()
+      , [PaceableFormat.NativeEndCard]        = new()
+    };
 
     // Banner.
     [SerializeField, SectionGroup("Banner", Foldable = true), LabelText("Auto Show")]
@@ -92,13 +104,13 @@ public partial class AdsManager : IAdsManager {
 
     /// <summary>The formats the manager paces, each numbered as its <see cref="AdFormat"/>: every full-screen one but the rewarded, which the player asks for, and Native Collapsible.</summary>
     public enum PaceableFormat {
-        Interstitial         = (int) AdFormat.Interstitial
-      , RewardedInterstitial = (int) AdFormat.RewardedInterstitial
-      , AppOpen              = (int) AdFormat.AppOpen
-      , NativeCollapsible    = (int) AdFormat.NativeCollapsible
-      , NativeInterstitial   = (int) AdFormat.NativeInterstitial
-      , NativeAppOpen        = (int) AdFormat.NativeAppOpen
-      , NativeEndCard        = (int) AdFormat.NativeEndCard
+        Interstitial         = AdFormat.Interstitial
+      , RewardedInterstitial = AdFormat.RewardedInterstitial
+      , AppOpen              = AdFormat.AppOpen
+      , NativeCollapsible    = AdFormat.NativeCollapsible
+      , NativeInterstitial   = AdFormat.NativeInterstitial
+      , NativeAppOpen        = AdFormat.NativeAppOpen
+      , NativeEndCard        = AdFormat.NativeEndCard
     }
 
     /// <summary>The formats the ad on return can be, best first.</summary>
