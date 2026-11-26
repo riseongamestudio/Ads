@@ -26,31 +26,17 @@ public partial class AdsManager : IAdsManager {
       , { AdFormat.NativeAppOpen, true }, { AdFormat.NativeEndCard, true }, { AdFormat.NativeMRec, true }
     });
 
-    // In the order of AdFormat, as the Formats section lists them.
     // Interstitial and Native Interstitial: what most of the studio's games run in Remote Config (Get In The Bowl, Bounce Adventure, Fish Sort).
-    [SerializeField, SectionGroup("Pacing", Foldable = true), LabelText("Interstitial")]
-    private AdPacing interstitialPacing = new(45, 25);
-
+    // Native Collapsible: what most of them run, the first at once, then 15 seconds apart.
     // No game of the studio paces Rewarded Interstitial, App Open or Native App Open; 0 is no pacing.
-    [SerializeField, SectionGroup("Pacing"), LabelText("Rewarded Interstitial")]
-    private AdPacing rewardedInterstitialPacing = new();
-
-    [SerializeField, SectionGroup("Pacing"), LabelText("App Open")]
-    private AdPacing appOpenPacing = new();
-
-    // What most of the studio's games run: the first at once, then 15 seconds apart.
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native Collapsible")]
-    private AdPacing collapsiblePacing = new(0, 15);
-
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native Interstitial")]
-    private AdPacing nativeInterstitialPacing = new(45, 25);
-
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native App Open")]
-    private AdPacing nativeAppOpenPacing = new();
-
-    // 0, so the end card follows the ad it is chained after each time that one shows.
-    [SerializeField, SectionGroup("Pacing"), LabelText("Native End Card")]
-    private AdPacing nativeEndCardPacing = new();
+    // Native End Card at 0, so it follows the ad it is chained after each time that one shows.
+    [SerializeField, LabelText("Pacing"), NoRowShade]
+    [Tooltip("Each paced format's spacing, in seconds: from launch to its first show, from its last show, and from the last rewarded ad.")]
+    private EnumMap<PaceableFormat, AdPacing> pacing = new(new Dictionary<PaceableFormat, AdPacing> {
+        { PaceableFormat.Interstitial, new(45, 25) }, { PaceableFormat.RewardedInterstitial, new() }, { PaceableFormat.AppOpen, new() }
+      , { PaceableFormat.NativeCollapsible, new(0, 15) }, { PaceableFormat.NativeInterstitial, new(45, 25) }, { PaceableFormat.NativeAppOpen, new() }
+      , { PaceableFormat.NativeEndCard, new() }
+    });
 
     // After the interstitial and the rewarded, as most of the studio's games run it.
     [SerializeField, SectionGroup("End Card", Foldable = true), LabelText("After Interstitial")]
@@ -98,6 +84,17 @@ public partial class AdsManager : IAdsManager {
     };
 
     #endregion
+
+    /// <summary>The formats the manager paces, each numbered as its <see cref="AdFormat"/>: every full-screen one but the rewarded, which the player asks for, and Native Collapsible.</summary>
+    public enum PaceableFormat {
+        Interstitial         = (int) AdFormat.Interstitial
+      , RewardedInterstitial = (int) AdFormat.RewardedInterstitial
+      , AppOpen              = (int) AdFormat.AppOpen
+      , NativeCollapsible    = (int) AdFormat.NativeCollapsible
+      , NativeInterstitial   = (int) AdFormat.NativeInterstitial
+      , NativeAppOpen        = (int) AdFormat.NativeAppOpen
+      , NativeEndCard        = (int) AdFormat.NativeEndCard
+    }
 
     /// <summary>The formats the ad on return can be, best first.</summary>
     public enum ReturnAd {
@@ -169,15 +166,8 @@ public partial class AdsManager : IAdsManager {
     /// <summary>The format's pacing allows a show now; the rewarded, which the player asks for, has none.</summary>
     public bool Allows(AdFullScreenFormat format) => PacingOf(format)?.Allows(format) ?? true;
 
-    private AdPacing PacingOf(AdFullScreenFormat format) => format switch {
-        AdFullScreenFormat.Interstitial         => interstitialPacing
-      , AdFullScreenFormat.NativeInterstitial   => nativeInterstitialPacing
-      , AdFullScreenFormat.RewardedInterstitial => rewardedInterstitialPacing
-      , AdFullScreenFormat.AppOpen              => appOpenPacing
-      , AdFullScreenFormat.NativeAppOpen        => nativeAppOpenPacing
-      , AdFullScreenFormat.NativeEndCard        => nativeEndCardPacing
-      , _                                       => null
-    };
+    // Every full-screen format but the rewarded is paceable.
+    private AdPacing PacingOf(AdFullScreenFormat format) => format is AdFullScreenFormat.Rewarded ? null : pacing[(PaceableFormat) (int) format];
 
     private bool EndCardAfter(AdFullScreenFormat format) => format switch {
         AdFullScreenFormat.Interstitial       => endCardAfterInterstitial.Value
@@ -229,11 +219,11 @@ public partial class AdsManager : IAdsManager {
     public void ShowBanner() => AdsSdk.ShowBanner();
     public void HideBanner() => AdsSdk.HideBanner();
 
-    public bool CanShowCollapsible => collapsiblePacing.Allows(AdFormat.NativeCollapsible) && AdsSdk.IsCollapsibleReady;
+    public bool CanShowCollapsible => pacing[PaceableFormat.NativeCollapsible].Allows(AdFormat.NativeCollapsible) && AdsSdk.IsCollapsibleReady;
 
     /// <summary>The collapsible under these rules: nothing within its pacing; else a plan drawn by weight, its steps one after the other. Resolves to how many ads displayed.</summary>
     public UniTask<int> ShowCollapsibleAsync(Action onDisplayed = null) {
-        if (!collapsiblePacing.Allows(AdFormat.NativeCollapsible)) return UniTask.FromResult(0);
+        if (!pacing[PaceableFormat.NativeCollapsible].Allows(AdFormat.NativeCollapsible)) return UniTask.FromResult(0);
 
         var plan = AdCollapsiblePlan.Pick(collapsiblePlans);
         if (plan == null) Debug.LogWarning($"{nameof(AdsManager)}: no collapsible plan has steps and a weight above 0, so ShowCollapsibleAsync shows nothing");

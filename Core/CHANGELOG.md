@@ -45,7 +45,7 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
   (cách dừng game mặc định trong Editor) thành public.
 - Sample `AdsManager` (Package Manager → Samples): các luật phần lớn game của studio
   chạy, với giá trị mặc định cũ của trang. Remove Ads là một ô tick cho mỗi định dạng;
-  mục Pacing theo thứ tự định dạng của mục Formats.
+  Pacing là `EnumMap<PaceableFormat, AdPacing>`, theo thứ tự định dạng của mục Formats.
 - `AdImpression.Placement`: placement của lần show đi cùng doanh thu.
 - Mọi field `AdRemoteSetting` của lớp manager có ô chọn key Remote Config, và build
   dừng khi key của nó không còn trong Remote Config. Project không có

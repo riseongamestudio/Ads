@@ -286,7 +286,7 @@ là giá trị mặc định khai trên trang Remote Config.
 
 | Công cụ | Làm gì |
 |---|---|
-| `AdPacing` | Field giãn cách một format, trang vẽ mỗi field một mục gập mở mang tên field: **First After (s)** (số giây từ lúc mở game tới lần hiện đầu), **Min Interval (s)** (số giây từ lần hiện gần nhất), **After Rewarded (s)** (số giây từ lần một ad Rewarded hiện), mỗi ô có key Remote Config. `Allows(format)` đúng khi đã qua cả ba; nó đếm từ `AdsSdk.SecondsSinceDisplay`, không giữ trạng thái riêng, nên hai format dùng chung một `AdPacing` thì hỏi nó cho cả hai |
+| `AdPacing` | Field giãn cách một format, trang vẽ mỗi `AdPacing` một mục gập mở mang nhãn của nó (tên field, hay tên key khi là giá trị của một `EnumMap`): **First After (s)** (số giây từ lúc mở game tới lần hiện đầu), **Min Interval (s)** (số giây từ lần hiện gần nhất), **After Rewarded (s)** (số giây từ lần một ad Rewarded hiện), mỗi ô có key Remote Config. `Allows(format)` đúng khi đã qua cả ba; nó đếm từ `AdsSdk.SecondsSinceDisplay`, không giữ trạng thái riêng, nên hai format dùng chung một `AdPacing` thì hỏi nó cho cả hai |
 | `AdCollapsiblePlan` | Một cách chạy collapsible: tên, **Weight** (có key Remote Config) và **Close** của từng ad trong chuỗi. Gắn `[SectionList]` lên mảng plan thì trang vẽ mỗi plan một dòng gập mở, ô tên và Weight trên thanh. `AdCollapsiblePlan.Pick(plans)` bốc một plan có bước, cơ hội của plan bằng weight chia tổng weight; không plan nào có bước và weight lớn hơn 0 thì trả `null` |
 | `AdsSdk.SetSuppressed(format, on)` | Chặn format, như mọi format gói remove-ads lấy đi (xem `AdsSdk`) |
 | `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)` | Lần mở game thứ mấy, số giây từ lần format hiện gần nhất |
@@ -305,6 +305,7 @@ Field của sample trên trang và giá trị mặc định:
 | Field | Mặc định | Nguồn |
 |---|---|---|
 | Remove Ads | Mỗi định dạng một ô tick; tick mọi định dạng trừ Rewarded, Rewarded Interstitial | Gói remove-ads thường chỉ bỏ quảng cáo người chơi không tự chọn xem; format có thưởng bị chặn thì người chơi nhận thưởng không cần ad |
+| Pacing | Một mục cho mỗi giá trị của `PaceableFormat`: mọi format full-screen trừ Rewarded, thêm Native Collapsible, theo thứ tự của `AdFormat` | Rewarded do người chơi tự chọn xem nên không giãn cách |
 | Pacing: Interstitial, Native Interstitial | First After 45, Min Interval 25 | Giá trị trên Remote Config của phần lớn game studio (Get In The Bowl, Bounce Adventure, Fish Sort) |
 | Pacing: Native Collapsible | 0, 15 | Như trên |
 | Pacing: Rewarded Interstitial, App Open, Native App Open, Native End Card | 0, 0 | Không game nào của studio giãn cách các format này; 0 là không giãn cách |
