@@ -17,7 +17,7 @@ public partial class AdsManager : IAdsManager {
     #region Fields
 
     // Every format but the rewarding ones, which would otherwise grant their reward with no ad.
-    [SerializeField, SectionList(Item = "format"), LabelText("Remove Ads")]
+    [SerializeField, SectionList(Item = "format", Foldable = true), LabelText("Remove Ads")]
     [Tooltip("The formats a remove-ads purchase takes away; SetAdsRemoved suppresses them.")]
     private List<AdFormat> removeAdsFormats = new() {
         AdFormat.Banner, AdFormat.MRec, AdFormat.Interstitial, AdFormat.AppOpen, AdFormat.NativeInFeed, AdFormat.NativeCollapsible
@@ -25,7 +25,7 @@ public partial class AdsManager : IAdsManager {
     };
 
     // What most of the studio's games run in Remote Config (Get In The Bowl, Bounce Adventure, Fish Sort).
-    [SerializeField, SectionGroup("Pacing"), LabelText("Interstitial")]
+    [SerializeField, SectionGroup("Pacing", Foldable = true), LabelText("Interstitial")]
     private AdPacing interstitialPacing = new(45, 25);
 
     [SerializeField, SectionGroup("Pacing"), LabelText("Native Interstitial")]
@@ -50,7 +50,7 @@ public partial class AdsManager : IAdsManager {
     private AdPacing collapsiblePacing = new(0, 15);
 
     // After the interstitial and the rewarded, as most of the studio's games run it.
-    [SerializeField, SectionGroup("End Card"), LabelText("After Interstitial")]
+    [SerializeField, SectionGroup("End Card", Foldable = true), LabelText("After Interstitial")]
     private AdRemoteSetting<bool> endCardAfterInterstitial = new(true);
 
     [SerializeField, SectionGroup("End Card"), LabelText("After Rewarded")]
@@ -59,12 +59,12 @@ public partial class AdsManager : IAdsManager {
     [SerializeField, SectionGroup("End Card"), LabelText("After Native Interstitial")]
     private AdRemoteSetting<bool> endCardAfterNativeInterstitial = new(false);
 
-    [SerializeField, SectionGroup("Banner"), LabelText("Auto Show")]
+    [SerializeField, SectionGroup("Banner", Foldable = true), LabelText("Auto Show")]
     [Tooltip("Shows the banner as the game starts and keeps it up, held back while remove-ads takes it.")]
     private bool bannerAutoShow = true;
 
     // As most of the studio's games run it: the native one when loaded, else the network's.
-    [SerializeField, SectionGroup("On Return To Game"), LabelText("Format")]
+    [SerializeField, SectionGroup("On Return To Game", Foldable = true), LabelText("Format")]
     [Tooltip("The ad shown when the player comes back to the game, under its own pacing; Native App Open, else App Open takes the native one when it is loaded and the app open ad otherwise. "
            + "None for no ad on return.")]
     private ReturnAd returnAd = ReturnAd.NativeAppOpenElseAppOpen;
