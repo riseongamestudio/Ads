@@ -29,6 +29,11 @@ Mọi thay đổi đáng kể của `com.riseon.ads.admob.native` được ghi �
 - Bản xem trước trong Editor vẽ theo kiểu mới: thẻ, thanh app open, dấu AdChoices
   và creative mẫu. Bấm vào ad mở trang AdMob.
 
+### Sửa
+
+- iOS: game văng khi lấy một ad native đã nạp ra dùng, thường ngay lúc một ad toàn
+  màn hình hiện và nạp ad kế: ad bị giải phóng trước khi được đọc.
+
 ## [2.0.1] - 2026-11-20
 
 ### Đổi

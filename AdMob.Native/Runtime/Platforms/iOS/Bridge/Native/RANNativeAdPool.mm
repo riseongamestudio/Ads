@@ -137,9 +137,12 @@ static NSMutableDictionary<NSString *, RANNativeAdPool *> *RANPools(void) {
 - (nullable RANNativeAdPoolCachedAd *)takeForSizeKey:(int64_t)sizeKey
                                             consumer:(id<RANNativeAdPoolConsumer>)consumer {
     [self ran_removeExpiredAds];
-    for (RANNativeAdPoolCachedAd *cached in _cachedAds) {
-        if (![RANNativeAdPool ran_cached:cached fits:sizeKey]) continue;
+    for (RANNativeAdPoolCachedAd *candidate in _cachedAds) {
+        if (![RANNativeAdPool ran_cached:candidate fits:sizeKey]) continue;
 
+        // The loop does not retain what it enumerates and the array holds
+        // the only reference, so it is kept here before it leaves the array.
+        RANNativeAdPoolCachedAd *cached = candidate;
         [_cachedAds removeObject:cached];
         [_holders setObject:consumer forKey:cached.ad];
         [self ran_scheduleCacheExpiry];

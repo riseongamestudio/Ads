@@ -2689,7 +2689,6 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
     CGFloat bestBoxWidth = 0;
     CGFloat bestBoxHeight = 0;
     CGFloat bestTop = 0;
-    CGFloat bestIntervalLeft = 0;
     CGFloat bestIntervalWidth = panelWidth;
     BOOL bestAtEdges = NO;
     for (NSInteger index = 0; index < 4; ++index) {
@@ -2733,7 +2732,6 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
             bestBoxWidth = boxWidth;
             bestBoxHeight = boxHeight;
             bestTop = top;
-            bestIntervalLeft = intervalLeft;
             bestIntervalWidth = intervalWidth;
             bestAtEdges = candidateEdges[index];
         }
