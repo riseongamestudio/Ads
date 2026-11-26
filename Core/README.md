@@ -300,7 +300,10 @@ chuyển file vào chỗ của game và sửa những gì game cần; file là c
 cập nhật nó. Lớp là `partial`, nên phần riêng của game (đọc save, log analytics...)
 nằm được ở file khác mà không đụng file sample.
 
-Field của sample trên trang và giá trị mặc định:
+Field của sample trên trang và giá trị mặc định, theo thứ tự trên trang: luật áp cho nhiều
+format trước, áp cho càng nhiều format càng lên trên (Remove Ads, Pacing); rồi mục riêng của
+từng format, mang tên format đó, theo thứ tự của `AdFormat` (Banner; App Open cho App Open và
+Native App Open, ad khi quay lại game; Collapsible Plans; End Card):
 
 | Field | Mặc định | Nguồn |
 |---|---|---|
@@ -310,16 +313,16 @@ Field của sample trên trang và giá trị mặc định:
 | Pacing: Native Collapsible | 0, 15 | Như trên |
 | Pacing: Rewarded Interstitial, App Open, Native App Open, Native End Card | 0, 0 | Không game nào của studio giãn cách các format này; 0 là không giãn cách |
 | Pacing: After Rewarded | 0 | Phần lớn game của studio không chờ thêm sau rewarded; Shikaku Cat chờ 45, OrganiCat 90 |
+| Banner: Auto Show | Bật | Banner của các game studio hiện từ đầu game; game cần ẩn banner ở vài màn thì tắt ô này và tự gọi `ShowBanner`, `HideBanner` |
+| App Open: Format | Native App Open, else App Open | Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat bật native app open ad trên Remote Config |
+| App Open: From Launch | 1 | Mọi game của studio trừ OrganiCat hiện app open ad từ lần mở đầu |
+| App Open: On Launch | Bật | Phần lớn game của studio hiện app open ad trên scene chờ lúc mở game; Google hướng dẫn như vậy cho cold start |
+| App Open: After Away (s) | 0 | Mọi game của studio hiện app open ad mỗi lần người chơi quay lại |
+| Collapsible Plans | **Plain** (weight 0.6: một ad, nút đóng sau 3 giây ở cạnh ngẫu nhiên), **Chained** (weight 0.3: hai ad, đóng bên phải rồi bên trái), **Redirect** (weight 0.1: một ad, bấm đóng thì mở quảng cáo) | Ba plan và tỉ lệ trên Remote Config của Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat |
 | End Card: After Interstitial, After Rewarded | Bật | Phần lớn game của studio hiện end card sau interstitial và rewarded |
 | End Card: After Native Interstitial | Tắt | Như trên |
-| Banner: Auto Show | Bật | Banner của các game studio hiện từ đầu game; game cần ẩn banner ở vài màn thì tắt ô này và tự gọi `ShowBanner`, `HideBanner` |
-| On Return To Game: Format | Native App Open, else App Open | Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat bật native app open ad trên Remote Config |
-| On Return To Game: From Launch | 1 | Mọi game của studio trừ OrganiCat hiện app open ad từ lần mở đầu |
-| On Return To Game: On Launch | Bật | Phần lớn game của studio hiện app open ad trên scene chờ lúc mở game; Google hướng dẫn như vậy cho cold start |
-| On Return To Game: After Away (s) | 0 | Mọi game của studio hiện app open ad mỗi lần người chơi quay lại |
-| Collapsible Plans | **Plain** (weight 0.6: một ad, nút đóng sau 3 giây ở cạnh ngẫu nhiên), **Chained** (weight 0.3: hai ad, đóng bên phải rồi bên trái), **Redirect** (weight 0.1: một ad, bấm đóng thì mở quảng cáo) | Ba plan và tỉ lệ trên Remote Config của Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat |
 
-**On Return To Game › Format** chọn **Native App Open, else App Open** (native app
+**App Open › Format** chọn **Native App Open, else App Open** (native app
 open ad khi nó sẵn sàng, không thì app open ad), **App Open**, **Native App Open**
 hoặc **None** (không hiện). **On Launch** bật thì ad cũng hiện lúc mở game, đè lên
 scene đầu, khi ad load xong trước lúc game rời scene đó; ad load muộn hơn thì chờ lần

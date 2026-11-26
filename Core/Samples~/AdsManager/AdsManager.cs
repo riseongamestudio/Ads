@@ -17,6 +17,9 @@ using UnityEngine.SceneManagement;
 public partial class AdsManager : IAdsManager {
     #region Fields
 
+    // The page's order: the rules over many formats first, the more formats the higher (Remove Ads, Pacing); then each format's own,
+    // named for it and in the order of AdFormat (Banner, App Open, Native Collapsible, Native End Card).
+
     // Every format but the rewarding ones, which would otherwise grant their reward with no ad.
     [SerializeField, LabelText("Remove Ads")]
     [Tooltip("The formats a remove-ads purchase takes away, ticked; SetAdsRemoved suppresses them.")]
@@ -38,41 +41,33 @@ public partial class AdsManager : IAdsManager {
       , { PaceableFormat.NativeEndCard, new() }
     });
 
-    // After the interstitial and the rewarded, as most of the studio's games run it.
-    [SerializeField, SectionGroup("End Card", Foldable = true), LabelText("After Interstitial")]
-    private AdRemoteSetting<bool> endCardAfterInterstitial = new(true);
-
-    [SerializeField, SectionGroup("End Card"), LabelText("After Rewarded")]
-    private AdRemoteSetting<bool> endCardAfterRewarded = new(true);
-
-    [SerializeField, SectionGroup("End Card"), LabelText("After Native Interstitial")]
-    private AdRemoteSetting<bool> endCardAfterNativeInterstitial = new(false);
-
+    // Banner.
     [SerializeField, SectionGroup("Banner", Foldable = true), LabelText("Auto Show")]
     [Tooltip("Shows the banner as the game starts and keeps it up, held back while remove-ads takes it.")]
     private bool bannerAutoShow = true;
 
+    // App Open and Native App Open, the ad on return to the game.
     // As most of the studio's games run it: the native one when loaded, else the network's.
-    [SerializeField, SectionGroup("On Return To Game", Foldable = true), LabelText("Format")]
+    [SerializeField, SectionGroup("App Open", Foldable = true), LabelText("Format")]
     [Tooltip("The ad shown when the player comes back to the game, under its own pacing; Native App Open, else App Open takes the native one when it is loaded and the app open ad otherwise. "
            + "None for no ad on return.")]
     private ReturnAd returnAd = ReturnAd.NativeAppOpenElseAppOpen;
 
     // Every one of the studio's games but OrganiCat shows it from the first launch.
-    [SerializeField, SectionGroup("On Return To Game"), LabelText("From Launch"), MinValue(1)]
+    [SerializeField, SectionGroup("App Open"), LabelText("From Launch"), MinValue(1)]
     [Tooltip("The ad shows from this launch of the game on the device, on launch and on return alike: 1 from the first launch.")]
     private int returnFromLaunch = 1;
 
     // As most of the studio's games and Google's cold start guidance: over the loading screen, when the ad loads before the game is ready.
-    [SerializeField, SectionGroup("On Return To Game"), LabelText("On Launch")]
+    [SerializeField, SectionGroup("App Open"), LabelText("On Launch")]
     [Tooltip("The ad also shows at launch, over the game's first scene, when it loads before the game leaves that scene. A game with one scene turns it off.")]
     private AdRemoteSetting<bool> returnOnLaunch = new(true);
 
-    [SerializeField, SectionGroup("On Return To Game"), LabelText("After Away (s)")]
+    [SerializeField, SectionGroup("App Open"), LabelText("After Away (s)")]
     [Tooltip("Seconds the game has to stay in the background before its return shows the ad; 0 for every return.")]
     private AdRemoteSetting<float> returnAfterAwaySeconds = new(0);
 
-    // Get In The Bowl's three plans.
+    // Native Collapsible: Get In The Bowl's three plans.
     [SerializeField, SectionList(Item = "plan", Foldable = true), LabelText("Collapsible Plans")]
     [Tooltip("The ways ShowCollapsibleAsync may run: each show draws one, each plan's chance its weight over all the weights.")]
     private AdCollapsiblePlan[] collapsiblePlans = {
@@ -82,6 +77,16 @@ public partial class AdsManager : IAdsManager {
           , new AdCloseSettings { CloseSide = AdCloseSide.Left, TimerSide = AdTimerSide.Left })
       , new("Redirect", .1f, new AdCloseSettings { Cooldown = 3, CloseSide = AdCloseSide.Right, TimerSide = AdTimerSide.Right, RedirectOnClose = true })
     };
+
+    // Native End Card: after the interstitial and the rewarded, as most of the studio's games run it.
+    [SerializeField, SectionGroup("End Card", Foldable = true), LabelText("After Interstitial")]
+    private AdRemoteSetting<bool> endCardAfterInterstitial = new(true);
+
+    [SerializeField, SectionGroup("End Card"), LabelText("After Rewarded")]
+    private AdRemoteSetting<bool> endCardAfterRewarded = new(true);
+
+    [SerializeField, SectionGroup("End Card"), LabelText("After Native Interstitial")]
+    private AdRemoteSetting<bool> endCardAfterNativeInterstitial = new(false);
 
     #endregion
 
@@ -180,7 +185,7 @@ public partial class AdsManager : IAdsManager {
 
     #region Return to game
 
-    /// <summary>The format the ad on return would show now: the first of On Return To Game's that is allowed and loaded; none before From Launch.</summary>
+    /// <summary>The format the ad on return would show now: the first of the App Open section's that is allowed and loaded; none before From Launch.</summary>
     public AdFullScreenFormat? ReturnFormat {
         get {
             if (AdsSdk.Launches < returnFromLaunch) return null;

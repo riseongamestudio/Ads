@@ -10,7 +10,7 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
 
 - Pack không còn luật của game: `AdsSdk` hiện đúng cái được gọi, như API của một SDK
   mediation. Remove-ads, giãn cách (First After, Min Interval, After Rewarded), end
-  card nối sau ad, ad khi quay lại game và lúc mở game (mục On Return To Game), Auto
+  card nối sau ad, ad khi quay lại game và lúc mở game (mục App Open), Auto
   Show của banner và các plan collapsible rời trang settings và lớp nền; chúng nằm
   trong sample `AdsManager`, game chép về và sửa. Ô **Included In Remove Ads**, **Use
   Native End Card** và các ô giãn cách của mục Formats không còn; giá trị đã đặt trên
