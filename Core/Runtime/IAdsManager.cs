@@ -7,12 +7,6 @@
     /// Its members are for the pack alone: the class implements them explicitly, and no other code can call them, not even through this interface.
     /// </summary>
     public interface IAdsManager {
-        /// <summary>
-        /// The Editor's stand-in for the pause a device makes while a full-screen ad is up, where no SDK pauses Unity: true as the first ad of a chain shows, false once the last one closed.<br/>
-        /// Only the game knows what pausing stops for it; <see cref="EditorGamePause.Apply"/> sets the time scale to zero and pauses the audio, both back as they were after.
-        /// </summary>
-        protected internal void PauseInEditor(bool paused);
-
         /// <summary>Once, as the first scene has loaded: where the manager subscribes to <see cref="AdsSdk"/>'s events and shows what the game shows from the start, such as the banner.</summary>
         protected internal void Started();
     }

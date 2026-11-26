@@ -61,7 +61,7 @@ rồi thêm package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob.native": "2.0.1"
+    "com.riseon.ads.admob.native": "2.1.0"
   }
 }
 ```
@@ -120,6 +120,17 @@ if (interstitial.IsReady()) interstitial.Show();
 - `CloseSettings` quyết nút đóng: thời gian chờ (`Cooldown`), cạnh đặt nút
   (`CloseSide`), vị trí đồng hồ (`TimerSide`), bấm đóng có mở quảng cáo không
   (`RedirectOnClose`); đổi sau được bằng `SetClose`.
+- `Layout` chọn cách xếp tấm thẻ trắng ở giữa màn hình; bỏ trống là
+  `Interstitial`. Đặt lúc tạo, không đổi sau.
+
+  | `FullScreenLayout` | Xếp |
+  |---|---|
+  | `Interstitial` | Ảnh trên cùng, rồi icon, tên, mô tả, nút bấm |
+  | `AppOpen` | `RedirectOnClose` tắt: như `Interstitial`, thêm thanh ở đầu màn hình với icon và tên game, thay nút đóng và đồng hồ: thanh quay vòng chờ suốt `Cooldown`, rồi ghi "Continue to app" và bấm được. `RedirectOnClose` bật: giống hệt `Interstitial` |
+  | `EndCard` | App trước (icon lớn, tên), rồi ảnh, mô tả, nút bấm |
+
+  Màn hình ngang thì ảnh nằm bên trái thẻ, chữ bên phải. Ad xoay theo game: game
+  ngang thì ad ngang.
 
 ### Nửa màn hình: chiều cao và trượt
 
@@ -195,7 +206,7 @@ cell.Dispose();                                                       // khi ch�
 
 Editor vẽ bản xem trước bằng uGUI, mỗi lớp một canvas Screen Space Overlay với
 sorting order lấy từ `NativeAdEditorLayers` (xem [thứ tự lớp](#thứ-tự-lớp)). Canvas
-của game phải nằm dưới số nhỏ nhất trong đó. Chi tiết:
+của game phải nằm dưới số nhỏ nhất trong đó. Bấm vào ad mở trang AdMob. Chi tiết:
 [Runtime/Platforms/Editor/README.md](Runtime/Platforms/Editor/README.md).
 
 ## Thứ tự lớp

@@ -2,6 +2,7 @@ package com.riseon.ads.admobnative;
 
 import android.app.Activity;
 import android.os.SystemClock;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.google.android.gms.ads.nativead.NativeAd;
@@ -38,6 +39,9 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
         final int backgroundColor;
         // The close button commits the ad's click on its way out.
         final boolean redirectOnClose;
+        // How a full-screen ad arranges itself, ordinals shared with the C#
+        // FullScreenLayout: Interstitial 0, AppOpen 1, EndCard 2.
+        final int layout;
 
         OverlayAdStyle(
                 boolean fullScreen
@@ -46,7 +50,8 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , int timerSide
               , float heightRatio
               , int backgroundColor
-              , boolean redirectOnClose) {
+              , boolean redirectOnClose
+              , int layout) {
             this.fullScreen = fullScreen;
             this.cooldown = Math.max(0, cooldown);
             this.closeSide = closeSide;
@@ -54,6 +59,7 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
             this.heightRatio = heightRatio;
             this.backgroundColor = backgroundColor;
             this.redirectOnClose = redirectOnClose;
+            this.layout = layout;
         }
 
         OverlayAdStyle WithClose(
@@ -68,7 +74,20 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
                   , newTimerSide
                   , heightRatio
                   , backgroundColor
-                  , newRedirectOnClose);
+                  , newRedirectOnClose
+                  , layout);
+        }
+
+        OverlayAdStyle WithLayout(int newLayout) {
+            return new OverlayAdStyle(
+                    fullScreen
+                  , cooldown
+                  , closeSide
+                  , timerSide
+                  , heightRatio
+                  , backgroundColor
+                  , redirectOnClose
+                  , newLayout);
         }
 
         // Random is answered once per presentation; the relative timer modes
@@ -138,6 +157,10 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
     private boolean preparedContentCloseOnLeft;
     private OverlayAdActivity.CloseRelay preparedContentCloseRelay;
     private String preparedContentMediaSignature;
+    // The screen the prepared face was laid out for; a turned screen needs
+    // the other arrangement.
+    private int preparedContentScreenWidth;
+    private int preparedContentScreenHeight;
     private String preparedPresentationMediaSignature;
 
     // The face of the creative's assets at one moment. A presentation built
@@ -373,7 +396,8 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , timerSide
               , heightRatio
               , backgroundColor
-              , redirectOnClose);
+              , redirectOnClose
+              , 0);
         configured = true;
         // A game paused under the ad lets its video play with sound; one
         // beside the game keeps it muted.
@@ -398,6 +422,20 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , closeSide
               , timerSide
               , redirectOnClose);
+        configuredStyle = updatedStyle;
+        RequestPreparedFaceRebuild(updatedStyle);
+    }
+
+    // Called straight after Configure. The pool it joined may already hold an
+    // ad another placement warmed, and a face may have been prepared from it
+    // in between, so that face is rebuilt as SetClose's is.
+    public void SetLayout(int layout) {
+        OverlayAdStyle currentStyle = configuredStyle;
+        if (!configured || released || currentStyle == null) {
+            Log.e(TAG, "SetLayout ignored before Configure or after Release");
+            return;
+        }
+        OverlayAdStyle updatedStyle = currentStyle.WithLayout(layout);
         configuredStyle = updatedStyle;
         RequestPreparedFaceRebuild(updatedStyle);
     }
@@ -1159,6 +1197,7 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
                           , style.backgroundColor
                           , style.redirectOnClose
                           , requestedPanelHeight
+                          , style.layout
                           , closeRelay);
             preparedContentView = createdContentView;
             preparedContentActivity = activity;
@@ -1166,6 +1205,9 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
             preparedContentCloseOnLeft = closeOnLeft;
             preparedContentCloseRelay = closeRelay;
             preparedContentMediaSignature = MediaSignature(ad);
+            DisplayMetrics metrics = activity.getResources().getDisplayMetrics();
+            preparedContentScreenWidth = metrics.widthPixels;
+            preparedContentScreenHeight = metrics.heightPixels;
         } catch (RuntimeException exception) {
             Log.e(TAG, "Failed to prepare full-screen ad content"
                   , exception);
@@ -1180,13 +1222,16 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
         // not among them, because SetClose rebuilds this content outright
         // rather than leaving a stale one to be caught here. What this does
         // catch is assets that finished arriving after the build and
-        // changed the layout the ad needs.
+        // changed the layout the ad needs, and a screen turned since.
+        DisplayMetrics metrics = activity.getResources().getDisplayMetrics();
         if (preparedContentView == null
                 || preparedContentActivity != activity
                 || preparedContentAd != ad
                 || preparedContentCloseRelay == null
                 || !MediaSignature(ad).equals(
-                        preparedContentMediaSignature)) {
+                        preparedContentMediaSignature)
+                || metrics.widthPixels != preparedContentScreenWidth
+                || metrics.heightPixels != preparedContentScreenHeight) {
             ReleasePreparedFullScreenContent();
             return null;
         }

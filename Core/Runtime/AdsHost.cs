@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using RiseOn.Consent;
+using RiseOn.Utils;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if ADS_SUPPORT_REMOTECONFIG
@@ -45,6 +46,9 @@ namespace RiseOn.Ads {
         // What the game wants on screen, shown once a mediation serving it starts.
         private bool    bannerWanted;
         private bool    mRecWanted;
+
+        // How many ads the game shows through are up; the rect ads wait for none.
+        private int rectAdsHidden;
         private readonly List<NativeRectHandle> handles = new();
         private readonly List<NativeRectHandle> unbound = new();
 
@@ -324,7 +328,7 @@ namespace RiseOn.Ads {
             if (!Application.isEditor || isPausedInEditor) return;
 
             isPausedInEditor = true;
-            AdsSdk.PauseInEditor(true);
+            PauseInEditor(true);
         }
 
         // Any thread: on a device the last step's close may come while Unity sleeps. The Editor's loop runs on, so its pause ends
@@ -337,8 +341,42 @@ namespace RiseOn.Ads {
                 if (Volatile.Read(ref fullScreenCount) != 0 || !isPausedInEditor) return;
 
                 isPausedInEditor = false;
-                AdsSdk.PauseInEditor(false);
+                PauseInEditor(false);
             });
+        }
+
+        // The game's pause, where a device would stop Unity under the ad; one failing in the game leaves the chain running.
+        private static void PauseInEditor(bool paused) {
+            try {
+                if (paused) IEditorPauseHandler.Pause();
+                else IEditorPauseHandler.Resume();
+            } catch (System.Exception exception) {
+                Debug.LogException(exception);
+            }
+        }
+
+        void IAdChainHost.HideRectAds() {
+            if (rectAdsHidden++ > 0) return;
+
+            TakeDownBanner();
+            TakeDownMRec();
+            RefreshHandles();
+        }
+
+        // The close may come on the ad's thread; the views come back on Unity's, once the game runs again.
+        void IAdChainHost.ShowRectAds() {
+            UniTask.Post(() => {
+                if (--rectAdsHidden > 0) return;
+
+                if (bannerWanted) ShowBanner();
+                if (mRecWanted) ShowMRec();
+                RefreshHandles();
+            });
+        }
+
+        // Each native rect hides or comes back as its canShow now says.
+        private void RefreshHandles() {
+            foreach (var handle in handles.ToArray()) handle.Refresh();
         }
 
         Color IAdChainHost.CoverColor => settings.CoverColor;
@@ -399,7 +437,7 @@ namespace RiseOn.Ads {
 
         public void ShowBanner() {
             bannerWanted = true;
-            if (AdsSdk.IsSuppressed(AdFormat.Banner)) return;
+            if (rectAdsHidden > 0 || AdsSdk.IsSuppressed(AdFormat.Banner)) return;
 
             var mediation = First<IAdMediationBanner>(AdFormat.Banner);
             if (mediation == null) return;
@@ -421,7 +459,7 @@ namespace RiseOn.Ads {
 
         public void ShowMRec() {
             mRecWanted = true;
-            if (AdsSdk.IsSuppressed(AdFormat.MRec)) return;
+            if (rectAdsHidden > 0 || AdsSdk.IsSuppressed(AdFormat.MRec)) return;
 
             var mediation = First<IAdMediationMRec>(AdFormat.MRec);
             if (mediation == null) return;
@@ -442,7 +480,7 @@ namespace RiseOn.Ads {
         }
 
         public NativeRectHandle CreateNativeRect(AdFormat format, Vector2Int sizePx, int roundCornerPx) {
-            var handle = new NativeRectHandle(format, sizePx, roundCornerPx, () => !AdsSdk.IsSuppressed(format), disposed => handles.Remove(disposed));
+            var handle = new NativeRectHandle(format, sizePx, roundCornerPx, () => rectAdsHidden == 0 && !AdsSdk.IsSuppressed(format), disposed => handles.Remove(disposed));
             handles.Add(handle);
             if (!TryBind(handle)) unbound.Add(handle);
             return handle;

@@ -55,7 +55,9 @@ namespace RiseOn.Ads.AdMob.Native {
               , settings.HeightRatio
               , settings.CacheSize
               , settings.BackgroundColor
-              , settings.Close) {}
+              , settings.Close
+              // The bottom slice has no card to arrange.
+              , FullScreenLayout.Interstitial) {}
 
         /// <summary>
         /// The panel's height in the platform's own units: pixels on Android, points on iOS, Screen pixels in the Editor.<br/>

@@ -46,17 +46,20 @@ Bước đầu `CallsBackOffLoop` thì màn che bật trước bước đầu, k
 exception. Bước đầu không `CallsBackOffLoop` thì không có màn che: SDK tự dừng game
 như thường.
 
+Chuỗi chỉ có một ad App Open cũng không có màn che: ad đó không có nền, game lộ ra
+quanh nó. Trong lúc nó hiện, banner, MRec và các ô native rời màn hình, rồi quay lại
+như game đang yêu cầu khi nó đóng.
+
 ## Kết quả
 
 `AdChainResult.Skip` là `NotReady` khi bước đầu chưa sẵn sàng: chuỗi không hiện
 gì. Bước sau chưa sẵn sàng thì bị bỏ qua, chuỗi vẫn chạy tiếp. `Rewarded` đúng khi
 bất kỳ bước rewarded nào trả thưởng.
 
-Chuỗi lấy từ `Chain()` của manager bỏ bước ngay lúc thêm: định dạng remove-ads chặn,
-định dạng chưa qua **First After**, **Min Interval** của nó (mục Formats). Không còn
-bước nào thì `Skip` là `Removed` hoặc `Pacing`, theo bước đầu tiên bị bỏ. Bước có
-thưởng bị remove-ads chặn thì `Rewarded` vẫn đúng: gói lấy đi quảng cáo, không lấy
-đi phần thưởng.
+Chuỗi lấy từ `AdsSdk.Chain()` bỏ bước ngay lúc thêm khi format của nó đang bị chặn
+(`AdsSdk.SetSuppressed`). Không còn bước nào thì `Skip` là `Suppressed` nếu có bước bị
+chặn, `NoStep` nếu chuỗi không có bước nào. Bước có thưởng bị chặn thì `Rewarded` vẫn
+đúng: chặn lấy đi quảng cáo, không lấy đi phần thưởng.
 
 ## Collapsible
 
@@ -65,5 +68,5 @@ và hiện cả chuỗi trên mediation đó. Mỗi bước có `AdCloseSettings
 bên nút đóng, redirect). Ad đầu trượt vào; `onDisplayed` của bước đến sau khi trượt
 xong. Ad cuối trượt ra khi người chơi đóng. Đóng kiểu redirect thì không trượt.
 Màn che half-screen chỉ hiện dưới ad chưa phải cuối, để ad kế tiếp thay chỗ mà game
-không lộ ra. `Run()` trả số ad đã hiện. `HideCollapsible()` (của `AdsSdk` hay của
-manager) cắt chuỗi đang chạy.
+không lộ ra. `Run()` trả số ad đã hiện. `AdsSdk.HideCollapsible()` cắt chuỗi đang
+chạy.

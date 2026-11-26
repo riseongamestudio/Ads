@@ -24,7 +24,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , settings.FullScreen
               , settings.HeightRatio
               , AdColor.Unpack(settings.BackgroundColor)
-              , settings.Close);
+              , settings.Close
+              , settings.Layout);
         }
 
         // Screen pixels: the unit the Editor's own surface is measured in.

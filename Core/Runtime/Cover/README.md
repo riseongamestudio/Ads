@@ -147,9 +147,8 @@ view của game để chen xuống dưới.
 - Ẩn = `Canvas.enabled = false` (giữ chỗ). Area là `Image` có `raycastTarget` kể cả
   khi trong suốt, như window trên máy.
 - Màn che không dừng game. Pause trong Editor thuộc về lượt full-screen: chuỗi bắt
-  đầu hiện ad đầu thì pack gọi `PauseInEditor(true)` của manager, ad cuối đóng thì
-  `PauseInEditor(false)`; game không có manager thì pack dùng cách dừng mặc định
-  `EditorGamePause.Apply` (xem README của pack, mục "Lớp manager").
+  đầu hiện ad đầu thì pack gọi `IEditorPauseHandler.Pause()` của `com.riseon.utils`, ad cuối
+  đóng thì `IEditorPauseHandler.Resume()` (xem README của pack, mục "Lớp manager").
 - Lệnh từ thread khác được post về thread Unity qua `SynchronizationContext`
   bắt ở `BeforeSceneLoad` (`EditorThread`).
 - **Không tái tạo hiểm họa của máy**: Editor ở time scale 0 vẫn chạy mọi

@@ -3,7 +3,7 @@
 Quảng cáo tự khởi động khi mở game theo thiết lập trong Project Settings: mediation
 khởi động khi luồng consent cho phép quảng cáo, danh sách ưu tiên theo định dạng
 (tại chỗ hoặc từ Remote Config), ad full-screen dưới màn che native, chuỗi
-collapsible. Lõi là lớp static `AdsSdk`, như API của một SDK mediation, không có luật
+collapsible. Lõi là lớp static `AdsSdk`, không có luật
 riêng; luật của game (remove-ads, giãn cách, end card, ad khi quay lại game) nằm
 trong lớp manager duy nhất của game, field của nó chỉnh trên trang settings. Project
 không có lớp manager riêng thì pack chạy `DefaultAdsManager`, các luật hay gặp.
@@ -32,8 +32,8 @@ Package `com.riseon.ads`, namespace `RiseOn.Ads`.
 | Unity 6000.3 | | Bản đang dùng để phát triển |
 | [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của trang cài đặt |
 | `com.riseon.consent` 1.0.2 | Tự cài theo `package.json` | Luồng UMP và ATT mà mediation chờ |
-| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của trang cài đặt |
-| `com.riseon.serializables` 1.0.5 | Tự cài theo `package.json` | Thiết lập của từng format, danh sách mediation |
+| `com.riseon.utils` 2.0.0 | Tự cài theo `package.json` | Các mục của trang cài đặt |
+| `com.riseon.serializables` 1.0.6 | Tự cài theo `package.json` | Thiết lập của từng format, danh sách mediation |
 | `com.cysharp.unitask` 2.5.11 | Tự cài theo `package.json`, từ OpenUPM | Các hàm `async` |
 | `com.unity.ugui` 2.0.0 | Tự cài theo `package.json` | Màn che và ad mẫu trong Editor, cửa sổ `AdsDebugger` |
 | Ít nhất một adapter | `com.riseon.ads.admob`, `com.riseon.ads.max` hoặc `com.riseon.ads.levelplay` | Mediation chạy quảng cáo |
@@ -65,7 +65,7 @@ cần dùng:
     }
   ],
   "dependencies": {
-    "com.riseon.ads": "2.0.0"
+    "com.riseon.ads": "3.0.0"
   }
 }
 ```
@@ -85,7 +85,7 @@ https://github.com/riseongamestudio/Ads.git?path=/Core
 
 ## Tổng quan
 
-- **`AdsSdk`**: lớp static, lõi của pack, như API của một SDK mediation. Trước scene
+- **`AdsSdk`**: lớp static, lõi của pack. Trước scene
   đầu, pack đọc settings và tạo manager; rồi chốt danh sách ưu tiên của lần mở này,
   chờ luồng consent và khởi động cùng lúc mọi mediation có tên trong các danh sách;
   SDK nào khởi động chậm hay treo không giữ chân SDK khác. `AdsSdk` hiện đúng cái
@@ -99,7 +99,7 @@ https://github.com/riseongamestudio/Ads.git?path=/Core
   trước scene đầu. Một SDK treo giữ nó (và `IsInitialized`) chờ mãi.
 - **Lớp manager**: mỗi project có tối đa một lớp `partial` cài `IAdsManager`, chỗ
   của luật quảng cáo của game. Field của lớp hiện trong mục Manager của trang; pack
-  tạo instance trước scene đầu và chỉ gọi `PauseInEditor`, `Started` của nó. Không có
+  tạo instance trước scene đầu và chỉ gọi `Started` của nó. Không có
   lớp riêng thì pack chạy `DefaultAdsManager`, các luật phần lớn game của studio chạy
   (xem "`DefaultAdsManager`"); game cần luật khác thì chép nó thành lớp riêng.
 - **Công cụ cho luật của game**: `AdPacing` (giãn cách một format, field của
@@ -136,11 +136,12 @@ https://github.com/riseongamestudio/Ads.git?path=/Core
   tự chạy luồng UMP + ATT khi mở game. Pack trao `ConsentState` cho từng mediation
   trước khi khởi động, và trao lại khi người chơi đổi lựa chọn trong form privacy.
 - **`AdChain`**: một hay nhiều ad full-screen nối nhau (interstitial rồi end card...).
-  Màn che native full-screen nằm dưới mọi ad của chuỗi, màu chỉnh trên trang: chỗ ad
+  Màn che native full-screen nằm dưới các ad của chuỗi, màu chỉnh trên trang: chỗ ad
   không phủ (lề tai thỏ...) và khoảng giữa hai ad đều là màu đó, game không lộ ra, và
-  game dừng tới khi ad cuối đóng. Riêng ad mà SDK báo đóng qua player loop của Unity
-  (rewarded của AdMob trên iOS) thì không có màn che và không có bước sau (xem
-  [Chain](Runtime/Chain/README.md)).
+  game dừng tới khi ad cuối đóng. Ad mà SDK báo đóng qua player loop của Unity
+  (rewarded của AdMob trên iOS) thì không có màn che và không có bước sau. Chuỗi chỉ có
+  một ad App Open cũng không có màn che, game lộ ra quanh ad; banner, MRec và ô native
+  rời màn hình trong lúc nó hiện (xem [Chain](Runtime/Chain/README.md)).
 - **`AdCollapsibleChain`**: các native collapsible nối nhau; ad đầu trượt vào, ad
   cuối trượt ra, giữa các ad không trượt. Màn che half-screen chỉ hiện dưới ad chưa
   phải cuối. `AdsSdk.ShowCollapsibleAsync(plan)` dựng chuỗi theo các bước của một
@@ -158,8 +159,11 @@ https://github.com/riseongamestudio/Ads.git?path=/Core
   giữa các format tùy mediation, xem README của nó), nên màn nào hiện nhiều ô cùng
   lúc thì tăng số đó. Tạo ô trước khi mediation phục vụ format khởi động xong thì ô
   nhận khối khi có, giữ chỗ và trạng thái bật mà game đã đặt. Định dạng tắt hay
-  mediation thiếu unit id thì handle rỗng: mọi lời gọi không làm gì và `HasCell` là
-  `false`, nên game chỉ chừa chỗ cho ô quảng cáo khi `HasCell` là `true`.
+  mediation thiếu unit id thì ô không bao giờ nhận khối: mọi lời gọi không làm gì.
+  `HasCell` là `true` khi ô đã nhận khối; ô tạo trước khi mediation khởi động xong là
+  `false` tới lúc đó, và không có sự kiện báo lúc nó đổi, nên game không dựa vào
+  `HasCell` để quyết định chừa chỗ; muốn biết format có mediation phục vụ thì dùng
+  `AdsSdk.Serves(format)`.
 - **`AdsDebugger`**: cửa sổ debug cho bản build test, game mở bằng
   `AdsDebugger.Show()` từ menu cheat. Cửa sổ hiện advertising ID của máy kèm nút
   copy, để đăng ký máy làm test device trên AdMob và LevelPlay (MAX bật test ads
@@ -188,7 +192,7 @@ Chi tiết từng khái niệm trong README của thư mục:
 | `HideCollapsible()` | Trượt collapsible đang hiện ra và kết thúc chuỗi của nó |
 | `ShowBanner()`, `HideBanner()`, `ShowMRec()`, `HideMRec()` | Banner, MRec ở chỗ chọn trong mục Formats; đã hiện thì ở đó tới khi gọi `Hide…`. Gọi lúc chưa mediation nào khởi động xong (màn đầu game) thì hiện khi mediation đầu tiên phục vụ format khởi động xong; mediation đứng trước nó trong danh sách khởi động xong sau thì chuyển sang mediation đó |
 | `CreateNativeMRec(sizePx, roundCornerPx)`, `CreateNativeInFeed(sizePx, roundCornerPx)` | Ô native, xem `NativeRectHandle` ở trên |
-| `SetSuppressed(format, on)`, `IsSuppressed(format)` | Chặn hay thả một format. Format full-screen bị chặn thì bước của nó bị bỏ khỏi mọi chuỗi, format có thưởng thì coi như người chơi đã nhận thưởng; banner, MRec, collapsible và ô native rời màn hình, và hiện lại những gì game đã yêu cầu khi thả. Không lưu: game đặt lại từ save mỗi lần mở, trước ad của scene đầu; gọi được trước khi pack chạy |
+| `SetSuppressed(format, on)`, `IsSuppressed(format)` | Chặn hay thả một format. Format full-screen bị chặn thì bước của nó bị bỏ khỏi mọi chuỗi, format có thưởng thì coi như người chơi đã nhận thưởng; banner, MRec và ô native rời màn hình, và hiện lại những gì game đã yêu cầu khi thả; chuỗi collapsible đang chạy bị cắt và không tự hiện lại. Không lưu: game đặt lại mỗi lần mở từ nguồn của nó (quyền sở hữu IAP, save), càng sớm càng tốt; gọi được trước khi pack chạy |
 | `Serves(format)` | Danh sách ưu tiên của format có ít nhất một mediation trên nền tảng này (danh sách trên trang, rồi danh sách từ key Remote Config sau khi Remote Config xong); mediation đã khởi động chưa thì không tính. Cho lựa chọn của game, như ẩn nút của format không mediation nào phục vụ |
 | `Launches` | Lần mở game này trên máy, 1 là lần đầu; pack tự đếm |
 | `SecondsSinceDisplay(format)` | Số giây từ lần format hiện gần nhất, từ mọi chuỗi; với Native Collapsible là từ ad đầu của chuỗi gần nhất; `null` khi chưa hiện lần nào |
@@ -196,7 +200,7 @@ Chi tiết từng khái niệm trong README của thư mục:
 
 | Sự kiện | Khi nào |
 |---|---|
-| `Paid` | Doanh thu từng impression, từ mọi mediation và format, kèm `Placement`. Doanh thu đã tự gửi tới analytics khi project cài `com.riseon.analytics` và **Ad Revenue from Ads** trên trang Analytics bật (mặc định) |
+| `Paid` | Doanh thu từng impression, từ mọi mediation và format, kèm `Placement`. Doanh thu đã tự gửi tới analytics khi project cài `com.riseon.analytics` và ô **Link RiseOn Ads** ở dòng Ad Revenue của bảng Standard Events trên trang Analytics được tick (mặc định) |
 | `Displayed` | Một ad full-screen lên màn hình, từ mọi chuỗi, kèm placement truyền vào lần show |
 | `CollapsibleDisplayed` | Một ad collapsible trượt vào hay thay chỗ, từ mọi chuỗi |
 | `Loaded`, `LoadFailed` | Một mediation (theo id) load xong hay lỗi một ad của format |
@@ -216,8 +220,8 @@ Inspector của asset chỉ có nút mở trang này.
 | Mục | Ý nghĩa |
 |---|---|
 | Display | **Cover**: màu màn che dưới ad full-screen và dưới collapsible giữa chuỗi. **Editor Sorting Order**: sorting order thấp nhất của các lớp ad trong Editor; các lớp xếp lên từ đó (xem dưới). Canvas của game phải thấp hơn số này |
-| Manager | Lớp manager của project: tên lớp trên thanh (chỉ đọc). Field của lớp hiện bên trong; lớp không có field nào thì thanh không gập mở |
-| Mediations | Các SDK quảng cáo. Mỗi class mediation trong project, cả adapter của pack lẫn class game tự viết, tự có một dòng gập mở; trang tự thêm khi class mới compile, không có bước thêm vào danh sách. Mediation không format nào dùng thì không khởi động. Alt+click mở hay gập cả nhánh. Bên trong, trên cùng là thiết lập của mediation (như App Key của LevelPlay) và của SDK, phần của SDK đọc và ghi thẳng vào file settings của chính SDK (xem README của từng mediation); dưới đó là mục con **Networks**, gập sẵn: các network mà SDK của mediation mediate, phiên bản adapter của từng network trong project, và cài, cập nhật, gỡ adapter theo đúng cách của SDK đó (LevelPlay chỉ có nút mở Network Manager của nó; xem mục Network trong README của từng adapter); dưới cùng là mục con **Formats** của mediation, mỗi format một mục con, unit id Android và iOS nằm ngay trên thanh của mục con; format có thêm thiết lập (như **Cache Size** của format native AdMob) thì gập mở được, và format không có thì đứng trước. Adapter của pack (AdMob, MAX, LevelPlay) có dòng dù chưa cài, như network trong mục **Networks**: cột giá trị ghi phiên bản trong project (chưa cài thì **Not installed**), kèm nút cuối dòng. **Install** thêm package của adapter qua Package Manager. Core cài từ thư mục local thì lấy từ thư mục cùng tên adapter cạnh `Core`; thiếu thư mục đó thì dòng không có **Install**, tooltip ghi đường dẫn thiếu. Core cài từ registry thì **Install** hỏi phiên bản, liệt kê các phiên bản registry có, mới nhất trước; danh sách chưa đọc xong (đang đọc, registry lỗi) thì **Install** cài thẳng bản mới nhất. Đã cài từ registry thì bấm vào phiên bản để chọn phiên bản khác, cũ hơn cũng được; có phiên bản mới hơn thì cột ghi `cũ → mới` kèm nút **Update**, và **Update All** trên thanh cập nhật mọi adapter cũ. Danh sách phiên bản đọc từ registry lần đầu mở trang trong mỗi phiên Editor; nút làm mới trên thanh đọc lại. **Uninstall** (khi manifest có tên adapter) hỏi lại một lần, kèm danh sách format đang dùng mediation, bỏ mediation khỏi danh sách và khỏi mọi format, rồi gỡ package. Unit id và thiết lập format của nó trong asset của pack mất theo; file settings của SDK trong `Assets` giữ nguyên, và package SDK chỉ được gỡ theo khi manifest không ghi nó trực tiếp. Cài, cập nhật, gỡ lỗi (ví dụ manifest thiếu scoped registry của SDK, xem README của adapter) thì Console báo `Installing … failed: …` (hay `Updating`, `Uninstalling`). Từ lúc bấm tới khi Package Manager xong, đầu danh sách có dòng quay ghi việc đang chạy, như **Uninstalling LevelPlay**, và mọi nút cài, gỡ trên trang mờ đi, vì Package Manager resolve lại mọi package rồi Unity mới compile |
+| Manager | Lớp manager của project: ô script trên thanh (chỉ đọc). Field của lớp hiện bên trong; lớp không có field nào thì thanh không gập mở |
+| Mediations | Các SDK quảng cáo. Mỗi class mediation trong project, cả adapter của pack lẫn class game tự viết, tự có một dòng gập mở; trang tự thêm khi class mới compile, không có bước thêm vào danh sách. Mediation không format nào dùng thì không khởi động. Alt+click mở hay gập cả nhánh. Bên trong, trên cùng là thiết lập của mediation (như App Key của LevelPlay) và của SDK, phần của SDK đọc và ghi thẳng vào file settings của chính SDK (xem README của từng mediation); dưới đó là mục con **Networks**, gập sẵn: các network mà SDK của mediation mediate, phiên bản adapter của từng network trong project, và cài, cập nhật, gỡ adapter theo đúng cách của SDK đó (LevelPlay chỉ có nút mở Network Manager của nó; xem mục Network trong README của từng adapter); dưới cùng là mục con **Formats** của mediation, mỗi format một mục con, unit id Android và iOS nằm ngay trên thanh của mục con; format có thêm thiết lập (như **Cache Size** của format native AdMob) thì gập mở được, và format không có thì đứng trước. Adapter của pack (AdMob, MAX, LevelPlay) có dòng dù chưa cài, như network trong mục **Networks**: cột giá trị ghi phiên bản trong project (chưa cài thì **Not installed**), kèm nút cuối dòng. **Install** thêm package của adapter qua Package Manager. Core cài từ thư mục local thì lấy từ thư mục cùng tên adapter cạnh `Core`; thiếu thư mục đó thì dòng không có **Install**, tooltip ghi đường dẫn thiếu. Core cài từ registry thì **Install** hỏi phiên bản, liệt kê các phiên bản registry có, mới nhất trước; danh sách chưa đọc xong (đang đọc, registry lỗi) thì **Install** cài thẳng bản mới nhất. Đã cài từ registry thì bấm vào phiên bản để chọn phiên bản khác, cũ hơn cũng được; có phiên bản mới hơn thì cột ghi `cũ → mới` kèm nút **Update**, và **Update All** trên thanh cập nhật mọi adapter cũ. Danh sách phiên bản đọc từ registry lần đầu mở trang trong mỗi phiên Editor; nút làm mới trên thanh đọc lại. **Uninstall** (khi manifest có tên adapter) hỏi lại một lần, kèm danh sách format đang dùng mediation, bỏ mediation khỏi danh sách và khỏi mọi format, rồi gỡ package. Unit id và thiết lập format của nó trong asset của pack mất theo; file settings của SDK trong `Assets` giữ nguyên, và package SDK chỉ được gỡ theo khi manifest không ghi nó trực tiếp. Cài, cập nhật, gỡ lỗi (ví dụ manifest thiếu scoped registry của SDK, xem README của adapter) thì Console báo `Installing … failed: …` (hay `Updating`, `Uninstalling`). Từ lúc bấm tới khi Package Manager xong, nút vừa bấm quay tại chỗ (di chuột lên nó thì ghi việc đang chạy, như **Uninstalling LevelPlay**), và mọi nút cài, gỡ trên trang mờ đi, vì Package Manager resolve lại mọi package rồi Unity mới compile |
 | Formats | Mỗi format một mục con gập mở, theo thứ tự Banner, MRec, Interstitial, Rewarded, Rewarded Interstitial, App Open, rồi các format native, gập sẵn. Trong mỗi mục, dòng **Mediations** là các mediation phục vụ format, thử từ trái sang phải; hàng hẹp thì ô xuống dòng như chữ, thử tiếp từ trên xuống dưới, mũi tên chỉ nằm giữa hai ô cùng dòng. Kéo một ô để đổi thứ tự, **×** trên ô bỏ mediation khỏi format, **+** thêm một mediation của trang mà format chưa có và phục vụ được format đó (format native chỉ AdMob; App Open có AdMob, MAX; Rewarded Interstitial chỉ AdMob); không mediation nào thì format ghi **Off** và tắt. Nút ở cuối dòng **Mediations** tách danh sách cho format mà mỗi nền tảng dùng mediation khác: bấm thì dòng thành hai dòng **Android** và **iOS**, iOS bắt đầu bằng danh sách đang có; nút ở cuối dòng tên gộp lại, giữ danh sách Android. Ô ngay trước nút ở cuối dòng **Mediations** (khi đã tách là dòng tên) chọn một key kiểu chuỗi của `com.riseon.firebase.remoteconfig` cho danh sách mediation (khai key ở trang **RiseOn > Firebase > Remote Config**), **No Remote Key** là không dùng key; project không có pack đó thì ô mờ, ghi **No Remote Config**. Một key dùng cho cả hai nền tảng; muốn mỗi nền tảng một giá trị thì đặt condition theo nền tảng trên console. Giá trị là id mediation cách nhau bằng dấu phẩy, tốt nhất trước, ví dụ `max,admob`; `off` tắt format; giá trị rỗng thì dùng danh sách của dòng **Mediations**. Id không có trong Mediations bị bỏ, kèm cảnh báo trong Console; id nào cũng bị bỏ thì format tắt, như `off`. Có ít nhất một format chọn key thì mediation khởi động sau khi Remote Config xong lần mở game, theo giá trị nó có lúc đó. Cuối mục là cách hiện của format, mediation nào phục vụ format cũng làm theo, chung cho cả hai nền tảng: Banner có **Position** (bốn góc, giữa trên, giữa dưới, chính giữa vùng an toàn) và **Adaptive** (bật thì rộng hết màn hình, cao theo banner adaptive của mạng; tắt thì 320×50); MRec có **Position**; Native Interstitial, Native App Open, Native End Card có **Background Color** (màu chỗ creative không phủ) và **Close** (số giây chờ, cạnh đặt nút đóng, chỗ đồng hồ, bấm đóng thì mở quảng cáo); Native Collapsible có **Height Ratio** (phần chiều cao màn hình panel chiếm, từ đáy) và **Background Color**; Native MRec, Native In-Feed có **Background Color** (trong suốt thì chỗ game chừa sẵn lộ ra). |
 
 Trang báo đỏ và build dừng khi:
@@ -274,15 +278,20 @@ Compile báo lỗi khi:
 | `RISEONADS003` | Có hơn một lớp cài `IAdsManager` |
 | `RISEONADS004` | Một interface kế thừa `IAdsManager` |
 | `RISEONADS005` | Lớp abstract cài `IAdsManager`: pack tự tạo manager nên không tạo được lớp abstract |
-| `RISEONADS006` | Game đã có lớp riêng mà code vẫn gọi `DefaultAdsManager`, thứ lúc đó không chạy |
+| `RISEONADS006` | Game đã có lớp riêng mà code vẫn gọi `DefaultAdsManager`, thứ lúc đó không chạy. Chỉ báo trong assembly thấy được lớp của game; xem [DefaultAdsManager](#defaultadsmanager) |
 
-`IAdsManager` có hai member, `protected internal`, nên lớp cài chúng tường minh
-(`void IAdsManager.PauseInEditor(bool paused)`) và chỉ pack gọi được:
+`IAdsManager` có một member, `protected internal`, nên lớp cài nó tường minh
+(`void IAdsManager.Started()`) và chỉ pack gọi được:
 
 | Member | Khi nào |
 |---|---|
-| `PauseInEditor(paused)` | Trong Editor không SDK nào dừng Unity dưới ad full-screen, nên pack gọi hàm này: `true` khi chuỗi bắt đầu hiện ad đầu, `false` khi ad cuối đóng; game không có manager thì pack dùng `EditorGamePause.Apply`. `EditorGamePause.Apply` đưa `Time.timeScale` về 0 và dừng âm thanh, rồi trả lại như cũ; game viết khác khi với nó "dừng" là việc khác (ví dụ game tự đếm giờ bằng thời gian thật) |
 | `Started()` | Một lần, khi scene đầu đã load: chỗ manager đăng ký sự kiện của `AdsSdk` và hiện những gì game hiện từ đầu, như banner |
+
+Trong Editor không SDK nào dừng Unity dưới ad full-screen, nên pack gọi
+`IEditorPauseHandler.Pause()` của `com.riseon.utils` khi chuỗi bắt đầu hiện ad đầu và
+`Resume()` khi ad cuối đóng: mặc định `Time.timeScale` về 0 và dừng âm thanh. Game
+muốn dừng theo cách khác thì viết lớp cài `IEditorPauseHandler`, xem
+[EditorPauseHandler](https://github.com/riseongamestudio/Utils/blob/com.riseon.utils/2.0.0/Core/Runtime/EditorPauseHandler/README.md).
 
 Field của lớp hiện trong mục Manager của trang và lưu trong asset của pack. Field kiểu
 `AdRemoteSetting<float>` hay `AdRemoteSetting<bool>`, kể cả bên trong `AdPacing` và
@@ -299,7 +308,6 @@ là giá trị mặc định khai trên trang Remote Config.
 | `AdCollapsiblePlan` | Một cách chạy collapsible: tên, **Weight** (có key Remote Config) và **Close** của từng ad trong chuỗi. Gắn `[SectionList]` lên mảng plan thì trang vẽ mỗi plan một dòng gập mở, ô tên và Weight trên thanh. `AdCollapsiblePlan.Pick(plans)` bốc một plan có bước, cơ hội của plan bằng weight chia tổng weight; không plan nào có bước và weight lớn hơn 0 thì trả `null` |
 | `AdsSdk.SetSuppressed(format, on)` | Chặn format, như mọi format gói remove-ads lấy đi (xem `AdsSdk`) |
 | `AdsSdk.Launches`, `AdsSdk.SecondsSinceDisplay(format)` | Lần mở game thứ mấy, số giây từ lần format hiện gần nhất |
-| `EditorGamePause.Apply(paused)` | Cách dừng game mặc định trong Editor, cho `PauseInEditor` |
 
 ## `DefaultAdsManager`
 
@@ -311,13 +319,22 @@ thành lớp của game (tên lớp theo tên file, nằm trong root namespace c
 đổi mọi chỗ gọi `DefaultAdsManager` trong script của `Assets` sang tên đầy đủ của lớp đó,
 nên phần còn lại của script không đổi (Console liệt kê các file đã đổi), và khi lớp đó compile xong thì chép các giá trị đang đặt
 trong mục Manager sang field cùng tên. Từ đó pack chạy lớp của game. Code ngoài `Assets`
-(package nhúng) còn gọi `DefaultAdsManager` thì compile báo `RISEONADS006`.
+(package nhúng) còn gọi `DefaultAdsManager` thì compile báo `RISEONADS006` khi assembly
+của nó thấy được lớp của game; không thấy thì không có lỗi compile, và
+`DefaultAdsManager.Ins` ném `InvalidOperationException` lúc chạy.
 
-Pack không ghi file nào, và Console báo lý do, khi chỗ lưu thuộc assembly không vào build
-(như thư mục `Editor`), hay khi assembly của chỗ lưu hoặc của một chỗ gọi đã thấy một kiểu
-cùng tên (như manager cũ của game). Chỗ lưu thuộc assembly definition thiếu tham chiếu
-(`RiseOn.Ads`, `RiseOn.Utils`, `RiseOn.Serializables`, `UniTask`) thì compile báo như mọi
-tham chiếu thiếu.
+Pack không ghi file nào, và Console báo lý do, khi tên file không phải tên lớp hợp lệ, khi
+chỗ lưu thuộc assembly không vào build (như thư mục `Editor`), hay khi assembly của chỗ
+lưu hoặc của một chỗ gọi đã thấy một kiểu cùng tên (như manager cũ của game). Compile báo
+lỗi như mọi tham chiếu thiếu khi:
+
+- Assembly definition của chỗ lưu thiếu những gì lớp chép dùng: `RiseOn.Ads`,
+  `RiseOn.Utils`, `RiseOn.Serializables`, `UniTask`, và Odin
+  (`Sirenix.OdinInspector.Attributes.dll`, phải ghi tay khi bật Override References).
+- Một script vừa đổi lời gọi nằm trong assembly không tham chiếu được assembly của chỗ
+  lưu. Hay gặp nhất: lưu vào `Assets` không có assembly definition (`Assembly-CSharp`)
+  trong khi có lời gọi nằm trong một assembly definition, thứ không tham chiếu được
+  `Assembly-CSharp`; lưu lớp vào một assembly definition mà các script đó tham chiếu.
 
 Luật vào `DefaultAdsManager` theo một tiêu chí: phần lớn game của studio cùng có, hoặc
 nhà phát triển SDK khuyến nghị. Chỗ các game chỉ khác nhau con số thì là field trên trang,
@@ -337,13 +354,13 @@ lại game; Collapsible Plans; End Card):
 | Pacing | Một mục cho mỗi lúc hiện ad: Interstitial và Native Interstitial chung một mục, Rewarded Interstitial, App Open và Native App Open chung một mục, Native Collapsible, Native End Card. Hai format chung một mục thì đếm từ lần một trong hai hiện gần nhất | Hai format cùng lấp một lúc (interstitial của mạng hay native ở cùng chỗ nghỉ giữa màn, app open của mạng hay native khi quay lại), game hiện cái này hoặc cái kia, nên hai đồng hồ riêng sẽ cho cả hai hiện; Get In The Bowl, Bounce Adventure giãn cách hai interstitial chung một đồng hồ. Rewarded do người chơi tự chọn xem nên không giãn cách |
 | Pacing: Interstitial, Native Interstitial | First After 45, Min Interval 25 | Giá trị trên Remote Config của phần lớn game studio (Get In The Bowl, Bounce Adventure, Fish Sort) |
 | Pacing: Native Collapsible | 0, 15 | Như trên |
-| Pacing: Rewarded Interstitial, App Open, Native End Card | 0, 0 | Không game nào của studio giãn cách các format này; 0 là không giãn cách |
+| Pacing: Rewarded Interstitial; App Open, Native App Open; Native End Card | 0, 0 | Không game nào của studio giãn cách các format này; 0 là không giãn cách |
 | Pacing: After Rewarded | 0 | Phần lớn game của studio không chờ thêm sau rewarded; Shikaku Cat chờ 45, OrganiCat 90 |
 | Banner: Auto Show | Bật | Banner của các game studio hiện từ đầu game; game cần ẩn banner ở vài màn thì tắt ô này và tự gọi `ShowBanner`, `HideBanner` |
 | Interstitial: From Level | 1 | Phần lớn game của studio hiện interstitial từ level đầu; Get In The Bowl, Triple Pop từ level 4. Chỉ áp cho lời gọi có truyền `level` |
 | App Open: Format | Native App Open, else App Open | Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat bật native app open ad trên Remote Config |
 | App Open: From Launch | 1 | Mọi game của studio trừ OrganiCat hiện app open ad từ lần mở đầu |
-| App Open: On Launch | Bật | Phần lớn game của studio hiện app open ad trên scene chờ lúc mở game; Google hướng dẫn như vậy cho cold start |
+| App Open: On Launch | Bật | Phần lớn game của studio hiện app open ad trên scene chờ lúc mở game; Google [hướng dẫn](https://developers.google.com/admob/android/app-open#cold_starts_and_loading_screens) như vậy cho cold start |
 | App Open: After Away (s) | 0 | Mọi game của studio hiện app open ad mỗi lần người chơi quay lại |
 | Collapsible Plans | **Plain** (weight 0.6: một ad, nút đóng sau 3 giây ở cạnh ngẫu nhiên), **Chained** (weight 0.3: hai ad, đóng bên phải rồi bên trái), **Redirect** (weight 0.1: một ad, bấm đóng thì mở quảng cáo) | Ba plan và tỉ lệ trên Remote Config của Get In The Bowl, Bounce Adventure, Fish Sort, Shikaku Cat |
 | End Card: After Interstitial, After Rewarded | Bật | Phần lớn game của studio hiện end card sau interstitial và rewarded |
@@ -371,17 +388,14 @@ card cũng không hiện.
 | `ShowRewardedAsync(placement)`, `ShowRewardedInterstitialAsync` | Như trên, trả `true` khi người chơi nhận thưởng; format bị chặn thì thưởng luôn, không hiện ad |
 | `CanShowRewarded`, `CanShowRewardedInterstitial` | Có ad sẵn (Rewarded Interstitial thì giãn cách cũng phải cho phép), hoặc format bị chặn, khi đó thưởng không cần ad. Dùng để bật nút xem quảng cáo |
 | `ShowAsync(format, placement, level)`, `Allows(format, level)` | Đường chung của các hàm trên, cho format chỉ biết lúc chạy; `Allows` là giãn cách của format, và From Level với interstitial |
-| `Opportunity` | Sự kiện `(format, placement)` khi luật cho một lần hiện đi qua (không bị chặn, giãn cách và From Level cho phép), trước khi biết có ad sẵn hay không: lúc analytics tính là một cơ hội hiện ad, như sự kiện "interstitial triggered" của các game |
-| `SetAdsRemoved(removed)`, `AdsRemoved` | Chặn hay thả các format của mục Remove Ads. Gọi lúc mở game từ save, sau khi mua hay hoàn tiền gói remove-ads, và khi no-ads tạm thời của game hết hạn |
+| `Opportunity` | Sự kiện `(format, placement)` khi luật cho một lần hiện đi qua (không bị chặn, giãn cách và From Level cho phép), kể cả khi chưa có ad sẵn: lúc analytics tính là một cơ hội hiện ad, như sự kiện "interstitial triggered" của các game |
+| `SetAdsRemoved(removed)`, `AdsRemoved` | Chặn hay thả các format của mục Remove Ads. Gọi theo quyền sở hữu gói remove-ads (`IapSdk.Owns` lúc bắt đầu, rồi `IapSdk.OwnershipChanged` của `com.riseon.iap`), và khi no-ads tạm thời của game hết hạn. `Owns` là `false` tới khi cửa hàng trả lời, nên trong lúc đó banner tự hiện và ad lúc mở game vẫn hiện với người đã mua. Game muốn tránh thì tắt **Banner: Auto Show** và **App Open: On Launch** trong mục Manager, chờ `IapSdk.WaitUntilReadyAsync()` (kèm giới hạn thời gian), rồi tự gọi `ShowBanner`; ad lúc mở game thì chờ thêm `AdsSdk.WaitUntilInitializedAsync()` và tới khi `ReturnFormat` khác `null` (ad đã nạp), rồi mới gọi `ShowReturnAdAsync("launch")`, vì lúc chưa có ad sẵn nó trả `false` mà không hiện gì |
 | `AdsOff` | Switch của tester: bật thì không format nào hiện, format có thưởng thì thưởng luôn; tắt thì Remove Ads giữ như đã đặt. Hai cái cùng quyết định việc chặn ở một chỗ, nên không cái nào gỡ chặn của cái kia |
 | `ReturnAdBlocked` | Đặt `true` khi game tự đưa người chơi ra ngoài (bảng mua hàng, share, trang store), vì lần quay lại đó không phải lượt mở mới |
-| `ReturnFormat`, `ShowReturnAdAsync(placement)` | Format ad khi quay lại sẽ hiện lúc này (`null` khi chưa tới From Launch hay chưa có ad), và hiện nó, cho game tự hiện ad đó, ví dụ trên màn loading của mình |
+| `ReturnFormat`, `ShowReturnAdAsync(placement)` | Format ad khi quay lại sẽ hiện lúc này, và hiện nó, cho game tự hiện ad đó, ví dụ trên màn loading của mình. `ReturnFormat` là `null` khi Format là **None**, chưa tới From Launch, format bị chặn (Remove Ads, `AdsOff`), giãn cách App Open chưa cho phép, hoặc chưa có ad sẵn |
 | `ShowCollapsibleAsync(onDisplayed)` | Không hiện khi collapsible bị chặn hay giãn cách của Native Collapsible chưa cho phép; không thì bốc một plan theo weight và hiện các bước của nó nối nhau. Trả số ad đã hiện |
 | `CanShowCollapsible` | Giãn cách cho phép và có ad sẵn |
 | `ShowBanner()`, `HideBanner()` | Như của `AdsSdk` |
-
-Project mẫu `PackageSandbox` chạy `DefaultAdsManager`, với một file riêng của game: remove-ads
-đọc từ save, log analytics.
 
 ## Trong Editor
 
@@ -391,11 +405,28 @@ cho mọi target khác); unit id thì dùng của Android, ô Android trống th
 Mediation có tên trong các danh sách ưu tiên coi như khởi động không cần SDK và có ad
 sẵn cho các định dạng đó; mediation có cả native thì ad giả có sau khi SDK của nó
 khởi động xong cho native, và không có nếu lần khởi động đó lỗi. Pack vẽ ad giả ghi
-tên mediation đang phục vụ: ad full-screen kín màn hình có nút đóng ở góc phải trên
-(rewarded đếm ngược 5 giây rồi mới đóng được, đóng là nhận thưởng), banner 320×50
-point (Adaptive thì rộng hết vùng an toàn), MRec 300×250 point, mỗi cái ở chỗ chọn
-trong mục Formats; hai cái cùng chỗ thì đè lên nhau, như trên máy. Kích thước tính
-như trên điện thoại rộng 360 point. Native vẫn dùng bản xem trước của mediation, nên
+tên mediation đang phục vụ, cùng bố cục với ad native của pack AdMob.Native:
+
+- Interstitial: một thẻ giữa nền đen (ảnh, logo, tên, nhà quảng cáo, mô tả, nút
+  Install hình viên thuốc, badge Ad và AdChoices trên góc thẻ), nút đóng tròn ở góc
+  phải trên.
+- Rewarded và rewarded interstitial: trang app (icon, tên, điểm, thể loại, video,
+  nút Install ở đáy) với nhãn "Reward in N seconds" ở góc phải trên; màn dọc thì dải
+  video cao hết phần trang còn trống, chỗ video không phủ là chính hình đó phóng to và
+  tối đi; hết 5 giây nhãn thành
+  "Reward granted", end card hiện lên và ad đóng được; đóng là nhận thưởng.
+- App open: thanh trên cùng có icon và tên game, spinner trong 2 giây đầu rồi
+  "Continue to app"; bấm thanh để đóng. Dưới thanh là thẻ như interstitial, game tối
+  đi phía sau.
+- Banner 320×50 point (Adaptive thì rộng hết vùng an toàn) và MRec 300×250 point, mỗi
+  cái ở chỗ chọn trong mục Formats; hai cái cùng chỗ thì đè lên nhau, như trên máy.
+
+Theme của Editor (sáng/tối) chọn màu cho mọi ad giả. Kích thước tính như trên điện
+thoại rộng 360 point. Game view nằm ngang thì thẻ để ảnh bên trái, chữ bên phải, và
+rewarded để video bên trái, trang app bên phải; thẻ không rộng quá 440 point (ngang
+760 point), nên trên tablet nó đứng giữa thay vì kéo hết bề ngang. Nút Install mở
+trang của mediation phục vụ ad (AdMob, MAX, LevelPlay), như ad thật mở trang của nhà
+quảng cáo; ad vẫn ở trên màn hình. Native vẫn dùng bản xem trước của mediation, nên
 mediation phục vụ native vẫn khởi động SDK cho các định dạng native.
 
 Mọi lớp là canvas Screen Space Overlay, xếp bằng sorting order từ **Editor Sorting
@@ -413,6 +444,27 @@ Order** lên:
 Mediation tự vẽ bản xem trước lấy các số này từ `AdsEditorLayers`.
 
 ## Hướng dẫn nhanh
+
+Game không có lớp manager riêng chạy `DefaultAdsManager`, luật chỉnh trong mục Manager
+của trang:
+
+```csharp
+using RiseOn.Ads;
+using RiseOn.Iap;
+
+// Lúc mở game, và mỗi khi quyền sở hữu gói remove-ads đổi
+DefaultAdsManager.Ins.SetAdsRemoved(IapSdk.Owns(IapProductId.NoAds));
+IapSdk.OwnershipChanged += (product, owned) => {
+    if (product is IapProductId.NoAds) DefaultAdsManager.Ins.SetAdsRemoved(owned);
+};
+
+// Hết level: interstitial theo giãn cách và From Level, end card theo mục End Card
+await DefaultAdsManager.Ins.ShowInterstitialAsync("level_end", level);
+
+// Nút xem quảng cáo hồi sinh
+reviveButton.interactable = DefaultAdsManager.Ins.CanShowRewarded;
+var rewarded = await DefaultAdsManager.Ins.ShowRewardedAsync("revive");
+```
 
 Game có lớp manager riêng, tự viết luật của mình, ví dụ interstitial chỉ từ level 3,
 giãn cách chỉnh trên trang:
@@ -433,14 +485,20 @@ public partial class AdsManager : IAdsManager {
         return await AdsSdk.ShowInterstitialAsync(placement);
     }
 
-    void IAdsManager.PauseInEditor(bool paused) => EditorGamePause.Apply(paused);
-
     void IAdsManager.Started() { }
 }
 
-// Lúc mở game, từ save: gói remove-ads chặn interstitial và banner
-AdsSdk.SetSuppressed(AdFormat.Interstitial, Save.AdsRemoved);
-AdsSdk.SetSuppressed(AdFormat.Banner, Save.AdsRemoved);
+// Gói remove-ads chặn interstitial và banner, theo quyền sở hữu mà com.riseon.iap báo
+// (using RiseOn.Iap;)
+void ApplyAdsRemoved(bool removed) {
+    AdsSdk.SetSuppressed(AdFormat.Interstitial, removed);
+    AdsSdk.SetSuppressed(AdFormat.Banner, removed);
+}
+
+ApplyAdsRemoved(IapSdk.Owns(IapProductId.NoAds));
+IapSdk.OwnershipChanged += (product, owned) => {
+    if (product is IapProductId.NoAds) ApplyAdsRemoved(owned);
+};
 
 // Ở chỗ khác của game
 var shown    = await AdsManager.Ins.ShowInterstitialAsync("level_end");

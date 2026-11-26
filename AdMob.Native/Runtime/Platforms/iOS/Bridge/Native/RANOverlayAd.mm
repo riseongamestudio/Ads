@@ -44,6 +44,9 @@ static NSTimeInterval RANNow(void) {
 @property (nonatomic, readonly) int32_t backgroundColor;
 // The close button commits the ad's click on its way out.
 @property (nonatomic, readonly) BOOL redirectOnClose;
+// How a full-screen ad arranges its card, ordinals shared with the C#
+// FullScreenLayout: Interstitial 0, AppOpen 1, EndCard 2.
+@property (nonatomic, readonly) int32_t layout;
 @end
 
 @implementation RANOverlayStyle
@@ -54,7 +57,8 @@ static NSTimeInterval RANNow(void) {
                          timerSide:(int32_t)timerSide
                        heightRatio:(float)heightRatio
                    backgroundColor:(int32_t)backgroundColor
-                   redirectOnClose:(BOOL)redirectOnClose {
+                   redirectOnClose:(BOOL)redirectOnClose
+                            layout:(int32_t)layout {
     self = [super init];
     if (self == nil) return nil;
     _fullScreen = fullScreen;
@@ -64,6 +68,7 @@ static NSTimeInterval RANNow(void) {
     _heightRatio = heightRatio;
     _backgroundColor = backgroundColor;
     _redirectOnClose = redirectOnClose;
+    _layout = layout;
     return self;
 }
 
@@ -78,7 +83,20 @@ static NSTimeInterval RANNow(void) {
                      timerSide:timerSide
                    heightRatio:self.heightRatio
                backgroundColor:self.backgroundColor
-               redirectOnClose:redirectOnClose];
+               redirectOnClose:redirectOnClose
+                        layout:self.layout];
+}
+
+- (RANOverlayStyle *)styleWithLayout:(int32_t)layout {
+    return [[RANOverlayStyle alloc]
+            initWithFullScreen:self.fullScreen
+                      cooldown:self.cooldown
+                     closeSide:self.closeSide
+                     timerSide:self.timerSide
+                   heightRatio:self.heightRatio
+               backgroundColor:self.backgroundColor
+               redirectOnClose:self.redirectOnClose
+                        layout:layout];
 }
 
 // Random is answered once per presentation; the relative timer modes then
@@ -208,7 +226,8 @@ static NSString *RANMediaSignature(GADNativeAd *nativeAd) {
                          timerSide:timerSide
                        heightRatio:heightRatio
                    backgroundColor:backgroundColor
-                   redirectOnClose:redirectOnClose];
+                   redirectOnClose:redirectOnClose
+                            layout:0];
         self->_configured = YES;
         [self resolvePanelHeight];
         // A game paused under the ad lets its video play with sound; one
@@ -216,6 +235,23 @@ static NSString *RANMediaSignature(GADNativeAd *nativeAd) {
         self->_pool = [RANNativeAdPool joinWithAdUnitID:self->_adUnitID
                                              startMuted:!self->_configuredStyle.pausesGame
                                                consumer:self];
+    }];
+}
+
+// Straight after Configure. The pool it joined may already hold an ad
+// another placement warmed, so a face prepared from it is rebuilt as
+// setClose's is.
+- (void)setLayout:(int32_t)layout {
+    [RANBaseAd runOnMainThread:^{
+        RANOverlayStyle *currentStyle = self->_configuredStyle;
+        if (!self->_configured || self.released || currentStyle == nil) {
+            NSLog(@"%@: SetLayout ignored before Configure or after "
+                    "Release", kRANTag);
+            return;
+        }
+        RANOverlayStyle *updatedStyle = [currentStyle styleWithLayout:layout];
+        self->_configuredStyle = updatedStyle;
+        [self ran_rebuildPreparedPresentationForStyle:updatedStyle];
     }];
 }
 
@@ -699,7 +735,8 @@ static const int64_t kRANPanelSizeTag = 1LL << 62;
                                 fullScreen:style.fullScreen
                                heightRatio:style.heightRatio
                            backgroundColor:style.backgroundColor
-                           redirectOnClose:style.redirectOnClose];
+                           redirectOnClose:style.redirectOnClose
+                                    layout:style.layout];
     __weak RANOverlayAd *weakSelf = self;
     __weak GADNativeAd *weakAd = ad;
     createdPresentation.onShow = ^{

@@ -13,16 +13,22 @@ play mode. Luật chung ở
   không mô phỏng lifecycle (chủ dự án chốt, 516759f6): nó để xem ad **trông ra
   sao**, không để tái tạo độ trễ.
 - **Không port layout engine sang Editor** (chủ dự án chốt): preview chỉ vẽ
-  vài layout đại diện — overlay xếp chồng (media dưới dải control, stack dồn
-  đáy) và ô hình chữ nhật (scrim khi ước lượng band `48 + headline + CTA + gaps`
-  không vừa, ngược lại cột media-top nuốt height thừa). Nó **không có**
-  MEDIA_LEFT, ticker, icon-hero, thang marquee. Creative đứng xem trong Editor
-  ra thẻ xếp chồng, trên máy ra rail — kiểm side-media phải build lên máy.
+  vài layout đại diện — thẻ full-screen (`EditorAd.Card.cs`: ba
+  `FullScreenLayout`, dọc/ngang, thanh app, cùng thứ tự nhường của `FitCard`;
+  creative giả định 16:9), half-screen xếp chồng (media dưới dải control,
+  stack dồn đáy) và ô hình chữ nhật (scrim khi ước lượng band
+  `48 + headline + CTA + gaps` không vừa, ngược lại cột media-top nuốt height
+  thừa). Nó **không có** MEDIA_LEFT, ticker, icon-hero, thang marquee.
+  Half-screen: creative đứng xem trong Editor ra thẻ xếp chồng, trên máy ra rail — kiểm
+  side-media phải build lên máy.
 - Vì preview là gương, mọi hằng số nó dùng phải **khớp máy thật**: 5dp
   padding ngang, 30dp control, 72dp sàn icon-row, 48/120dp sàn media, ngưỡng
   tier 150/280dp, icon 24/36/48dp, gap 1/3/5dp, CTA `0.18×shortSide` kẹp
   24–36dp, badge `0.10×shortSide` kẹp 15px–18dp, scrim veil 70%, tỉ lệ thụt
-  góc `1 − 1/√2`. Sửa số bên Java/Obj-C++ thì sửa `EditorAd` cùng lượt.
+  góc `1 − 1/√2`; thẻ: bo 20dp, lề 16dp, rộng ≤440/760dp, cao ngang ≤420dp,
+  padding 20dp, icon 56/88/40dp, CTA 52dp, ảnh ≤58% bề rộng (ngang) / ≤60%
+  chiều cao (dọc), thanh app 40dp, 82% bề rộng. Sửa số bên Java/Obj-C++ thì
+  sửa `EditorAd` cùng lượt.
 
 ## 2. asmdef: runtime trong Editor, vắng mặt trong build
 
@@ -63,8 +69,8 @@ canvas của game.
 - Chiều cao panel half theo **đúng công thức máy**:
   `min(Screen.height, max(Screen.height × ratio, 48dp × uiScale))`, pixel
   `Screen` (`EditorAd.ResolveHalfScreenPanelHeight`, cũng là
-  `HalfScreenAd.PanelHeight` trong Editor). Không còn nới theo nội dung như
-  bản cũ — nới thì `PanelHeight` sai với panel thật.
+  `HalfScreenAd.PanelHeight` trong Editor). Panel không nới theo nội dung,
+  để `PanelHeight` khớp panel thật.
 - Trượt: `anchoredPosition.y` của panel, `Time.unscaledDeltaTime`, 0.25s,
   ease bình phương hai chiều (phần còn ngoài màn khi vào được `p` là
   `(1 − p)²`, khi ra được `1 − p` cũng vậy → quay đầu tại chỗ không giật).
@@ -89,10 +95,12 @@ canvas của game.
 
 ## 6. Quy ước vẽ
 
-- Viền element là **inner stroke** (bốn thanh vẽ trong mép, thanh dọc rút
-  2×độ dày để không đè góc) như `GradientDrawable` stroke của Android; Unity
-  `Outline` là outer, chủ dự án bác (87652fd1). CTA `#2196F3` viền `#1565C0`
-  như máy, phần còn lại đen 35%.
+- Media không có viền, như trên máy: ảnh đã có mép của nó, vành tối chỉ làm
+  bẩn mép trên nền sáng và không thấy trên nền tối.
+- Bo góc bằng sprite 9-slice rasterize từ distance field (`RoundedRectSprite`,
+  `Round`) như ô hình chữ nhật: CTA là pill `#1A73E8` không viền, icon bo
+  22% cạnh (cắt bằng `Mask`), badge Ad bo 4dp (ô hình chữ nhật 3dp), close và
+  timer là đĩa. Thẻ trên nền tối: đĩa sáng, dấu tối.
 - Dấu close **vẽ bằng hai nét** (capsule distance field) đúng hình học máy
   (`0.44` cạnh ngắn, nét 2.5dp), không gõ U+2715 (mỗi OEM một font). Close
   20sp, countdown 18sp trong box 30dp — close cố ý to hơn.

@@ -175,6 +175,51 @@ static const NSTimeInterval kRANClosePressSeparation = 0.1;
 // REDIRECT_TIMEOUT_MS.
 static const NSTimeInterval kRANRedirectTimeout = 3.0;
 
+// An icon's corners, as a launcher rounds them.
+static const CGFloat kRANIconCornerRatio = 0.22f;
+static const CGFloat kRANAttributionCorner = 4;
+static const uint32_t kRANCallToActionColor = 0xFF1A73E8;
+
+// The full-screen arrangements, ordinals shared with the C# FullScreenLayout.
+static const int32_t kRANLayoutAppOpen = 1;
+static const int32_t kRANLayoutEndCard = 2;
+// The full-screen face is one card, white whatever the panel, so the
+// advertiser's colors read as theirs.
+static const uint32_t kRANCardColor = 0xFFFFFFFF;
+// Behind media narrower or shorter than its box, a picture's or a video's:
+// light, so the letterbox reads as part of the card. Black bars beside a tall
+// video merged into a dark panel and cut the card in two.
+static const uint32_t kRANCardMediaBackdropColor = 0xFFF1F3F4;
+static const CGFloat kRANCardCorner = 20;
+static const CGFloat kRANCardMargin = 16;
+static const CGFloat kRANCardMaxWidth = 440;
+static const CGFloat kRANCardLandscapeMaxWidth = 760;
+static const CGFloat kRANCardLandscapeMaxHeight = 420;
+// The picture's share of the card's width in landscape, at most, and of the
+// card's height in portrait, so the text keeps its room.
+static const CGFloat kRANCardLandscapeMediaShare = 0.58f;
+static const CGFloat kRANCardPortraitMediaShare = 0.6f;
+static const CGFloat kRANCardPadding = 20;
+static const CGFloat kRANCardIconSize = 56;
+static const CGFloat kRANCardSmallIconSize = 40;
+static const CGFloat kRANEndCardIconSize = 88;
+static const CGFloat kRANCardCallToActionHeight = 52;
+static const CGFloat kRANCardControlInset = 12;
+static const CGFloat kRANCardControlTop = 8;
+// Over a dark panel the close is Google's: a light disc with a dark cross.
+static const uint32_t kRANLightDiscColor = 0xE6E3E3E3;
+static const uint32_t kRANDarkGlyphColor = 0xFF1F1F1F;
+// The app open ad's bar back to the game, as AdMob draws its own: white, its
+// left end round, running off the screen's right edge.
+static const CGFloat kRANAppBarHeight = 40;
+static const CGFloat kRANAppBarGap = 8;
+static const CGFloat kRANAppBarWidthShare = 0.82f;
+static const CGFloat kRANAppBarIconSize = 26;
+static const uint32_t kRANAppBarActionColor = 0xFF1A73E8;
+static const uint32_t kRANAppBarSecondaryColor = 0xFF5F6368;
+static const uint32_t kRANAppBarNameColor = 0xDE000000;
+static NSString *const kRANAppBarContinueText = @"Continue to app";
+
 static UIColor *RANARGB(uint32_t argb) {
     return [UIColor colorWithRed:((argb >> 16) & 0xFF) / 255.0
                            green:((argb >> 8) & 0xFF) / 255.0
@@ -184,6 +229,34 @@ static UIColor *RANARGB(uint32_t argb) {
 
 // A UILabel with content insets - the attribution badge and the timer and
 // close controls all pad their text the way the Android views do.
+// The game's own icon, as the home screen shows it: the last of the primary
+// icon's files is the largest the bundle carries.
+static UIImage *RANApplicationIcon(void) {
+    NSDictionary *icons = NSBundle.mainBundle.infoDictionary[@"CFBundleIcons"];
+    NSArray *files = icons[@"CFBundlePrimaryIcon"][@"CFBundleIconFiles"];
+    NSString *name = files.lastObject;
+    return name != nil ? [UIImage imageNamed:name] : nil;
+}
+
+// The build runs before the view has a window, so the card is first fitted
+// against the key window's insets; the layout pass fits it again in its own.
+static UIEdgeInsets RANKeyWindowSafeArea(void) {
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) return window.safeAreaInsets;
+        }
+    }
+    return UIEdgeInsetsZero;
+}
+
+static NSString *RANApplicationName(void) {
+    NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+    NSString *name = info[@"CFBundleDisplayName"];
+    if (name.length == 0) name = info[@"CFBundleName"];
+    return name ?: @"";
+}
+
 @interface RANPaddedLabel : UILabel
 @property (nonatomic) UIEdgeInsets ran_contentInsets;
 // VoiceOver's press. A control that has given up being its own touch target
@@ -232,11 +305,26 @@ static void RANCentreUnderIcon(UIView *view) {
     view.ran_layoutGravity = RANGravityCenterHorizontal;
 }
 
+// Whether the panel reads as light, so its text goes dark. A panel mostly
+// see-through shows the game, whose shade nothing here knows, and keeps the
+// white text. The Java side's IsLight.
+static BOOL RANIsLightPanel(int32_t argb) {
+    uint32_t color = (uint32_t)argb;
+    if (((color >> 24) & 0xFF) < 128) return NO;
+    double luminance = (0.2126 * ((color >> 16) & 0xFF)
+            + 0.7152 * ((color >> 8) & 0xFF)
+            + 0.0722 * (color & 0xFF)) / 255.0;
+    return luminance > 0.5;
+}
+
 @implementation RANOverlayAdContentView {
     GADNativeAd *_nativeAd;
     int64_t _countDownRemainingMs;
     BOOL _closeOnLeft;
     BOOL _redirectOnClose;
+    // Interstitial 0, AppOpen 1, EndCard 2: how the full-screen card is
+    // arranged.
+    int32_t _layout;
     BOOL _timerOnLeft;
     BOOL _fullScreen;
     int32_t _backgroundColor;
@@ -262,6 +350,19 @@ static void RANCentreUnderIcon(UIView *view) {
 
     BOOL _hasDisplayableMedia;
     BOOL _sideMediaLayout;
+    // The full-screen card replaces the adaptive pipeline outright: one
+    // arrangement, fitted to the screen, nothing negotiated afterwards.
+    BOOL _cardLayout;
+    BOOL _cardLandscape;
+    RANLinearLayoutView *_cardInfo;
+    RANLinearLayoutView *_cardHead;
+    UIView *_appBar;
+    UIActivityIndicatorView *_appBarSpinner;
+    UIView *_appBarReady;
+    CAShapeLayer *_appBarChevron;
+    UILabel *_appBarName;
+    UIImageView *_appBarIcon;
+    UILabel *_appBarContinue;
     CGFloat _sideMediaWidthPx;
     // What the media's left edge costs the row: 0 while the picture bleeds,
     // the side padding once something stands under it.
@@ -363,6 +464,7 @@ static void RANCentreUnderIcon(UIView *view) {
                  backgroundColor:(int32_t)backgroundColor
                  redirectOnClose:(BOOL)redirectOnClose
             requestedPanelHeight:(CGFloat)requestedPanelHeight
+                          layout:(int32_t)layout
                          onClose:(dispatch_block_t)onClose {
     self = [super initWithFrame:CGRectZero];
     if (self == nil) return nil;
@@ -374,6 +476,7 @@ static void RANCentreUnderIcon(UIView *view) {
     _fullScreen = fullScreen;
     _backgroundColor = backgroundColor;
     _redirectOnClose = redirectOnClose;
+    _layout = layout;
     _onClose = [onClose copy];
     _shrunkTexts = [NSMutableSet set];
     [self ran_buildWithRequestedPanelHeight:requestedPanelHeight];
@@ -623,7 +726,9 @@ static void RANCentreUnderIcon(UIView *view) {
     // A picture directly above the identity row is its own separator; the
     // row's top padding would only widen a seam already there.
     _mediaAboveIdentity = _hasDisplayableMedia;
-    _sideMediaLayout = _hasDisplayableMedia
+    _cardLayout = _fullScreen;
+    _sideMediaLayout = !_cardLayout
+            && _hasDisplayableMedia
             && [self ran_shouldUseSideMediaForPanelHeight:sidePanelHeight];
 
     // One line per build: every layout decision and its inputs, so a
@@ -726,6 +831,7 @@ static void RANCentreUnderIcon(UIView *view) {
     _body.maxLines = kRANMaxBodyLineCount;
     _body.ran_layoutWidth = RANLayoutMatchParent;
     _body.ran_padding = UIEdgeInsetsMake(0, 0, kRANMinBodyBottomPadding, 0);
+    [self ran_colorTextOnLight:RANIsLightPanel(_backgroundColor)];
 
     _callToAction = [UIButton buttonWithType:UIButtonTypeCustom];
     [self ran_styleCallToAction:_callToAction];
@@ -735,7 +841,9 @@ static void RANCentreUnderIcon(UIView *view) {
     _callToAction.ran_minimumSize = CGSizeMake(0, kRANMinCallToActionHeight);
     _callToAction.ran_layoutWidth = RANLayoutMatchParent;
 
-    if (_sideMediaLayout) {
+    if (_cardLayout) {
+        [self ran_arrangeCard];
+    } else if (_sideMediaLayout) {
         CGFloat sideMediaWidth =
                 [self ran_sideMediaWidthForPanelHeight:sidePanelHeight];
         // The media column is exactly as tall as the creative can fill at
@@ -920,6 +1028,14 @@ static void RANCentreUnderIcon(UIView *view) {
     _nativeAdView.bodyView = _body;
     _nativeAdView.callToActionView = _callToAction;
     [self ran_bindAssets];
+    if (_cardLayout) {
+        // Dark on the white card, whatever the panel.
+        [self ran_colorTextOnLight:YES];
+        // No unrenderable verdict: full screen has no such station on
+        // Android, and the card keeps its media floor when it cannot fit.
+        [self ran_fitCardInSize:UIScreen.mainScreen.bounds.size
+                       safeArea:RANKeyWindowSafeArea()];
+    }
     // One anchor per block: where the icon stands alone above the text -
     // the rail beside a side media, or the icon standing in for a missing
     // picture - the text centers under it. A centered icon over left-aligned
@@ -942,7 +1058,8 @@ static void RANCentreUnderIcon(UIView *view) {
                     requestedPanelHeight];
         }
     }
-    if (_fullScreen && _hasDisplayableMedia && !_sideMediaLayout) {
+    if (_fullScreen && !_cardLayout
+            && _hasDisplayableMedia && !_sideMediaLayout) {
         // The stack hugs the bottom and the media grows toward the corner
         // controls; the exact fit runs in the layout pass, where the true
         // frame is known.
@@ -997,9 +1114,22 @@ static void RANCentreUnderIcon(UIView *view) {
                 initWithTarget:self
                         action:@selector(ran_closeTapped)]];
     }
+    if (_cardLayout && !RANIsLightPanel(_backgroundColor)) {
+        _close.backgroundColor = RANARGB(kRANLightDiscColor);
+        _closeGlyph.strokeColor = RANARGB(kRANDarkGlyphColor).CGColor;
+        _countdown.backgroundColor = RANARGB(kRANLightDiscColor);
+        _countdown.textColor = RANARGB(kRANDarkGlyphColor);
+    }
     [self addSubview:_countdown];
     [self addSubview:_close];
 
+    if (_cardLayout) {
+        _resolvedPanelHeight = UIScreen.mainScreen.bounds.size.height;
+        if (_layout == kRANLayoutAppOpen && !_redirectOnClose) {
+            [self ran_buildAppBar];
+        }
+        return;
+    }
     [self ran_resolveContentHeightWithRequestedPanelHeight:requestedPanelHeight];
 
     // The last resort freed the text from sharing the panel with the
@@ -1153,6 +1283,8 @@ static void RANCentreUnderIcon(UIView *view) {
     attribution.font = [UIFont boldSystemFontOfSize:10];
     attribution.textAlignment = NSTextAlignmentCenter;
     attribution.backgroundColor = RANARGB(0xFFFFC107);
+    attribution.layer.cornerRadius = kRANAttributionCorner;
+    attribution.layer.masksToBounds = YES;
     attribution.ran_contentInsets = UIEdgeInsetsMake(1, 5, 1, 5);
     attribution.ran_minimumSize = CGSizeMake(
             MAX(kRANAttributionWidth, kRANMinBadgeSize)
@@ -1179,15 +1311,17 @@ static void RANCentreUnderIcon(UIView *view) {
     control.textAlignment = NSTextAlignmentCenter;
     control.backgroundColor = [UIColor colorWithWhite:backgroundWhite
                                                 alpha:backgroundAlpha];
+    // A disc: every control is the strip's height square.
+    control.layer.cornerRadius = kRANControlStripHeight / 2;
+    control.layer.masksToBounds = YES;
     return control;
 }
 
-// Same treatment as the rect ad's button: its own filled and bordered
-// background rather than the platform default.
+// A filled pill rather than the platform default; its radius follows its
+// height in the layout pass, so the ends stay round however the fit sizes it.
 - (void)ran_styleCallToAction:(UIButton *)callToAction {
-    callToAction.backgroundColor = RANARGB(0xFF2196F3);
-    callToAction.layer.borderColor = RANARGB(0xFF1565C0).CGColor;
-    callToAction.layer.borderWidth = 1;
+    callToAction.backgroundColor = RANARGB(kRANCallToActionColor);
+    callToAction.layer.masksToBounds = YES;
     [callToAction setTitleColor:UIColor.whiteColor
                        forState:UIControlStateNormal];
     callToAction.titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -1832,6 +1966,10 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (_released || _nativeAdView == nil) return;
+    if (_cardLayout) {
+        [self ran_layoutCard];
+        return;
+    }
 
     CGRect bounds = self.bounds;
     CGFloat cutoutInset = _fullScreen ? self.safeAreaInsets.top : 0;
@@ -1938,9 +2076,459 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
           , controlSize);
 
     [self ran_matchIconSizeToIdentityText];
+    [self ran_roundAssets];
     [self ran_keepTextWholeOrScrolling:_headline];
     [self ran_keepTextWholeOrScrolling:_body];
     [self ran_keepTextWholeOrScrolling:_advertiser];
+}
+
+// Radii that follow the sizes the layout settled on.
+- (void)ran_roundAssets {
+    CGSize button = _callToAction.bounds.size;
+    _callToAction.layer.cornerRadius = MIN(button.width, button.height) / 2;
+    if (!_iconHero) {
+        CGSize icon = _icon.bounds.size;
+        _icon.layer.cornerRadius =
+                MIN(icon.width, icon.height) * kRANIconCornerRatio;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Card - the full-screen face. One rounded card in the middle of the panel,
+// as Google renders a responsive ad: the picture across its top, then the
+// icon, the headline, the advertiser and rating, the body, all centred, and a
+// wide pill to act. In landscape the picture takes the card's left and the
+// rest stands beside it. The end card leads with the app: a big icon and the
+// name over the picture. The picture yields first when the screen is short,
+// then the body's lines, then the icon; a card that still cannot fit keeps
+// the picture at its floor and is held to its slot, its foot cut. The Java
+// side's BuildCard and FitCard.
+// ---------------------------------------------------------------------------
+
+- (BOOL)ran_cardHasAppBar {
+    return _layout == kRANLayoutAppOpen && !_redirectOnClose;
+}
+
+- (CGFloat)ran_cardTopReserve {
+    return [self ran_cardHasAppBar]
+            ? kRANAppBarHeight + 2 * kRANAppBarGap
+            : kRANControlStripHeight + 2 * kRANCardControlTop;
+}
+
+- (void)ran_arrangeCard {
+    CGSize screen = UIScreen.mainScreen.bounds.size;
+    [self ran_arrangeCardLandscape:screen.width > screen.height];
+}
+
+// The views go back to their places for this orientation; what giving way
+// took is given back, as the fit starts over.
+- (void)ran_arrangeCardLandscape:(BOOL)landscape {
+    BOOL endCard = _layout == kRANLayoutEndCard;
+    _cardLandscape = landscape;
+    for (UIView *view in @[ _mediaView, _icon, _identityText, _body
+                          , _callToAction ]) {
+        [view removeFromSuperview];
+    }
+    [_cardInfo removeFromSuperview];
+    [_cardHead removeFromSuperview];
+    _cardHead = nil;
+    _body.ran_gone = NO;
+
+    _contentColumn.ran_padding = UIEdgeInsetsZero;
+    _contentColumn.ran_vertical = !_cardLandscape;
+    _contentColumn.ran_gravity = RANGravityCenterHorizontal | RANGravityTop;
+    _contentColumn.backgroundColor = RANARGB(kRANCardColor);
+    _contentColumn.layer.cornerRadius = kRANCardCorner;
+    _contentColumn.clipsToBounds = YES;
+    // The card's hairline, drawn over the media: grey on a light panel, where
+    // the white card has no edge of its own; faint white on a dark one, where
+    // a dark picture would merge into the panel. The Java side's card edge.
+    _contentColumn.layer.borderWidth = 1;
+    _contentColumn.layer.borderColor =
+            RANARGB(RANIsLightPanel(_backgroundColor) ? 0xFFDADCE0 : 0x33FFFFFF).CGColor;
+
+    _headline.font = [UIFont boldSystemFontOfSize:endCard ? 22 : 20];
+    _headline.maxLines = 2;
+    _advertiser.font = [UIFont systemFontOfSize:13];
+    _body.font = [UIFont systemFontOfSize:14];
+    _body.maxLines = kRANMaxBodyLineCount;
+    _body.ran_padding = UIEdgeInsetsMake(8, 0, 0, 0);
+    RANCentreUnderIcon(_headline);
+    RANCentreUnderIcon(_advertiser);
+    RANCentreUnderIcon(_starRating);
+    RANCentreUnderIcon(_body);
+    _identityText.ran_gravity = RANGravityCenterHorizontal;
+    _identityText.ran_layoutWidth = RANLayoutMatchParent;
+    _identityText.ran_layoutWeight = 0;
+    _identityText.ran_layoutMargins = UIEdgeInsetsZero;
+
+    _callToAction.titleLabel.font = [UIFont boldSystemFontOfSize:16];
+    _callToAction.titleLabel.numberOfLines = 1;
+    _callToAction.ran_minimumSize = CGSizeZero;
+    _callToAction.ran_layoutWidth = RANLayoutMatchParent;
+    _callToAction.ran_layoutHeight = kRANCardCallToActionHeight;
+    _callToAction.ran_layoutMargins = UIEdgeInsetsMake(16, 0, 0, 0);
+
+    CGFloat iconSize = endCard ? kRANEndCardIconSize : kRANCardIconSize;
+    _icon.ran_layoutWidth = iconSize;
+    _icon.ran_layoutHeight = iconSize;
+    _icon.ran_layoutGravity = RANGravityCenterHorizontal;
+    _icon.ran_layoutMargins = UIEdgeInsetsMake(0, 0, 12, 0);
+    if (_hasDisplayableMedia) {
+        _mediaView.backgroundColor = RANARGB(kRANCardMediaBackdropColor);
+        _mediaView.ran_minimumSize = CGSizeZero;
+        _mediaView.ran_layoutMargins = UIEdgeInsetsZero;
+        _mediaView.ran_layoutWidth = RANLayoutMatchParent;
+        _mediaView.ran_layoutHeight = 0;
+    }
+
+    _cardInfo = [[RANLinearLayoutView alloc] init];
+    _cardInfo.ran_vertical = YES;
+    _cardInfo.ran_gravity =
+            RANGravityCenterHorizontal | RANGravityCenterVertical;
+    _cardInfo.ran_padding = UIEdgeInsetsMake(
+            kRANCardPadding, kRANCardPadding, kRANCardPadding, kRANCardPadding);
+    _cardInfo.ran_layoutWidth = RANLayoutMatchParent;
+
+    if (_cardLandscape) {
+        if (_hasDisplayableMedia) {
+            _mediaView.ran_layoutHeight = RANLayoutMatchParent;
+            [_contentColumn addSubview:_mediaView];
+        }
+        [_cardInfo addSubview:_icon];
+        [_cardInfo addSubview:_identityText];
+        [_cardInfo addSubview:_body];
+        [_cardInfo addSubview:_callToAction];
+        _cardInfo.ran_layoutWidth = 0;
+        _cardInfo.ran_layoutHeight = RANLayoutMatchParent;
+        _cardInfo.ran_layoutWeight = 1;
+        [_contentColumn addSubview:_cardInfo];
+        return;
+    }
+
+    if (endCard) {
+        // The app first, then its picture, then the pitch and the button.
+        _cardHead = [[RANLinearLayoutView alloc] init];
+        _cardHead.ran_vertical = YES;
+        _cardHead.ran_gravity = RANGravityCenterHorizontal;
+        _cardHead.ran_padding = UIEdgeInsetsMake(
+                kRANCardPadding + 8, kRANCardPadding, 12, kRANCardPadding);
+        _cardHead.ran_layoutWidth = RANLayoutMatchParent;
+        [_cardHead addSubview:_icon];
+        [_cardHead addSubview:_identityText];
+        [_contentColumn addSubview:_cardHead];
+        if (_hasDisplayableMedia) [_contentColumn addSubview:_mediaView];
+        _cardInfo.ran_padding = UIEdgeInsetsMake(
+                4, kRANCardPadding, kRANCardPadding, kRANCardPadding);
+    } else {
+        if (_hasDisplayableMedia) [_contentColumn addSubview:_mediaView];
+        [_cardInfo addSubview:_icon];
+        [_cardInfo addSubview:_identityText];
+    }
+    [_cardInfo addSubview:_body];
+    [_cardInfo addSubview:_callToAction];
+    [_contentColumn addSubview:_cardInfo];
+}
+
+// The card's frame inside a panel of this size, before its height is known
+// in portrait (the height field is then the most it may take).
+- (CGRect)ran_cardSlotInSize:(CGSize)size safeArea:(UIEdgeInsets)safeArea {
+    CGFloat left = safeArea.left + kRANCardMargin;
+    CGFloat right = safeArea.right + kRANCardMargin;
+    CGFloat top = safeArea.top + [self ran_cardTopReserve];
+    CGFloat bottom = safeArea.bottom + kRANCardMargin;
+    CGFloat availableWidth = MAX(0, size.width - left - right);
+    CGFloat width = MIN(
+            availableWidth
+          , _cardLandscape ? kRANCardLandscapeMaxWidth : kRANCardMaxWidth);
+    CGFloat height = MAX(0, size.height - top - bottom);
+    if (_cardLandscape) height = MIN(height, kRANCardLandscapeMaxHeight);
+    return CGRectMake(
+            left + (availableWidth - width) / 2, top, width, height);
+}
+
+- (CGFloat)ran_measureCardWidth:(CGFloat)width {
+    [_contentColumn ran_measureWithWidthSpec:
+                    RANMeasureSpecMake(RANMeasureSpecExactly, width)
+                                 heightSpec:
+                    RANMeasureSpecMake(RANMeasureSpecUnspecified, 0)];
+    return _contentColumn.ran_measuredSize.height;
+}
+
+// One step of giving way, in order: the body to one line, the body gone, the
+// icon smaller. NO when nothing is left to give.
+- (BOOL)ran_cardGiveWay:(NSInteger)step {
+    switch (step) {
+        case 0:
+            _body.maxLines = kRANMinBodyLineCount;
+            return YES;
+        case 1:
+            _body.ran_gone = YES;
+            return YES;
+        case 2:
+            _icon.ran_layoutWidth = kRANCardSmallIconSize;
+            _icon.ran_layoutHeight = kRANCardSmallIconSize;
+            return YES;
+        default:
+            return NO;
+    }
+}
+
+// Sizes the card for a panel of this size. In portrait the picture takes
+// what the text leaves, up to its own proportions and its share of the card;
+// the text gives way before the picture goes under its floor. In landscape
+// the column beside the picture gives way until it fits the card's height.
+// Giving way only ever narrows, so the layout pass may run it again.
+- (BOOL)ran_fitCardInSize:(CGSize)size safeArea:(UIEdgeInsets)safeArea {
+    CGRect slot = [self ran_cardSlotInSize:size safeArea:safeArea];
+    if (slot.size.width <= 0 || slot.size.height <= 0) return NO;
+
+    if (_cardLandscape) {
+        CGFloat mediaWidth = 0;
+        if (_hasDisplayableMedia) {
+            mediaWidth = MAX(
+                    _minimumMediaSize
+                  , MIN(
+                        round(slot.size.width * kRANCardLandscapeMediaShare)
+                      , round(slot.size.height * _mediaAspectRatio)));
+            _mediaView.ran_layoutWidth = mediaWidth;
+            if (slot.size.height < _minimumMediaSize) return NO;
+        }
+        CGFloat infoWidth = slot.size.width - mediaWidth;
+        for (NSInteger step = 0; ; ++step) {
+            [_cardInfo ran_measureWithWidthSpec:
+                            RANMeasureSpecMake(RANMeasureSpecExactly, infoWidth)
+                                     heightSpec:
+                            RANMeasureSpecMake(RANMeasureSpecUnspecified, 0)];
+            if (_cardInfo.ran_measuredSize.height <= slot.size.height) {
+                return YES;
+            }
+            if (![self ran_cardGiveWay:step]) return NO;
+        }
+    }
+
+    CGFloat naturalMediaHeight = round(slot.size.width / _mediaAspectRatio);
+    CGFloat mediaCap = round(slot.size.height * kRANCardPortraitMediaShare);
+    if (_hasDisplayableMedia) _mediaView.ran_layoutHeight = 0;
+    for (NSInteger step = 0; ; ++step) {
+        CGFloat textHeight = [self ran_measureCardWidth:slot.size.width];
+        if (!_hasDisplayableMedia) {
+            if (textHeight <= slot.size.height) return YES;
+        } else {
+            CGFloat mediaHeight = MIN(
+                    naturalMediaHeight
+                  , MIN(mediaCap, slot.size.height - textHeight));
+            if (mediaHeight >= _minimumMediaSize) {
+                _mediaView.ran_layoutHeight = mediaHeight;
+                return YES;
+            }
+        }
+        if (![self ran_cardGiveWay:step]) {
+            if (_hasDisplayableMedia) {
+                _mediaView.ran_layoutHeight = _minimumMediaSize;
+            }
+            return NO;
+        }
+    }
+}
+
+- (void)ran_layoutCard {
+    CGRect bounds = self.bounds;
+    UIEdgeInsets safeArea = self.safeAreaInsets;
+    // Built ahead for the screen as it was; turned since, the card takes
+    // the other arrangement.
+    BOOL landscape = bounds.size.width > bounds.size.height;
+    if (bounds.size.width > 0 && landscape != _cardLandscape) {
+        [self ran_arrangeCardLandscape:landscape];
+    }
+    // Fitted again for the real bounds; the build only had the screen.
+    [self ran_fitCardInSize:bounds.size safeArea:safeArea];
+    CGRect slot = [self ran_cardSlotInSize:bounds.size safeArea:safeArea];
+    CGFloat height = _cardLandscape
+            ? slot.size.height
+            : MIN(slot.size.height, [self ran_measureCardWidth:slot.size.width]);
+    CGRect card = CGRectMake(
+            slot.origin.x
+          , slot.origin.y + (slot.size.height - height) / 2
+          , slot.size.width
+          , height);
+    _nativeAdView.frame = card;
+    [_contentColumn ran_measureWithWidthSpec:
+                    RANMeasureSpecMake(RANMeasureSpecExactly, card.size.width)
+                                 heightSpec:
+                    RANMeasureSpecMake(RANMeasureSpecExactly, card.size.height)];
+    [_contentColumn ran_layoutWithFrame:
+            CGRectMake(0, 0, card.size.width, card.size.height)];
+    if (_fallbackMediaImageView != nil) {
+        _fallbackMediaImageView.frame = _mediaView.bounds;
+    }
+
+    // The badges on the card's corners, over its picture: the card is the
+    // ad and the panel around it is not.
+    [_attribution ran_measureWithWidthSpec:
+                    RANMeasureSpecMake(RANMeasureSpecUnspecified, 0)
+                               heightSpec:
+                    RANMeasureSpecMake(RANMeasureSpecUnspecified, 0)];
+    CGSize attributionSize = _attribution.ran_measuredSize;
+    _attribution.frame = CGRectMake(
+            kRANCardControlInset
+          , kRANCardControlInset
+          , attributionSize.width
+          , attributionSize.height);
+    CGFloat adChoicesSize = MAX(kRANAdChoicesReserveSize, kRANMinBadgeSize);
+    _adChoicesReserve.frame = CGRectMake(
+            card.size.width - adChoicesSize, 0, adChoicesSize, adChoicesSize);
+
+    // The controls at the panel's top corners, clear of the card.
+    CGFloat controlSize = kRANControlStripHeight;
+    CGFloat controlY = safeArea.top + kRANCardControlTop;
+    CGFloat leftX = safeArea.left + kRANCardControlInset;
+    CGFloat rightX = bounds.size.width - safeArea.right
+            - kRANCardControlInset - controlSize;
+    _close.frame = CGRectMake(
+            _closeOnLeft ? leftX : rightX, controlY, controlSize, controlSize);
+    [self ran_layoutCloseGlyph];
+    _countdown.frame = CGRectMake(
+            _timerOnLeft ? leftX : rightX, controlY, controlSize, controlSize);
+    [self ran_layoutAppBarInBounds:bounds safeArea:safeArea];
+
+    [self ran_roundAssets];
+    [self ran_keepTextWholeOrScrolling:_headline];
+    [self ran_keepTextWholeOrScrolling:_body];
+    [self ran_keepTextWholeOrScrolling:_advertiser];
+}
+
+// The bar back to the game, at the top of an app open ad: the game's icon and
+// name, a spinner while the close is held, then Continue to app and a
+// chevron. It is the way out, so the cross and the countdown stand down.
+- (void)ran_buildAppBar {
+    UIView *bar = [[UIView alloc] init];
+    bar.backgroundColor = UIColor.whiteColor;
+    bar.layer.cornerRadius = kRANAppBarHeight / 2;
+    bar.layer.maskedCorners =
+            kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner;
+    bar.layer.shadowColor = UIColor.blackColor.CGColor;
+    bar.layer.shadowOpacity = 0.18f;
+    bar.layer.shadowRadius = 2;
+    bar.layer.shadowOffset = CGSizeMake(0, 1);
+
+    _appBarIcon = [[UIImageView alloc] initWithImage:RANApplicationIcon()];
+    _appBarIcon.contentMode = UIViewContentModeScaleAspectFill;
+    _appBarIcon.clipsToBounds = YES;
+    _appBarIcon.layer.cornerRadius = kRANAppBarIconSize * kRANIconCornerRatio;
+    [bar addSubview:_appBarIcon];
+
+    _appBarName = [[UILabel alloc] init];
+    _appBarName.text = RANApplicationName();
+    _appBarName.font = [UIFont systemFontOfSize:15];
+    _appBarName.textColor = RANARGB(kRANAppBarNameColor);
+    _appBarName.lineBreakMode = NSLineBreakByTruncatingTail;
+    [bar addSubview:_appBarName];
+
+    _appBarSpinner = [[UIActivityIndicatorView alloc]
+            initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
+    _appBarSpinner.color = RANARGB(kRANAppBarActionColor);
+    [_appBarSpinner startAnimating];
+    [bar addSubview:_appBarSpinner];
+
+    UIView *ready = [[UIView alloc] init];
+    _appBarContinue = [[UILabel alloc] init];
+    _appBarContinue.text = kRANAppBarContinueText;
+    _appBarContinue.font = [UIFont systemFontOfSize:14];
+    _appBarContinue.textColor = RANARGB(kRANAppBarSecondaryColor);
+    [ready addSubview:_appBarContinue];
+    _appBarChevron = [CAShapeLayer layer];
+    _appBarChevron.strokeColor = RANARGB(kRANAppBarActionColor).CGColor;
+    _appBarChevron.fillColor = UIColor.clearColor.CGColor;
+    _appBarChevron.lineWidth = 2.5;
+    _appBarChevron.lineCap = kCALineCapRound;
+    _appBarChevron.lineJoin = kCALineJoinRound;
+    [ready.layer addSublayer:_appBarChevron];
+    [bar addSubview:ready];
+    _appBarReady = ready;
+
+    [bar addGestureRecognizer:[[UITapGestureRecognizer alloc]
+            initWithTarget:self
+                    action:@selector(ran_appBarTapped)]];
+    bar.isAccessibilityElement = YES;
+    bar.accessibilityLabel = kRANAppBarContinueText;
+    bar.accessibilityTraits = UIAccessibilityTraitButton;
+    [self addSubview:bar];
+    _appBar = bar;
+    [self ran_syncAppBar];
+}
+
+- (void)ran_appBarTapped {
+    if (_countDownRemainingMs > 0 || _onClose == nil) return;
+    _onClose();
+}
+
+- (void)ran_layoutAppBarInBounds:(CGRect)bounds safeArea:(UIEdgeInsets)safeArea {
+    if (_appBar == nil) return;
+
+    CGFloat height = kRANAppBarHeight;
+    CGFloat overhang = height / 2;
+    // The right end runs off the screen, as AdMob's bar does.
+    CGFloat width = round(bounds.size.width * kRANAppBarWidthShare) + overhang;
+    _appBar.frame = CGRectMake(
+            bounds.size.width + overhang - width
+          , safeArea.top + kRANAppBarGap
+          , width
+          , height);
+    CGFloat x = 14;
+    _appBarIcon.frame = CGRectMake(
+            x, (height - kRANAppBarIconSize) / 2
+          , kRANAppBarIconSize, kRANAppBarIconSize);
+    x += kRANAppBarIconSize + 10;
+
+    // What stands at the right, inside the visible part of the bar.
+    CGFloat visibleRight = width - overhang - 8;
+    CGFloat chevronSize = 22;
+    CGSize continueSize = [_appBarContinue sizeThatFits:
+            CGSizeMake(CGFLOAT_MAX, height)];
+    CGFloat readyWidth = continueSize.width + 6 + chevronSize;
+    CGFloat trailing = _appBarReady.hidden ? 20 : readyWidth;
+    _appBarReady.frame = CGRectMake(
+            visibleRight - readyWidth, 0, readyWidth, height);
+    _appBarContinue.frame = CGRectMake(
+            0, (height - continueSize.height) / 2
+          , continueSize.width, continueSize.height);
+    CGRect chevronBox = CGRectMake(
+            continueSize.width + 6, (height - chevronSize) / 2
+          , chevronSize, chevronSize);
+    _appBarChevron.frame = chevronBox;
+    UIBezierPath *chevron = [UIBezierPath bezierPath];
+    CGFloat tipX = chevronSize / 2 + chevronSize * 0.14f;
+    CGFloat centreY = chevronSize / 2;
+    [chevron moveToPoint:CGPointMake(
+            tipX - chevronSize * 0.26f, centreY - chevronSize * 0.28f)];
+    [chevron addLineToPoint:CGPointMake(tipX, centreY)];
+    [chevron addLineToPoint:CGPointMake(
+            tipX - chevronSize * 0.26f, centreY + chevronSize * 0.28f)];
+    _appBarChevron.path = chevron.CGPath;
+    _appBarSpinner.frame = CGRectMake(
+            visibleRight - 20, (height - 20) / 2, 20, 20);
+
+    _appBarName.frame = CGRectMake(
+            x, 0, MAX(0, visibleRight - trailing - 8 - x), height);
+}
+
+// Where the app bar is the way out, it shows the countdown's state and the
+// corner controls stay hidden.
+- (void)ran_syncAppBar {
+    if (_appBar == nil) return;
+
+    BOOL done = _countDownRemainingMs <= 0;
+    _countdown.hidden = YES;
+    _close.hidden = YES;
+    _appBarSpinner.hidden = done;
+    if (done) {
+        [_appBarSpinner stopAnimating];
+    } else {
+        [_appBarSpinner startAnimating];
+    }
+    _appBarReady.hidden = !done;
+    [self setNeedsLayout];
 }
 
 // A media that ran out of height before it reached the sides is starving,
@@ -2242,6 +2830,8 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
 
     _scrimLayoutActive = YES;
     _lastResortPanelHeight = panelHeight;
+    // The text moves onto the veil, which is dark whatever the panel.
+    [self ran_colorTextOnLight:NO];
     [_mediaView removeFromSuperview];
     [_nativeAdView insertSubview:_mediaView atIndex:0];
     _mediaView.ran_layoutMargins = UIEdgeInsetsZero;
@@ -2263,6 +2853,18 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
     _contentColumn.ran_gravity =
             RANGravityBottom | RANGravityCenterHorizontal;
     return YES;
+}
+
+- (void)ran_colorTextOnLight:(BOOL)onLight {
+    _headline.textColor = onLight
+            ? [UIColor colorWithWhite:0 alpha:0.87]
+            : UIColor.whiteColor;
+    UIColor *secondary = onLight
+            ? [UIColor colorWithWhite:0 alpha:0.6]
+            : [UIColor colorWithWhite:1 alpha:0.8];
+    _advertiser.textColor = secondary;
+    _body.textColor = secondary;
+    _starRating.onLight = onLight;
 }
 
 - (void)ran_matchIconSizeToIdentityText {
@@ -2361,8 +2963,10 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
     if (remainingMs <= 0) {
         _countdown.hidden = YES;
         _close.hidden = NO;
+        [self ran_syncAppBar];
         return;
     }
+    [self ran_syncAppBar];
 
     // Monotonic, like the CountDownTimer the Java side runs this on. The
     // manual route to a clock change cannot reach a running countdown - the
@@ -2393,6 +2997,7 @@ static CGFloat RANInterpolate(CGFloat minimum, CGFloat maximum, CGFloat scale) {
         strongSelf->_countDownRemainingMs = 0;
         strongSelf->_countdown.hidden = YES;
         strongSelf->_close.hidden = NO;
+        [strongSelf ran_syncAppBar];
     }];
 }
 

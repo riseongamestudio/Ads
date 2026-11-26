@@ -71,6 +71,7 @@ namespace RiseOn.Ads.AdMob {
               , BackgroundColor = look.BackgroundColor
               , Format          = NativeFormatName(format)
               , Close           = ToNative(look.Close)
+              , Layout          = NativeLayout(format)
             });
 
             return new NativeFullScreenSlot(this, format, ad);
@@ -261,6 +262,20 @@ namespace RiseOn.Ads.AdMob {
 
         private void ReportNativePaid(AdFormat format, Native.AdInfo info) {
             context?.ReportPaid(new AdImpression(format, MediationId, info.Source, info.UnitId, info.Value, info.Currency, PlacementOf(format)));
+        }
+
+        /// <summary>How the native pack arranges a full-screen format's card.</summary>
+        private static Native.FullScreenLayout NativeLayout(AdFormat format) {
+            switch (format) {
+                case AdFormat.NativeAppOpen:
+                    return Native.FullScreenLayout.AppOpen;
+
+                case AdFormat.NativeEndCard:
+                    return Native.FullScreenLayout.EndCard;
+
+                default:
+                    return Native.FullScreenLayout.Interstitial;
+            }
         }
 
         /// <summary>The placement name the native pack reports with its impressions.</summary>

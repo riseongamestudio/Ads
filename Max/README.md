@@ -21,8 +21,8 @@ Package `com.riseon.ads.max`, namespace `RiseOn.Ads.Max`, mediation id `max`.
 |---|---|---|
 | Unity 6000.3 | | Bản đang dùng để phát triển |
 | [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của MAX trên trang Ads |
-| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
-| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của MAX trên trang Ads |
+| `com.riseon.ads` 3.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.utils` 2.0.0 | Tự cài theo `package.json` | Các mục của MAX trên trang Ads |
 | `com.applovin.mediation.ads` 8.6.5 | Tự cài theo `package.json`, từ registry AppLovin | AppLovin MAX SDK |
 
 "Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
@@ -56,7 +56,7 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.max": "1.0.1"
+    "com.riseon.ads.max": "1.1.0"
   }
 }
 ```
@@ -87,6 +87,8 @@ riêng cho Android và iOS.
   log lỗi, vì điều khoản của AppLovin cấm khởi tạo SDK cho trẻ em. Bỏ MAX khỏi danh
   sách ưu tiên của game đó.
 - Doanh thu MAX báo bằng USD.
+- Placement game truyền khi hiện ad full-screen đi vào `MaxSdk.Show…`, nên dashboard
+  MAX tách số liệu theo placement đó.
 
 ## Setting của SDK
 
@@ -134,11 +136,11 @@ trang mở hoặc khi thanh Networks hiện trên trang. Nút ↻ trên thanh đ
   của AppLovin bỏ thêm bản beta của chúng, pack thì không). Plugin là package mà
   network không có package nào trong manifest thì dòng của nó không có **Uninstall**.
 - Plugin là package thì trong lúc hàm cài của AppLovin resolve, Editor không phản hồi
-  (đo trong PackageSandbox, cài Moloco: khoảng 14 giây); dòng quay đã hiện trước đó.
+  (đo trên một project thử, cài Moloco: khoảng 14 giây); nút vừa bấm đã quay trước đó.
 - Package của AppLovin không có chữ ký, nên sau khi cài Unity có thể hiện hộp
   **Missing Signature**. Đó là hộp của Unity, không phải của pack.
-- Trong lúc chờ, mục hiện dòng quay ghi việc đang chạy và mọi nút cài, gỡ trên trang
-  mờ đi. Plugin là package mà request lỗi thì Console báo `<việc> failed: …`,
+- Trong lúc chờ, nút vừa bấm quay tại chỗ (di chuột lên ghi việc đang chạy) và mọi
+  nút cài, gỡ trên trang mờ đi. Plugin là package mà request lỗi thì Console báo `<việc> failed: …`,
   như `Installing Pangle failed: …`.
 - Không chọn được phiên bản: Integration Manager chỉ đưa bản mới nhất của mỗi adapter.
 - Không đọc được danh sách thì mục báo kiểm tra kết nối mạng.

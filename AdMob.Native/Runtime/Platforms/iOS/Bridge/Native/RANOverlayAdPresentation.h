@@ -23,7 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
                             fullScreen:(BOOL)fullScreen
                            heightRatio:(float)heightRatio
                        backgroundColor:(int32_t)backgroundColor
-                       redirectOnClose:(BOOL)redirectOnClose;
+                       redirectOnClose:(BOOL)redirectOnClose
+                                layout:(int32_t)layout;
 
 @property (nonatomic, copy, nullable) dispatch_block_t onShow;
 @property (nonatomic, copy, nullable) dispatch_block_t onDismiss;

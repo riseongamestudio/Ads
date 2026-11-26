@@ -1,90 +1,63 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
+    // The test creative: AdMob's blues on a diagonal under soft light
+    // discs, as a promo card is drawn. The discs stay inside the box, as
+    // nothing here clips them.
     internal sealed class EditorMediaGraphic : MaskableGraphic {
-        private const int SunSegments = 18;
-        private const float SunRadiusRatio = 0.09f;
-        private const float SunXRatio = 0.78f;
-        private const float SunYRatio = 0.74f;
-        private const float BackPeakXRatio = 0.48f;
-        private const float BackPeakYRatio = 0.70f;
-        private const float BackEndXRatio = 0.88f;
-        private const float FrontStartXRatio = 0.24f;
-        private const float FrontPeakXRatio = 0.68f;
-        private const float FrontPeakYRatio = 0.58f;
+        private const int GlowSegments = 48;
 
-        private static readonly Color topColor =
-                new(0.10f, 0.15f, 0.24f, 1f);
-        private static readonly Color bottomColor =
-                new(0.08f, 0.43f, 0.48f, 1f);
-        private static readonly Color backMountainColor =
-                new(0.22f, 0.61f, 0.62f, 0.88f);
-        private static readonly Color frontMountainColor =
-                new(0.10f, 0.28f, 0.38f, 0.94f);
-        private static readonly Color sunColor =
-                new(1f, 0.76f, 0.24f, 0.95f);
+        private static readonly Color fromColor =
+                new(0.09f, 0.28f, 0.66f, 1f);
+        private static readonly Color toColor =
+                new(0.26f, 0.52f, 0.96f, 1f);
+        private static readonly Color glowColor =
+                new(1f, 1f, 1f, 0.09f);
+
+        // Each disc as its center's share of the box and its radius's
+        // share of the box's shorter side.
+        private static readonly Vector3[] glows = {
+            new(0.78f, 0.70f, 0.18f)
+          , new(0.20f, 0.26f, 0.16f)
+          , new(0.62f, 0.16f, 0.10f)
+        };
 
         protected override void OnPopulateMesh(VertexHelper vertexHelper) {
             vertexHelper.Clear();
             var rect = GetPixelAdjustedRect();
-            EditorGraphicUtility.AddGradientQuad(
-                vertexHelper
-              , rect
-              , bottomColor
-              , topColor);
+            var middle = Color.Lerp(fromColor, toColor, 0.5f);
+            var start = vertexHelper.currentVertCount;
+            vertexHelper.AddVert(
+                new(rect.xMin, rect.yMin)
+              , fromColor
+              , new(0f, 0f));
+            vertexHelper.AddVert(
+                new(rect.xMin, rect.yMax)
+              , middle
+              , new(0f, 1f));
+            vertexHelper.AddVert(
+                new(rect.xMax, rect.yMax)
+              , toColor
+              , new(1f, 1f));
+            vertexHelper.AddVert(
+                new(rect.xMax, rect.yMin)
+              , middle
+              , new(1f, 0f));
+            vertexHelper.AddTriangle(start, start + 1, start + 2);
+            vertexHelper.AddTriangle(start + 2, start + 3, start);
 
-            var sunRadius =
-                    Mathf.Min(rect.width, rect.height)
-                            * SunRadiusRatio;
-            EditorGraphicUtility.AddCircle(
-                vertexHelper
-              , new(
-                    Mathf.Lerp(rect.xMin, rect.xMax, SunXRatio)
-                  , Mathf.Lerp(rect.yMin, rect.yMax, SunYRatio))
-              , sunRadius
-              , sunColor
-              , SunSegments);
-
-            EditorGraphicUtility.AddTriangle(
-                vertexHelper
-              , new(rect.xMin, rect.yMin)
-              , new(
-                    Mathf.Lerp(
-                        rect.xMin
-                      , rect.xMax
-                      , BackPeakXRatio)
-                  , Mathf.Lerp(
-                        rect.yMin
-                      , rect.yMax
-                      , BackPeakYRatio))
-              , new(
-                    Mathf.Lerp(
-                        rect.xMin
-                      , rect.xMax
-                      , BackEndXRatio)
-                  , rect.yMin)
-              , backMountainColor);
-            EditorGraphicUtility.AddTriangle(
-                vertexHelper
-              , new(
-                    Mathf.Lerp(
-                        rect.xMin
-                      , rect.xMax
-                      , FrontStartXRatio)
-                  , rect.yMin)
-              , new(
-                    Mathf.Lerp(
-                        rect.xMin
-                      , rect.xMax
-                      , FrontPeakXRatio)
-                  , Mathf.Lerp(
-                        rect.yMin
-                      , rect.yMax
-                      , FrontPeakYRatio))
-              , new(rect.xMax, rect.yMin)
-              , frontMountainColor);
+            var side = Mathf.Min(rect.width, rect.height);
+            foreach (var glow in glows) {
+                EditorGraphicUtility.AddCircle(
+                    vertexHelper
+                  , new(
+                        Mathf.Lerp(rect.xMin, rect.xMax, glow.x)
+                      , Mathf.Lerp(rect.yMin, rect.yMax, glow.y))
+                  , side * glow.z
+                  , glowColor
+                  , GlowSegments);
+            }
         }
     }
 }

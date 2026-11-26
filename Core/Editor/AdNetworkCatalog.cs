@@ -71,7 +71,6 @@ namespace RiseOn.Ads.Editor {
             if (networks == null && !isLoading && problem == null) StartLoad();
             if (!section.Open) return;
 
-            PackageJobs.DrawRunning(Key);
             if (isLoading) DrawLine(SpinnerUtils.Content(LoadingText), EditorStyles.label);
             else if (problem != null) DrawLine(new GUIContent(problem), EditorStyles.wordWrappedMiniLabel);
 
@@ -124,9 +123,7 @@ namespace RiseOn.Ads.Editor {
                 var width = EditorStyles.miniButton.CalcSize(label).x;
                 var button = new Rect(right - width, value.y, width, value.height);
                 right = button.x - Section.LabelGap;
-                using (new EditorGUI.DisabledScope(isLoading || PackageJobs.IsRunning)) {
-                    if (!GUI.Button(button, label, EditorStyles.miniButton)) continue;
-                }
+                if (!PackageJobs.Button(button, label, $"{Key}/{text}", !isLoading)) continue;
 
                 act(list);
                 selected.Clear();
@@ -143,9 +140,7 @@ namespace RiseOn.Ads.Editor {
             var outdated = networks?.FindAll(network => network.Install != null && network.IsOutdated) ?? new List<PackageRow>();
             var label    = new GUIContent("Update All", outdated.Count == 0 ? "Every adapter in the project is on its newest version" : $"Update {string.Join(", ", outdated.ConvertAll(network => network.Name))}");
             var width    = EditorStyles.miniButton.CalcSize(label).x;
-            using (new EditorGUI.DisabledScope(outdated.Count == 0 || isLoading || PackageJobs.IsRunning)) {
-                if (!GUI.Button(new Rect(value.xMax - width, value.y, width, value.height), label, EditorStyles.miniButton)) return;
-            }
+            if (!PackageJobs.Button(new Rect(value.xMax - width, value.y, width, value.height), label, $"{Key}/Update All", outdated.Count > 0 && !isLoading)) return;
 
             Install(outdated, $"Updating {Names(outdated)}");
             GUIUtility.ExitGUI();
@@ -153,7 +148,7 @@ namespace RiseOn.Ads.Editor {
 
         /// <summary>Starts a package change shown in this section.</summary>
         protected void Change(string what, string[] add, string[] remove) {
-            PackageJobs.Change(Key, what, add, remove);
+            PackageJobs.Change(what, add, remove);
         }
 
         private void StartLoad() {
@@ -182,7 +177,7 @@ namespace RiseOn.Ads.Editor {
         // The name in the label column, then the version and the buttons.
         private static void DrawRow(PackageRow network) {
             var value = SectionRows.MarkFirstRow(EditorGUILayout.GetControlRect(), out var prefix);
-            GUI.Label(prefix, new GUIContent(network.Name, network.Tooltip));
+            GUI.Label(prefix, new GUIContent(network.Name, network.Tooltip), Section.CutLabel);
             PackageRow.Draw(value, network);
         }
     }

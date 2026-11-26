@@ -24,6 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
                       closeSide:(int32_t)closeSide
                       timerSide:(int32_t)timerSide
                 redirectOnClose:(BOOL)redirectOnClose;
+- (void)setLayout:(int32_t)layout;
 - (void)setCloseWithCooldown:(int32_t)cooldown
                    closeSide:(int32_t)closeSide
                    timerSide:(int32_t)timerSide

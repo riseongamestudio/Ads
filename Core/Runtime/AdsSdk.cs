@@ -167,8 +167,8 @@ namespace RiseOn.Ads {
 
         /// <summary>
         /// Holds a format back, such as every format a remove-ads purchase takes, or lets it through again.<br/>
-        /// Suppressed, a full-screen format's step is left out of every chain, a rewarding one counting as rewarded; the banner, the MRec, the collapsible and the native blocks go off screen, and what the game wants of them comes back once lifted.<br/>
-        /// Not saved: the game sets it from its save at every launch, before the first scene's ads; callable before the pack starts.
+        /// Suppressed, a full-screen format's step is left out of every chain, a rewarding one counting as rewarded; the banner, the MRec and the native blocks go off screen, and what the game wants of them comes back once lifted; a collapsible chain running is cut and does not come back.<br/>
+        /// Not saved: the game sets it at every launch from its own source, such as the IAP ownership or its save, as early as it can; callable before the pack starts.
         /// </summary>
         public static void SetSuppressed(AdFormat format, bool on) {
             if (on ? suppressed.Add(format) : suppressed.Remove(format)) host?.ApplySuppressed(format);
@@ -234,16 +234,6 @@ namespace RiseOn.Ads {
         internal static void RaisePlayerLeft() => Raise(PlayerLeft, handler => handler());
 
         internal static void RaisePlayerReturned(double awaySeconds) => Raise(PlayerReturned, handler => handler(awaySeconds));
-
-        // The Editor's pause under a full-screen ad: the manager's, else the default.
-        internal static void PauseInEditor(bool paused) {
-            try {
-                if (Manager != null) Manager.PauseInEditor(paused);
-                else EditorGamePause.Apply(paused);
-            } catch (Exception exception) {
-                Debug.LogException(exception);
-            }
-        }
 
         // Each handler alone, so that one failing in the game neither stops the others nor the pack's own bookkeeping.
         private static void Raise<T>(T handlers, Action<T> call) where T : Delegate {

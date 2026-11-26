@@ -9,7 +9,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
     // the scrim-over-media template or the media-top column - so a developer
     // sees in play mode roughly what the device will draw, without any of
     // the device's loading behavior.
-    internal sealed class EditorAd : MonoBehaviour {
+    internal sealed partial class EditorAd : MonoBehaviour {
         private enum RectAdTier {
             Compact
           , Regular
@@ -20,15 +20,17 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private const string BuiltInFontName        = "LegacyRuntime.ttf";
         private const string AdAttributionText      = "Ad";
         private const string AdChoicesText          = "AdChoices";
-        private const string HeadlineText           = "Native Editor Ad";
-        private const string AdvertiserText         = "Google Mobile Ads placeholder";
-        private const string StarRatingText         = "★★★★☆  4.0";
-        private const string BodyText               = "This GameObject previews the native ad layout in the Unity Editor.";
+        // Filled as a test ad, AdMob as the advertiser with its icon.
+        private const string HeadlineText           = "Test Ad";
+        private const string AdvertiserText         = "AdMob";
+        private const string StarRatingText         = "★★★★★  4.8";
+        private const string BodyText               = "This native test ad stands in for AdMob's. On a device, the real ad shows here.";
         private const string CallToActionText       = "Install";
-        private const string ImageMediaText         = "IMAGE MEDIA";
-        private const string FlexibleMediaText      = "IMAGE / VIDEO MEDIA";
+        // Where the pack keeps the advertiser's icon, from its folder.
+        private const string AdvertiserIconPath     = "/Editor/AdMobIcon.png";
         private const string ClickLogText           = "Native ad preview click";
-        private const string TestAdClickUrl         = "https://google.com";
+        // The preview stands in for an AdMob ad, so a click leads to AdMob.
+        private const string TestAdClickUrl         = "https://admob.google.com/home/";
         private const string AdChoicesUrl           = "https://support.google.com/My-Ad-Center-Help/answer/12155764";
         private const string AdChoicesClickLogText  = "Native AdChoices preview click";
         private const string PanelObjectName        = "Native Ad Panel";
@@ -164,17 +166,17 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 new(360f, 800f);
         private static readonly Color secondaryTextColor =
                 new(1f, 1f, 1f, 0.8f);
+        private static readonly Color primaryTextOnLightColor =
+                new(0f, 0f, 0f, 0.87f);
+        private static readonly Color secondaryTextOnLightColor =
+                new(0f, 0f, 0f, 0.6f);
         private static readonly Color controlColor =
                 new(0f, 0f, 0f, 0.7f);
         private static readonly Color attributionColor =
                 new(1f, 0.76f, 0.03f, 1f);
-        // The device call to action verbatim: #2196F3, bordered #1565C0.
+        // The device call to action verbatim: a #1A73E8 pill.
         private static readonly Color callToActionColor =
-                new(0x21 / 255f, 0x96 / 255f, 0xF3 / 255f, 1f);
-        private static readonly Color callToActionBorderColor =
-                new(0x15 / 255f, 0x65 / 255f, 0xC0 / 255f, 1f);
-        private static readonly Color elementOutlineColor =
-                new(0f, 0f, 0f, 0.35f);
+                new(0x1A / 255f, 0x73 / 255f, 0xE8 / 255f, 1f);
 
         private enum Slide {
             None
@@ -308,13 +310,18 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             canvasScaler.scaleFactor = ResolveUIScale();
 
             panel = CreatePanel(config);
-            if (config.Mode is EditorAdMode.RectAd) {
+            cardLayout = config.Mode is EditorAdMode.FullScreen;
+            if (cardLayout) {
+                // The card carries its own badges.
+                content = CreateCard(panel, config);
+            } else if (config.Mode is EditorAdMode.RectAd) {
                 content = CreateRectAdContent(panel, config);
             } else {
                 content = CreateContent(panel, config);
             }
-            adChoicesRect = CreateBadges(panel);
+            if (!cardLayout) adChoicesRect = CreateBadges(panel);
             CreateControls(panel, config);
+            if (cardLayout) StyleCardControls(config);
             Canvas.ForceUpdateCanvases();
             RefreshResponsiveLayout(true);
 
@@ -575,13 +582,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 contentLayout.childAlignment = TextAnchor.LowerCenter;
             }
 
-            var mediaText = config.AllowsVideo
-                    ? FlexibleMediaText
-                    : ImageMediaText;
             mediaLayoutElement =
                     CreateMedia(
                         content
-                      , mediaText
+                      , MediaText(config)
                       , MediaMinSizeDp
                       , out mediaLabel);
 
@@ -605,6 +609,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var identityTextParent =
                     CreateIdentityRow(detailsObject.transform);
+            // The device's rule: dark text on a light panel, white otherwise.
+            var onLight = IsLight(config.BackgroundColor);
+            var primaryColor = onLight
+                    ? primaryTextOnLightColor
+                    : Color.white;
+            var secondaryColor = onLight
+                    ? secondaryTextOnLightColor
+                    : secondaryTextColor;
             var headlineFontSize = fullScreen
                     ? FullScreenHeadlineFontSize
                     : CompactHeadlineFontSize;
@@ -613,7 +625,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , HeadlineText
               , headlineFontSize
               , TextAnchor.MiddleLeft
-              , Color.white);
+              , primaryColor);
             headlineLayoutElement =
                     headlineText.GetComponent<LayoutElement>();
 
@@ -622,7 +634,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , AdvertiserText
               , AdvertiserFontSize
               , TextAnchor.MiddleLeft
-              , secondaryTextColor);
+              , secondaryColor);
             CreateText(
                 identityTextParent
               , StarRatingText
@@ -634,7 +646,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , BodyText
               , BodyFontSize
               , TextAnchor.MiddleLeft
-              , secondaryTextColor);
+              , secondaryColor);
 
             callToActionLayoutElement = CreateCallToAction(
                 detailsObject.transform
@@ -722,7 +734,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var image = iconObject.GetComponent<Image>();
             image.color = callToActionColor;
-            AddOutline(image, elementOutlineColor);
+            // Rounded as a launcher rounds it; the mask cuts the picture.
+            Round(image, sizeDp * IconCornerRatio);
+            iconObject.AddComponent<Mask>();
+            var layout = iconObject.GetComponent<LayoutElement>();
+            layout.minWidth = sizeDp;
+            layout.minHeight = sizeDp;
+            layout.preferredWidth = sizeDp;
+            layout.preferredHeight = sizeDp;
 
             var button = iconObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -731,11 +750,20 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     TestAdClickUrl
                   , ClickLogText));
 
-            var layout = iconObject.GetComponent<LayoutElement>();
-            layout.minWidth = sizeDp;
-            layout.minHeight = sizeDp;
-            layout.preferredWidth = sizeDp;
-            layout.preferredHeight = sizeDp;
+            var icon = AdvertiserIcon();
+            if (icon) {
+                image.color = Color.white;
+                var picture = new GameObject(
+                    IconObjectName
+                  , typeof(RectTransform)
+                  , typeof(RawImage));
+                picture.transform.SetParent(iconObject.transform, false);
+                var rawImage = picture.GetComponent<RawImage>();
+                rawImage.texture = icon;
+                rawImage.raycastTarget = false;
+                Stretch(rawImage.rectTransform);
+                return layout;
+            }
 
             var label = CreateOverlayText(
                 iconObject.transform
@@ -755,6 +783,42 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             return layout;
         }
 
+        // As the device reads a panel: light when mostly opaque and bright.
+        // A panel mostly see-through shows the game, whose shade is unknown.
+        private static bool IsLight(Color color) {
+            if (color.a < 0.5f) {
+                return false;
+            }
+
+            var luminance =
+                    0.2126f * color.r
+                  + 0.7152f * color.g
+                  + 0.0722f * color.b;
+            return luminance > 0.5f;
+        }
+
+        // The format's name on the creative, over what it may carry.
+        private static string MediaText(EditorAdConfig config) {
+            var format = config.Mode switch {
+                EditorAdMode.FullScreen => "Native Full Screen"
+              , EditorAdMode.Collapsible => "Native Half Screen"
+              , _ => "Native Rect"
+            };
+            return config.AllowsVideo
+                    ? format + "\nTest ad · image or video"
+                    : format + "\nTest ad · image";
+        }
+
+        private static Texture2D AdvertiserIcon() {
+            var package =
+                    UnityEditor.PackageManager.PackageInfo.FindForAssembly(
+                        typeof(EditorAd).Assembly);
+            return package != null
+                    ? UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+                        package.assetPath + AdvertiserIconPath)
+                    : null;
+        }
+
         private LayoutElement CreateMedia(
             Transform parent
           , string text
@@ -772,7 +836,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var graphic =
                     mediaObject.GetComponent<EditorMediaGraphic>();
             graphic.raycastTarget = true;
-            AddOutline(graphic, elementOutlineColor);
 
             var button = mediaObject.GetComponent<Button>();
             button.targetGraphic = graphic;
@@ -818,7 +881,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var image = buttonObject.GetComponent<Image>();
             image.color = callToActionColor;
-            AddOutline(image, callToActionBorderColor);
+            Round(image, heightDp / 2f);
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -919,7 +982,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var mediaGraphic =
                     mediaObject.GetComponent<EditorMediaGraphic>();
             mediaGraphic.raycastTarget = true;
-            AddOutline(mediaGraphic, elementOutlineColor);
             var mediaButton = mediaObject.GetComponent<Button>();
             mediaButton.targetGraphic = mediaGraphic;
             mediaButton.onClick.AddListener(
@@ -928,9 +990,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                   , ClickLogText));
             mediaLabel = CreateOverlayText(
                 mediaObject.transform
-              , config.AllowsVideo
-                        ? FlexibleMediaText
-                        : ImageMediaText
+              , MediaText(config)
               , MediaLabelFontSize
               , TextAnchor.MiddleCenter
               , Color.white);
@@ -1255,8 +1315,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , new(
                     AttributionWidthDp
                   , AttributionHeightDp));
-            attributionObject.GetComponent<Image>().color =
-                    attributionColor;
+            var attributionImage = attributionObject.GetComponent<Image>();
+            attributionImage.color = attributionColor;
+            // As the device rounds it: 3dp on a rect ad, 4dp on an overlay.
+            Round(attributionImage, config.Mode is EditorAdMode.RectAd ? 3f : 4f);
             attributionText = CreateOverlayText(
                 attributionObject.transform
               , AdAttributionText
@@ -1457,6 +1519,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var image = buttonObject.GetComponent<Image>();
             image.color = controlColor;
+            Round(image, ControlSizeDp / 2f);
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -1488,7 +1551,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var controlRect =
                     controlObject.GetComponent<RectTransform>();
             SetControlRect(controlRect, onLeft);
-            controlObject.GetComponent<Image>().color = controlColor;
+            var image = controlObject.GetComponent<Image>();
+            image.color = controlColor;
+            Round(image, ControlSizeDp / 2f);
 
             label = CreateOverlayText(
                 controlObject.transform
@@ -1578,54 +1643,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             label.color = color;
             label.raycastTarget = false;
             return label;
-        }
-
-        // The border the device buttons carry: a thin rim drawn INSIDE the
-        // element's own bounds - an inner stroke, the way GradientDrawable
-        // strokes on Android - so the border never grows the element.
-        private const float InnerStrokeWidthDp = 1.5f;
-
-        private static void AddOutline(Graphic graphic, Color color) {
-            var target = graphic.rectTransform;
-            CreateStrokeEdge(
-                target, color, new(0f, 1f), new(1f, 1f)
-              , new(0.5f, 1f), new(0f, InnerStrokeWidthDp));
-            CreateStrokeEdge(
-                target, color, new(0f, 0f), new(1f, 0f)
-              , new(0.5f, 0f), new(0f, InnerStrokeWidthDp));
-            // The side bars stop short of the corners the horizontal bars
-            // already own, so a translucent stroke never doubles up there.
-            CreateStrokeEdge(
-                target, color, new(0f, 0f), new(0f, 1f)
-              , new(0f, 0.5f)
-              , new(InnerStrokeWidthDp, -2f * InnerStrokeWidthDp));
-            CreateStrokeEdge(
-                target, color, new(1f, 0f), new(1f, 1f)
-              , new(1f, 0.5f)
-              , new(InnerStrokeWidthDp, -2f * InnerStrokeWidthDp));
-        }
-
-        private static void CreateStrokeEdge(
-            RectTransform parent
-          , Color color
-          , Vector2 anchorMin
-          , Vector2 anchorMax
-          , Vector2 pivot
-          , Vector2 size) {
-            var edgeObject = new GameObject(
-                "Stroke"
-              , typeof(RectTransform)
-              , typeof(Image));
-            edgeObject.transform.SetParent(parent, false);
-            var rect = edgeObject.GetComponent<RectTransform>();
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.pivot = pivot;
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = size;
-            var image = edgeObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
         }
 
         private static void Stretch(RectTransform rect) {
@@ -1784,6 +1801,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             canvasScaler.scaleFactor = uiScale;
             ApplyPanelRect(panel, config, uiScale);
             Canvas.ForceUpdateCanvases();
+            if (cardLayout) {
+                RefreshCard(uiScale);
+                lastScreenWidth = Screen.width;
+                lastScreenHeight = Screen.height;
+                lastSafeArea = Screen.safeArea;
+                lastUIScale = uiScale;
+                return;
+            }
             var safeTopInset = ResolveSafeTopInset(uiScale);
             ApplySafeTopInset(safeTopInset);
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);
@@ -1993,6 +2018,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 AdvanceSlide();
                 return;
             }
+            SpinAppBar();
 
             if (countdownControl == null
                     || !countdownControl.activeSelf) {
@@ -2008,6 +2034,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             countdownControl.SetActive(false);
             closeButton.gameObject.SetActive(true);
+            SyncAppBar();
         }
 
         private void Finish(bool notify) {

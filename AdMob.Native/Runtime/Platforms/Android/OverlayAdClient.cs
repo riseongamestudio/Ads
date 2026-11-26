@@ -8,6 +8,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
         private const string JavaSetListenerMethod = "SetListener";
         private const string JavaConfigureMethod   = "Configure";
         private const string JavaSetCloseMethod    = "SetClose";
+        private const string JavaSetLayoutMethod   = "SetLayout";
         private const string JavaLoadAdMethod      = "Load";
         private const string JavaShowAdMethod      = "Show";
         private const string JavaHideAdMethod      = "Hide";
@@ -37,6 +38,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
               , (int)settings.Close.CloseSide
               , (int)settings.Close.TimerSide
               , settings.Close.RedirectOnClose);
+            javaObject.Call(
+                JavaSetLayoutMethod
+              , (int)settings.Layout);
             listener = new NativeAdLoadListenerProxy(callbacks);
             javaObject.Call(
                 JavaSetListenerMethod

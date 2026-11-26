@@ -9,6 +9,8 @@ import android.view.View;
 
 final class NativeAdStarRatingView extends View {
     private static final String EMPTY_STAR_COLOR = "#66FFFFFF";
+    // The empty stars on a light panel, where the white ones vanish.
+    private static final String EMPTY_STAR_ON_LIGHT_COLOR = "#42000000";
     private static final String FILLED_STAR_COLOR = "#FFFFC107";
     private static final int STAR_COUNT = 5;
     private static final int DESIRED_WIDTH_DP = 74;
@@ -29,6 +31,15 @@ final class NativeAdStarRatingView extends View {
         filledPaint.setColor(Color.parseColor(FILLED_STAR_COLOR));
         setMinimumWidth(Math.round(DESIRED_WIDTH_DP * density));
         setMinimumHeight(Math.round(DESIRED_HEIGHT_DP * density));
+    }
+
+    void SetOnLight(boolean onLight) {
+        emptyPaint.setColor(
+                Color.parseColor(
+                        onLight
+                                ? EMPTY_STAR_ON_LIGHT_COLOR
+                                : EMPTY_STAR_COLOR));
+        invalidate();
     }
 
     void SetRating(float value) {

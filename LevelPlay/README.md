@@ -22,8 +22,8 @@ Package `com.riseon.ads.levelplay`, namespace `RiseOn.Ads.LevelPlay`, mediation 
 |---|---|---|
 | Unity 6000.3 | | Bản đang dùng để phát triển |
 | [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của LevelPlay trên trang Ads |
-| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
-| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của LevelPlay trên trang Ads |
+| `com.riseon.ads` 3.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.utils` 2.0.0 | Tự cài theo `package.json` | Các mục của LevelPlay trên trang Ads |
 | `com.unity.services.levelplay` 9.5.1 | Tự cài theo `package.json`, từ Unity Registry (tên hiển thị "Ads Mediation") | LevelPlay SDK |
 
 "Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
@@ -52,7 +52,7 @@ OpenUPM với scope `com.cysharp`, `com.google` (phụ thuộc của `com.riseon
     }
   ],
   "dependencies": {
-    "com.riseon.ads.levelplay": "1.0.1"
+    "com.riseon.ads.levelplay": "1.1.0"
   }
 }
 ```
@@ -82,6 +82,10 @@ https://github.com/riseongamestudio/Ads.git?path=/LevelPlay
   `Plugins/iOS/ROLevelPlayFullScreenAd.m`): sự kiện đến theo thứ tự trên thread riêng
   của cầu nối (iOS: hàng đợi tuần tự), nên ad có màn che và nối được với các bước khác
   trong `AdChain`. Banner và MRec vẫn dùng API của Unity.
+- Placement game truyền khi hiện ad chỉ đi cùng `AdImpression.Placement`; pack hiện ad
+  với placement mặc định của LevelPlay. Các placement khác trên dashboard LevelPlay (và
+  capping của chúng) không áp dụng; capping đặt cho placement mặc định vẫn áp, nên để
+  trống để giãn cách chỉ do lớp manager quyết.
 - LevelPlay không đảm bảo thưởng đến trước sự kiện đóng. Cầu nối giữ sự kiện đóng
   của rewarded tối đa 1 giây chờ thưởng.
 - Unity dừng dưới interstitial và rewarded nhờ màn che của pack. Cờ

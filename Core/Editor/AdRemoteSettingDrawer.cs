@@ -23,8 +23,7 @@ namespace RiseOn.Ads.Editor {
 #if ADS_SUPPORT_REMOTECONFIG
             var id      = Property.Children["key"].Children["id"];
             var current = (int) id.ValueEntry.WeakSmartValue;
-            var key     = new Rect(field.xMax - AdRemoteKeyDrawer.Width, field.y, AdRemoteKeyDrawer.Width, field.height);
-            field.xMax = key.x - AdRemoteKeyDrawer.Gap;
+            var key     = KeyRect(ref field);
             remote     = current != 0;
             // The pick lands after this draw, from the drop-down's window, so the page repaints to show it.
             var window = GUIHelper.CurrentWindow;
@@ -35,8 +34,7 @@ namespace RiseOn.Ads.Editor {
             }, search: false);
             GUI.Label(key, new GUIContent("", keyTooltip));
 #else
-            var key = new Rect(field.xMax - AdRemoteKeyDrawer.Width, field.y, AdRemoteKeyDrawer.Width, field.height);
-            field.xMax = key.x - AdRemoteKeyDrawer.Gap;
+            var key = KeyRect(ref field);
 #endif
             using (new EditorGUI.DisabledScope(remote)) Value(field);
 #if !ADS_SUPPORT_REMOTECONFIG
@@ -44,6 +42,17 @@ namespace RiseOn.Ads.Editor {
             AdRemoteKeyDrawer.DrawNoPack(key);
 #endif
             EditorGUI.indentLevel = indent;
+        }
+
+        // At the row's end, as wide as its names need while the value keeps the room of a few digits; narrower, the two share the row, two parts to the drop-down for one
+        // to the value, so neither goes.
+        private static Rect KeyRect(ref Rect field) {
+            const float value = 48;
+            var room  = Mathf.Max(0, field.width - AdRemoteKeyDrawer.Gap);
+            var width = room >= AdRemoteKeyDrawer.Width + value ? AdRemoteKeyDrawer.Width : room * 2 / 3;
+            var key   = new Rect(field.xMax - width, field.y, width, field.height);
+            field.xMax = Mathf.Max(field.x, key.x - AdRemoteKeyDrawer.Gap);
+            return key;
         }
 
         // The page's value: a float at 0 or above, every one being seconds or a weight; or a bool.

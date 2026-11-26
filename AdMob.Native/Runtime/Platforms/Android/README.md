@@ -19,9 +19,10 @@ Bridge Java của pack: `Bridge/RiseOnAdsAdMobNative.androidlib` (package
     8.0 (đúng API 26) ném "Only fullscreen opaque activities can request
     orientation" từ `super.onCreate` cho Activity translucent khai orientation
     cố định — crash trước khi code của ta chạy, 7 người dùng dính (dfef7999).
-    Orientation xin ở runtime trong `onCreate`, **bỏ qua API 26** (ở đó
-    Activity translucent theo orientation của Activity đục bên dưới — game
-    portrait — nên vẫn portrait).
+    Orientation xin ở runtime trong `onCreate`: `SCREEN_ORIENTATION_BEHIND`,
+    ad xoay theo game như bên iOS. BEHIND không phải orientation cố định nên
+    API 26 cũng nhận; đừng đổi sang `PORTRAIT`/`LANDSCAPE` (cố định, crash
+    trên API 26).
 
 ## 2. Luồng
 

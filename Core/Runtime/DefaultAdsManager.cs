@@ -137,7 +137,7 @@ namespace RiseOn.Ads {
         private bool adsRemoved;
         private bool adsOff;
 
-        /// <summary>The player owns remove-ads: suppresses the formats it takes, or lets them through. Call it at launch from the save, and after a purchase, a refund or a timed no-ads running out.</summary>
+        /// <summary>The player owns remove-ads: suppresses the formats it takes, or lets them through. Call it as the ownership of the remove-ads product goes, such as from IapSdk.Owns at start and IapSdk.OwnershipChanged after, and when a timed no-ads runs out.</summary>
         public void SetAdsRemoved(bool removed) {
             adsRemoved = removed;
             ApplySuppressed();
@@ -242,20 +242,26 @@ namespace RiseOn.Ads {
         public bool ReturnAdBlocked { get; set; }
 
         /// <summary>The format the ad on return would show now: the first of the App Open section's that is allowed and loaded; none before From Launch.</summary>
-        public AdFullScreenFormat? ReturnFormat {
-            get {
-                if (AdsSdk.Launches < returnFromLaunch) return null;
-
-                foreach (var format in ReturnFormats) {
-                    if (!AdsSdk.IsSuppressed(format.ToFormat()) && Allows(format) && AdsSdk.IsReady(format)) return format;
-                }
-
-                return null;
-            }
-        }
+        public AdFullScreenFormat? ReturnFormat => ReturnFormatOf(loaded: true);
 
         /// <summary>The ad on return now, for a game that shows it itself, such as over its own loading screen once the bar is full; true when an ad displayed.</summary>
-        public async UniTask<bool> ShowReturnAdAsync(string placement = "return") => ReturnFormat is { } format && (await ShowAsync(format, placement)).AnyDisplayed;
+        public async UniTask<bool> ShowReturnAdAsync(string placement = "return") {
+            if (ReturnFormat is { } format) return (await ShowAsync(format, placement)).AnyDisplayed;
+
+            // The rules let one through but none loaded: still an opportunity, as for every other format.
+            if (ReturnFormatOf(loaded: false) is { } allowed) Opportunity?.Invoke(allowed.ToFormat(), placement);
+            return false;
+        }
+
+        private AdFullScreenFormat? ReturnFormatOf(bool loaded) {
+            if (AdsSdk.Launches < returnFromLaunch) return null;
+
+            foreach (var format in ReturnFormats) {
+                if (!AdsSdk.IsSuppressed(format.ToFormat()) && Allows(format) && (!loaded || AdsSdk.IsReady(format))) return format;
+            }
+
+            return null;
+        }
 
         private void OnPlayerReturned(double awaySeconds) {
             if (ReturnAdBlocked || awaySeconds < returnAfterAwaySeconds.Value) return;
@@ -270,7 +276,12 @@ namespace RiseOn.Ads {
             var first = SceneManager.GetActiveScene();
             await AdsSdk.WaitUntilInitializedAsync();
             await UniTask.WaitUntil(() => ReturnFormat != null || SceneManager.GetActiveScene() != first);
-            if (SceneManager.GetActiveScene() == first) await ShowReturnAdAsync("launch");
+            if (SceneManager.GetActiveScene() == first) {
+                await ShowReturnAdAsync("launch");
+            } else if (ReturnFormatOf(loaded: false) is { } allowed) {
+                // The game moved on before an ad loaded: the rules let one through, so it was still an opportunity.
+                Opportunity?.Invoke(allowed.ToFormat(), "launch");
+            }
         }
 
         #endregion
@@ -293,8 +304,6 @@ namespace RiseOn.Ads {
         }
 
         #endregion
-
-        void IAdsManager.PauseInEditor(bool paused) => EditorGamePause.Apply(paused);
 
         void IAdsManager.Started() {
             AdsSdk.PlayerReturned += OnPlayerReturned;

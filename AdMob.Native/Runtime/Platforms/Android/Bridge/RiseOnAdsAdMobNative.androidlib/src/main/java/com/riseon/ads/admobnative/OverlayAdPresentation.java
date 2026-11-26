@@ -140,6 +140,8 @@ public final class OverlayAdPresentation
               , backgroundColor
               , redirectOnClose
               , requestedPanelHeight
+              // The bottom slice has no full-screen arrangement to choose.
+              , OverlayAdContentView.LAYOUT_INTERSTITIAL
               , this::CloseByPlayer);
         setContentView(contentView);
         // The window keeps the height ConfigureWindow already gave it. It

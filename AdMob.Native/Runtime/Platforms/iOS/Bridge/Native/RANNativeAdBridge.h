@@ -122,6 +122,9 @@ void RANOverlayAdConfigure(
       , int32_t closeSide
       , int32_t timerSide
       , bool redirectOnClose);
+// Straight after Configure: how a full-screen ad arranges its card,
+// ordinals shared with the C# FullScreenLayout.
+void RANOverlayAdSetLayout(void* handle, int32_t layout);
 void RANOverlayAdSetClose(
         void* handle
       , int32_t cooldown

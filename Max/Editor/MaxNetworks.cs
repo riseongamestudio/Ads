@@ -69,7 +69,7 @@ namespace RiseOn.Ads.Max.Editor {
 
         // As a package, the pack's own request for the same packages ends the job; in Assets, the import does.
         private void Add(Network[] networks, string what) {
-            PackageJobs.Begin(Key, what);
+            PackageJobs.Begin(what);
             AppLovinEditorCoroutine.StartCoroutine(Run());
 
             IEnumerator Run() {
@@ -84,7 +84,7 @@ namespace RiseOn.Ads.Max.Editor {
                         while (add.MoveNext()) { }
                     }
 
-                    PackageJobs.Change(Key, what, networks.SelectMany(network => network.Packages).Select(package => $"{package.Name}@{package.Version}").ToArray(), null);
+                    PackageJobs.Change(what, networks.SelectMany(network => network.Packages).Select(package => $"{package.Name}@{package.Version}").ToArray(), null);
                     yield break;
                 }
 
@@ -102,11 +102,11 @@ namespace RiseOn.Ads.Max.Editor {
         private void Remove(Network[] networks, string what) {
             if (AppLovinIntegrationManager.IsPluginInPackageManager) {
                 // What AppLovin's removal takes out of the manifest, but as a request that reports when it is done, or why it failed.
-                PackageJobs.Change(Key, what, null, networks.SelectMany(Listed).ToArray());
+                PackageJobs.Change(what, null, networks.SelectMany(Listed).ToArray());
                 return;
             }
 
-            PackageJobs.Begin(Key, what);
+            PackageJobs.Begin(what);
             foreach (var network in networks) Client.RemoveNetwork(network);
             AssetDatabase.Refresh();
             PackageJobs.End();

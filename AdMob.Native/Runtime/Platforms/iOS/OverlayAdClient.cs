@@ -26,6 +26,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
               , (int)settings.Close.CloseSide
               , (int)settings.Close.TimerSide
               , settings.Close.RedirectOnClose);
+            NativeAdBridge.RANOverlayAdSetLayout(
+                handle
+              , (int)settings.Layout);
             NativeAdBridge.RANOverlayAdSetListener(
                 handle
               , NativeAdBridge.OnLoadingStartedCallback

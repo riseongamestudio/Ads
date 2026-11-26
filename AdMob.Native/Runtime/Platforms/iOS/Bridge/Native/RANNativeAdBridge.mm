@@ -173,6 +173,11 @@ void RANOverlayAdConfigure(
                     redirectOnClose:redirectOnClose];
 }
 
+void RANOverlayAdSetLayout(void* handle, int32_t layout) {
+    if (handle == NULL) return;
+    [(__bridge RANOverlayAd *)handle setLayout:layout];
+}
+
 void RANOverlayAdSetClose(
         void* handle
       , int32_t cooldown

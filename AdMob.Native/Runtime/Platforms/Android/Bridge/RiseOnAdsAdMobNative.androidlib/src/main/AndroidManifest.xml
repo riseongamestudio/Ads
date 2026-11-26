@@ -5,10 +5,8 @@
              throws "Only fullscreen opaque activities can request
              orientation" from Activity.onCreate when a translucent activity
              declares a fixed orientation - a hard crash before any of our
-             code runs. onCreate requests portrait at runtime instead,
-             skipping API 26, where a translucent activity follows the
-             orientation of the opaque activity beneath it (the portrait
-             game) anyway. -->
+             code runs. onCreate requests BEHIND at runtime instead, which
+             is not a fixed orientation: the ad turns with the game. -->
         <activity
             android:name="com.riseon.ads.admobnative.OverlayAdActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"

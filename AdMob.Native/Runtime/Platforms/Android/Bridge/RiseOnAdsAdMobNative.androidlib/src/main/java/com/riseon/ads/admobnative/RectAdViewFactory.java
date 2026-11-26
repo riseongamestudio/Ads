@@ -96,8 +96,10 @@ final class RectAdViewFactory {
     private static final float OPTIONAL_TEXT_MIN_SP = 10f;
     private static final float BADGE_SHORT_SIDE_RATIO = 0.10f;
     private static final float ATTRIBUTION_ASPECT_RATIO = 4f / 3f;
-    private static final String CTA_BACKGROUND_COLOR = "#FF2196F3";
-    private static final String CTA_BORDER_COLOR = "#FF1565C0";
+    private static final String CTA_BACKGROUND_COLOR = "#FF1A73E8";
+    private static final int ATTRIBUTION_CORNER_DP = 3;
+    // An icon's corners, as a launcher rounds them.
+    private static final float ICON_CORNER_RATIO = 0.22f;
     private static final String CTA_TEXT_COLOR = "#FFFFFFFF";
     private static final String CTA_RIPPLE_COLOR = "#55FFFFFF";
     // Opaque enough that text over any picture stays readable - the same
@@ -111,7 +113,6 @@ final class RectAdViewFactory {
     // it even a marquee reads as a sliver, so the icon leaves the line and
     // the text takes the full width instead.
     private static final int MIN_ICON_ROW_TEXT_WIDTH_DP = 72;
-    private static final int CTA_BORDER_WIDTH_DP = 1;
     private static final float ATTRIBUTION_TEXT_HEIGHT_RATIO = 0.55f;
     // Boxes are sized from the ad, labels are sized from their box. The two
     // short-side ratios are deliberately related - the call to action box is
@@ -1176,6 +1177,7 @@ final class RectAdViewFactory {
         attributionBackground.setShape(GradientDrawable.RECTANGLE);
         attributionBackground.setColor(
                 Color.parseColor(ATTRIBUTION_BACKGROUND_COLOR));
+        attributionBackground.setCornerRadius(Dp(ATTRIBUTION_CORNER_DP));
         views.attribution.setBackground(attributionBackground);
         root.addView(views.attribution);
 
@@ -1771,6 +1773,21 @@ final class RectAdViewFactory {
         views.icon = new ImageView(activity);
         views.icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         views.icon.setImageDrawable(iconAsset.getDrawable());
+        // The radius follows whatever size the plan settles on.
+        views.icon.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, android.graphics.Outline outline) {
+                int width = view.getWidth();
+                int height = view.getHeight();
+                outline.setRoundRect(
+                        0
+                      , 0
+                      , width
+                      , height
+                      , Math.min(width, height) * ICON_CORNER_RATIO);
+            }
+        });
+        views.icon.setClipToOutline(true);
         views.icon.setMinimumWidth(size);
         views.icon.setMinimumHeight(size);
 
@@ -1829,9 +1846,9 @@ final class RectAdViewFactory {
         callToActionBackground.setShape(GradientDrawable.RECTANGLE);
         callToActionBackground.setColor(
                 Color.parseColor(CTA_BACKGROUND_COLOR));
-        callToActionBackground.setStroke(
-                Dp(CTA_BORDER_WIDTH_DP)
-              , Color.parseColor(CTA_BORDER_COLOR));
+        // A pill: the radius is past any height the tiers give the button.
+        callToActionBackground.setCornerRadius(Dp(1000));
+        views.callToAction.setStateListAnimator(null);
         // The full-screen ad gets this for free from the platform button
         // background; this one paints its own, so the pressed state has to come
         // back with it or the button looks dead under a finger.
@@ -1840,7 +1857,7 @@ final class RectAdViewFactory {
                         ColorStateList.valueOf(
                                 Color.parseColor(CTA_RIPPLE_COLOR))
                       , callToActionBackground
-                      , null));
+                      , callToActionBackground));
 
         LinearLayout.LayoutParams layoutParams =
                 new LinearLayout.LayoutParams(

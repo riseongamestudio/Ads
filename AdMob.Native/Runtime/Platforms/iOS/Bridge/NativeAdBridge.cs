@@ -95,6 +95,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
           , int timerSide
           , [MarshalAs(UnmanagedType.I1)] bool redirectOnClose);
         [DllImport("__Internal")]
+        internal static extern void RANOverlayAdSetLayout(
+            IntPtr handle
+          , int layout);
+        [DllImport("__Internal")]
         internal static extern void RANOverlayAdSetClose(
             IntPtr handle
           , int cooldown

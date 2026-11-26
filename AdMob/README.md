@@ -21,9 +21,9 @@ Package `com.riseon.ads.admob`, namespace `RiseOn.Ads.AdMob`, mediation id `admo
 |---|---|---|
 | Unity 6000.3 | | Bản đang dùng để phát triển |
 | [Odin Inspector](https://odininspector.com) | Cài tay từ Asset Store | Các mục của AdMob trên trang Ads |
-| `com.riseon.ads` 2.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
-| `com.riseon.ads.admob.native` 2.0.1 | Tự cài theo `package.json` | Các format native |
-| `com.riseon.utils` 1.0.18 | Tự cài theo `package.json` | Các mục của AdMob trên trang Ads |
+| `com.riseon.ads` 3.0.0 | Tự cài theo `package.json` | Lõi quảng cáo mà adapter cắm vào |
+| `com.riseon.ads.admob.native` 2.1.0 | Tự cài theo `package.json` | Các format native |
+| `com.riseon.utils` 2.0.0 | Tự cài theo `package.json` | Các mục của AdMob trên trang Ads |
 | `com.google.ads.mobile` 11.5.0 | Tự cài theo `package.json`, từ OpenUPM | Google Mobile Ads SDK |
 
 "Tự cài" là Package Manager tự lấy theo version từ Unity Registry và các registry khai
@@ -51,7 +51,7 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob": "1.0.1"
+    "com.riseon.ads.admob": "1.1.0"
   }
 }
 ```
@@ -156,12 +156,13 @@ Google. Mỗi network là một package `com.google.ads.mobile.mediation.*` trê
 - Chọn phiên bản: **Install** mở danh sách (có ô tìm) mọi bản tương thích với Unity
   của project mà registry có, mới nhất trên cùng và được chọn sẵn; chọn một bản thì
   cài đúng bản đó. Adapter đã cài thì bấm vào chữ phiên bản (có dấu ▾) để mở cùng danh
-  sách và đổi sang bản khác, cũ hơn cũng được; dòng quay ghi như **Changing Pangle to
-  7.2.1**, và bản đang có trong project mờ trong danh sách. Adapter đã cài mà lần tìm
+  sách và đổi sang bản khác, cũ hơn cũng được; trong lúc đổi, chữ phiên bản quay tại
+  chỗ (di chuột lên ghi việc đang chạy, như **Changing Pangle to 7.2.1**), và bản đang
+  có trong project mờ trong danh sách. Adapter đã cài mà lần tìm
   không thấy (ví dụ offline) thì chữ phiên bản không có ▾.
-- Cài, cập nhật và gỡ đi qua Package Manager. Trong lúc chờ, mục hiện dòng quay
-  ghi việc đang chạy, như **Installing Pangle**, và mọi nút cài, gỡ trên trang mờ
-  đi; xong thì Unity compile lại. Lỗi thì Console báo `<việc> failed: …`, như
+- Cài, cập nhật và gỡ đi qua Package Manager. Trong lúc chờ, nút vừa bấm quay tại
+  chỗ (di chuột lên ghi việc đang chạy, như **Installing Pangle**), và mọi nút cài, gỡ
+  trên trang mờ đi; xong thì Unity compile lại. Lỗi thì Console báo `<việc> failed: …`, như
   `Updating Pangle failed: …`.
 - Package của OpenUPM không có chữ ký, nên sau khi cài Unity có thể hiện hộp
   **Missing Signature**. Đó là hộp của Unity, không phải của pack.

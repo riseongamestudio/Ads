@@ -106,6 +106,9 @@ static UIColor *RANRectAdARGB(uint32_t argb) {
 - (void)layoutSubviews {
     [super layoutSubviews];
     [self ran_applyLabelSizeForHeight:self.bounds.size.height];
+    // A pill, whatever height the row stretched it to.
+    CGSize size = self.bounds.size;
+    self.layer.cornerRadius = MIN(size.width, size.height) / 2;
 }
 
 - (void)ran_applyLabelSizeForHeight:(CGFloat)height {
@@ -978,6 +981,8 @@ static CGFloat RANMarkOverlap(UIView *root, UIView *_Nullable view, CGRect mark)
     attribution.font = [UIFont boldSystemFontOfSize:10];
     attribution.textAlignment = NSTextAlignmentCenter;
     attribution.backgroundColor = RANRectAdARGB(0xFFFFC107);
+    attribution.layer.cornerRadius = 3;
+    attribution.layer.masksToBounds = YES;
     attribution.userInteractionEnabled = NO;
     views.attribution = attribution;
     [root addSubview:attribution];
@@ -1558,6 +1563,9 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
                     : UIViewContentModeScaleAspectFit;
     icon.ran_layoutWidth = size;
     icon.ran_layoutHeight = size;
+    // An icon's corners, as a launcher rounds them.
+    icon.layer.cornerRadius = size * 0.22f;
+    icon.clipsToBounds = YES;
     icon.ran_layoutMargins = UIEdgeInsetsMake(0, 0, 0, gap);
     [parent addSubview:icon];
     views.icon = icon;
@@ -1580,9 +1588,8 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
     callToAction.titleLabel.numberOfLines = 0;
     callToAction.titleLabel.textAlignment = NSTextAlignmentCenter;
     callToAction.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    callToAction.backgroundColor = RANRectAdARGB(0xFF2196F3);
-    callToAction.layer.borderColor = RANRectAdARGB(0xFF1565C0).CGColor;
-    callToAction.layer.borderWidth = 1;
+    callToAction.backgroundColor = RANRectAdARGB(0xFF1A73E8);
+    callToAction.layer.masksToBounds = YES;
     // The native ad view under it takes the touch and reports the click, as
     // Google's native ad guide asks of the call to action.
     callToAction.userInteractionEnabled = NO;

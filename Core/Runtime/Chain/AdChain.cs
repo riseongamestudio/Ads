@@ -46,6 +46,12 @@ namespace RiseOn.Ads {
         /// <summary>Unity's thread, once a step displays.</summary>
         void Displayed(AdFormat format, string placement);
 
+        /// <summary>Unity's thread: the rect ads (banner, MRec, native MRec, in-feed cells) off the screen while an ad the game shows through is up.</summary>
+        void HideRectAds();
+
+        /// <summary>Any thread: that ad gone, the rect ads back as the game wants them.</summary>
+        void ShowRectAds();
+
         /// <summary>The page's cover color.</summary>
         Color CoverColor { get; }
     }
@@ -54,6 +60,7 @@ namespace RiseOn.Ads {
     /// Full-screen ads shown one after the other, such as an interstitial and the end card after it.<br/>
     /// The full-screen cover lies under them, so the game never shows where an ad does not reach nor between two steps, and keeps it paused; each step starts from the previous one's callback without the player loop, and the cover comes down after the last step, whatever failed.<br/>
     /// A first step whose mediation calls back through the player loop shows alone and without the cover, which its close could never take down.<br/>
+    /// An app open ad alone shows without the cover too: AdMob draws it with no ground, so the game shows around it, as the format means; the rect ads (banner, MRec, native MRec, in-feed cells) leave the screen meanwhile, as an ad must not show through another.<br/>
     /// A chain whose first step is not ready shows nothing; a later step that is not ready is skipped.
     /// </summary>
     public sealed class AdChain {
@@ -118,6 +125,7 @@ namespace RiseOn.Ads {
             private readonly bool                                    rewardedWithoutAd;
 
             private bool usesCover;
+            private bool alone;
             private int  displayed;
             private int  rewarded;
             private int  finished;
@@ -141,7 +149,8 @@ namespace RiseOn.Ads {
                     return UniTask.FromResult(new AdChainResult(0, rewardedWithoutAd, AdChainSkip.NotReady));
                 }
 
-                usesCover = first.CallsBackOffLoop(steps[0].Format);
+                alone     = steps.Count == 1 && steps[0].Format is AdFormat.AppOpen;
+                usesCover = !alone && first.CallsBackOffLoop(steps[0].Format);
                 if (!usesCover && steps.Count > 1) {
                     // Its close callback would wait for the player loop a cover stops, so nothing may follow it.
                     Debug.LogWarning($"{nameof(AdChain)}: {first.Id} {steps[0].Format} does not call back off Unity's thread, the steps after it are dropped");
@@ -149,6 +158,7 @@ namespace RiseOn.Ads {
                 }
 
                 host.BeginFullScreen();
+                if (alone) host.HideRectAds();
                 if (usesCover) FullScreenCover.Show(host.CoverColor);
 
                 ShowStep(0, first);
@@ -197,6 +207,7 @@ namespace RiseOn.Ads {
                 if (Interlocked.Exchange(ref finished, 1) != 0) return;
 
                 if (usesCover) FullScreenCover.Hide();
+                if (alone) host.ShowRectAds();
                 host.EndFullScreen();
 
                 var result = new AdChainResult(Volatile.Read(ref displayed), rewardedWithoutAd || Volatile.Read(ref rewarded) != 0, AdChainSkip.None);

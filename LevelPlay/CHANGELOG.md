@@ -6,10 +6,16 @@ Mọi thay đổi đáng kể của `com.riseon.ads.levelplay` được ghi ở 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-26
+
+Cần `com.riseon.ads` 3.0.0: adapter bản này không chạy với Core 2.0.0.
+
 ### Đổi
 
 - Theo `com.riseon.ads` mới: `Show` của mediation nhận placement.
 - Placement của lần show gần nhất của mỗi format đi cùng `AdImpression.Placement`; pack không truyền nó cho SDK LevelPlay.
+- `Editor/MediationIcon.png`: logo LevelPlay, Core vẽ nó trên ad giả trong Editor.
+- Phụ thuộc lên bản phát hành cùng đợt: `com.riseon.ads` 3.0.0, `com.riseon.utils` 2.0.0.
 
 ## [1.0.1] - 2026-11-20
 

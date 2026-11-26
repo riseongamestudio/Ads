@@ -4,6 +4,7 @@
 #import "RANNativeAdStarRatingView.h"
 
 static NSString *const kRANEmptyStarColor = @"#66FFFFFF";
+static NSString *const kRANEmptyStarOnLightColor = @"#42000000";
 static NSString *const kRANFilledStarColor = @"#FFFFC107";
 static const NSInteger kRANStarCount = 5;
 static const CGFloat kRANDesiredWidth = 74;
@@ -50,6 +51,11 @@ static UIColor *RANColorFromARGBString(NSString *value) {
     return _rating;
 }
 
+- (void)setOnLight:(BOOL)onLight {
+    _onLight = onLight;
+    [self setNeedsDisplay];
+}
+
 - (CGSize)sizeThatFits:(CGSize)size {
     return CGSizeMake(kRANDesiredWidth, kRANDesiredHeight);
 }
@@ -69,7 +75,8 @@ static UIColor *RANColorFromARGBString(NSString *value) {
     CGFloat outerRadius = starSize / 2;
     CGFloat innerRadius = outerRadius * kRANInnerRadiusRatio;
 
-    UIColor *emptyColor = RANColorFromARGBString(kRANEmptyStarColor);
+    UIColor *emptyColor = RANColorFromARGBString(
+            _onLight ? kRANEmptyStarOnLightColor : kRANEmptyStarColor);
     UIColor *filledColor = RANColorFromARGBString(kRANFilledStarColor);
     CGContextRef context = UIGraphicsGetCurrentContext();
     for (NSInteger index = 0; index < kRANStarCount; ++index) {

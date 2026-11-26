@@ -44,6 +44,11 @@ namespace RiseOn.Ads.AdMob.Native {
             /// Changeable afterwards through SetClose.
             /// </summary>
             public CloseSettings Close;
+
+            /// <summary>
+            /// How the card is arranged; unset is Interstitial.
+            /// </summary>
+            public FullScreenLayout Layout;
         }
 
         public FullScreenAd(in Settings settings)
@@ -54,7 +59,8 @@ namespace RiseOn.Ads.AdMob.Native {
               , heightRatio: 1
               , settings.CacheSize
               , settings.BackgroundColor
-              , settings.Close) {}
+              , settings.Close
+              , settings.Layout) {}
 
         /// <summary>
         /// Puts the ad over the whole screen.<br/>

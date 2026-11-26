@@ -13,11 +13,8 @@ namespace RiseOn.Ads.Editor {
     internal sealed class MediationListDrawer : OdinAttributeDrawer<MediationListAttribute, List<SerRef<IAdMediation>>> {
         private readonly SectionRows rows = new();
 
-        // The key under which the list's package changes show in it.
-        private const string Owner = "RiseOn.Ads.Mediations";
-
         // The pack's adapters, each listed whether its package is in the project or not, with its folder in the Ads repo, beside Core.
-        private static readonly PackAdapters adapters = new(Owner, typeof(AdsSettings)
+        private static readonly PackAdapters adapters = new(typeof(AdsSettings)
                                                           , new PackAdapter("AdMob", "com.riseon.ads.admob", "AdMob")
                                                           , new PackAdapter("LevelPlay", "com.riseon.ads.levelplay", "LevelPlay")
                                                           , new PackAdapter("MAX", "com.riseon.ads.max", "Max"));
@@ -45,7 +42,6 @@ namespace RiseOn.Ads.Editor {
             adapters.DrawUpdateAll(section.BarValue, shown.Where(row => row.Adapter != null && row.Index >= 0).Select(row => (row.Adapter.Value, row.Package)));
             if (!section.Open) return;
 
-            PackageJobs.DrawRunning(Owner);
             rows.Draw(shown.Count, index => DrawRow(shown[index]), "None");
         }
 
@@ -91,7 +87,7 @@ namespace RiseOn.Ads.Editor {
             var value = SectionRows.MarkFirstRow(line, out var prefix);
             if (row.Package != null) PackageRow.Draw(value, row.Package);
             if (row.Index < 0) {
-                GUI.Label(prefix, row.Name);
+                GUI.Label(prefix, row.Name, Section.CutLabel);
                 return;
             }
 
@@ -134,7 +130,7 @@ namespace RiseOn.Ads.Editor {
             foreach (var entry in uses) entry.List.EditableIds.Remove(mediation.Id);
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssetIfDirty(settings);
-            PackageJobs.Change(Owner, $"Uninstalling {name}", null, new[] { package }, worked => {
+            PackageJobs.Change($"Uninstalling {name}", null, new[] { package }, worked => {
                 // An undo would bring back a mediation whose class went with the package.
                 if (worked) Undo.ClearUndo(settings);
             });

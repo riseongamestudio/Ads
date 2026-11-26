@@ -6,7 +6,7 @@ namespace RiseOn.Ads {
     /// A native ad in a rect the game places, a native MRec or an in-feed cell, which the game switches on and off; the pack fills it with an ad while it is on, and rotates it.<br/>
     /// Off, it holds no ad another placement could use.<br/>
     /// A handle made before a mediation serving the format started holds no cell yet and shows nothing; it gets its cell once one has, with the position and the on or off the game set meanwhile, so the game uses it the same way either way. With the format off, that never comes.<br/>
-    /// While the format is suppressed (<see cref="AdsSdk.SetSuppressed"/>) the cell stays off, and comes back once that is lifted.
+    /// While the format is suppressed (<see cref="AdsSdk.SetSuppressed"/>), or an app open ad shows alone with the game around it, the cell stays off, and comes back once that is over.
     /// </summary>
     public sealed class NativeRectHandle : IDisposable {
         private readonly Func<bool> canShow;

@@ -16,6 +16,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         internal Vector2Int                PositionPx        { get; private set; }
         internal Vector2Int                SizePx            { get; }
         internal bool                      AllowsVideo       { get; }
+        /// <summary>Full screen only: how the card is arranged.</summary>
+        internal FullScreenLayout          Layout            { get; }
 
         private EditorAdConfig(
             string adUnitId
@@ -26,7 +28,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , int roundCornerPx
           , Vector2Int positionPx
           , Vector2Int sizePx
-          , bool allowsVideo) {
+          , bool allowsVideo
+          , FullScreenLayout layout) {
             AdUnitId        = adUnitId;
             Mode            = mode;
             Close = controls;
@@ -36,6 +39,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             PositionPx      = positionPx;
             SizePx          = sizePx;
             AllowsVideo     = allowsVideo;
+            Layout          = layout;
         }
 
         internal static EditorAdConfig CreateFullScreen(
@@ -43,7 +47,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , bool fullScreen
           , float heightRatio
           , Color backgroundColor
-          , in CloseSettings controls) {
+          , in CloseSettings controls
+          , FullScreenLayout layout) {
             return new(
                 adUnitId
               , fullScreen
@@ -55,7 +60,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , 0
               , default
               , default
-              , true);
+              , true
+              , layout);
         }
 
         internal static EditorAdConfig CreateRectAd(
@@ -73,7 +79,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , roundCornerPx
               , positionPx
               , sizePx
-              , true);
+              , true
+              , default);
         }
 
         internal void SetClose(in CloseSettings controls) {
@@ -94,7 +101,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , RoundCornerPx
               , PositionPx
               , SizePx
-              , AllowsVideo);
+              , AllowsVideo
+              , Layout);
         }
 
         private static float ResolveAlpha(float value, float defaultValue) {

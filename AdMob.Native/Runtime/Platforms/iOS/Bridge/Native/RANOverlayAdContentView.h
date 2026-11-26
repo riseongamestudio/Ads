@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
                  backgroundColor:(int32_t)backgroundColor
                  redirectOnClose:(BOOL)redirectOnClose
             requestedPanelHeight:(CGFloat)requestedPanelHeight
+                          layout:(int32_t)layout
                          onClose:(dispatch_block_t)onClose;
 
 // The counterpart of ResolveInitialPanelHeight: fullScreen takes the screen,

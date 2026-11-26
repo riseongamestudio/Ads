@@ -70,6 +70,7 @@ static const NSTimeInterval kRANSlideDuration = 0.25;
     BOOL _timerOnLeft;
     BOOL _fullScreen;
     BOOL _redirectOnClose;
+    int32_t _layout;
     float _heightRatio;
     int32_t _backgroundColor;
 
@@ -96,7 +97,8 @@ static const NSTimeInterval kRANSlideDuration = 0.25;
                             fullScreen:(BOOL)fullScreen
                            heightRatio:(float)heightRatio
                        backgroundColor:(int32_t)backgroundColor
-                       redirectOnClose:(BOOL)redirectOnClose {
+                       redirectOnClose:(BOOL)redirectOnClose
+                                layout:(int32_t)layout {
     self = [super init];
     if (self == nil) return nil;
 
@@ -109,6 +111,7 @@ static const NSTimeInterval kRANSlideDuration = 0.25;
     _heightRatio = heightRatio;
     _backgroundColor = backgroundColor;
     _redirectOnClose = redirectOnClose;
+    _layout = layout;
     return self;
 }
 
@@ -141,6 +144,7 @@ static const NSTimeInterval kRANSlideDuration = 0.25;
              backgroundColor:_backgroundColor
              redirectOnClose:_redirectOnClose
         requestedPanelHeight:requestedPanelHeight
+                      layout:_layout
                      onClose:^{ [weakSelf ran_closeByPlayer]; }];
     return _contentView != nil;
 }
