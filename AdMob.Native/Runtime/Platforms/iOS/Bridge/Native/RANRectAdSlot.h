@@ -56,7 +56,6 @@ NSTimeInterval RANRectAdBackoffDelay(
               loadedAt:(NSTimeInterval)loadedAt
           unfitSizeKey:(int64_t)unfitSizeKey;
 - (void)destroyAd:(nullable GADNativeAd *)ad;
-- (float)slotBackgroundColor;
 - (NSString *)unitAdUnitID;
 - (NSInteger)noFillStreak;
 - (void)notifyDisplayed;

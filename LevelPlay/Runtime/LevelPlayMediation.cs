@@ -251,7 +251,7 @@ namespace RiseOn.Ads.LevelPlay {
           , _                     => null
         };
 
-        public void Show(AdFormat format, string placement, IAdShowListener showListener) {
+        public void Show(AdFormat format, string placement, in AdCloseSettings close, IAdShowListener showListener) {
             if (!IsReady(format)) {
                 showListener.OnFailed(new AdError(-1, $"{format} not ready"));
                 return;

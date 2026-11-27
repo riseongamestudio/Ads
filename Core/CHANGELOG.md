@@ -6,6 +6,74 @@ Mọi thay đổi đáng kể của `com.riseon.ads` được ghi ở đây. Đ�
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-11-27
+
+Bản lớn: màu của ad không còn là setting, cách đóng ad native đi theo từng lần hiện,
+và `IAdMediationFullScreen.Show` đổi chữ ký. Xem "Nâng cấp từ 3.0.0" ở cuối bản này.
+
+### Thêm
+
+- `AdsSdk` nhận cách đóng của riêng một lần hiện: `Show(format, close, ...)`,
+  `ShowNativeInterstitialAsync(close, ...)`, `ShowNativeAppOpenAsync(close, ...)`,
+  `ShowNativeEndCardAsync(close, ...)`, `ShowCollapsibleAsync(close, ...)`, và trong chuỗi
+  `AdChain.Then(format, close, ...)`, `ThenIf(condition, format, close, ...)`,
+  `AdCollapsibleChain.Then(close, ...)`. Không truyền thì ad đóng theo **Close** của
+  format trong mục **Formats**.
+- `AdsSdk.ShowCollapsibleAsync(onDisplayed)`: một collapsible, không cần plan.
+  `DefaultAdsManager` không có plan nào rút được thì hiện đúng một collapsible như vậy,
+  thay vì không hiện gì.
+- Mục **Native Collapsible** của Formats có **Close**, như ba format native toàn màn hình.
+
+### Đổi
+
+- `IAdMediationFullScreen.Show(format, placement, listener)` thành
+  `Show(format, placement, in AdCloseSettings close, listener)`: `close` là cách đóng của
+  lần hiện (của lời gọi, không có thì của trang), cho format native; format khác bỏ qua.
+- Màu đi theo theme sáng tối của máy, không còn setting: ô **Cover** của trang, ô màu
+  nền của các format native (`AdNativeFullScreenSettings.BackgroundColor`,
+  `AdCollapsibleSettings.BackgroundColor`) và lớp `AdNativeRectSettings` (Native MRec,
+  Native In-Feed) không còn. Màn che dưới chuỗi ad toàn màn hình là màu đen, như sau ad
+  toàn màn hình của các mạng; màn che dưới chuỗi collapsible là màu mặt của theme, đúng
+  màu panel collapsible. Ô Native MRec, Native In-Feed mặc định trong suốt, giờ luôn
+  mang màu mặt đục của theme: hình game vẽ dưới ô không còn lộ ra.
+- Các lớp ad trong Editor cách nhau 100 sorting order (trước là 1), để canvas của game
+  chen được giữa hai lớp. `AdsEditorLayers.Step` (100) cho mediation vẽ lớp riêng.
+- Trang settings: mục **Display** không còn; **Editor Sorting Order** là một mục riêng,
+  ô số nằm trên thanh, mở ra thì thấy từng lớp ad với sorting order của nó.
+- Mục **Formats**: thanh của mỗi format là một dòng gồm nút tách, ô mediation, ô key
+  Remote Config; cột tên rộng bằng tên format dài nhất. Bấm ô mediation mở drop-down
+  chọn như mọi ô chọn của trang: bấm một dòng để thêm hay bỏ mediation, kéo dòng có dấu
+  tích để đổi thứ tự. File asset ghi xuống đĩa một lần khi drop-down đóng. Ô Android và
+  ô iOS của danh sách tách nền tảng mang icon nền tảng thay cho chữ.
+- Ad giả interstitial trong Editor phủ cả màn hình trên màu mặt của theme, như ad
+  full-screen của các mạng; app open giữ thẻ giữa màn hình, game tối đi phía sau.
+- Ad giả trong Editor: nút đóng của mọi format cùng một dấu ✕ (cỡ và nét như của
+  Google); nhà quảng cáo và rating nằm một dòng, cách nhau bằng dấu `·`.
+- Phụ thuộc `com.riseon.utils` 2.1.0.
+
+### Sửa
+
+- Hiệu ứng trên trang (gập mở, chuyển giữa một và hai dòng) không còn đứng giữa chừng
+  tới khi di chuột.
+
+### Nâng cấp từ 3.0.0
+
+1. Mediation game tự viết: thêm tham số `in AdCloseSettings close` vào
+   `IAdMediationFullScreen.Show`; format native dùng nó để đặt nút đóng.
+2. Code đọc `AdNativeFullScreenSettings.BackgroundColor`,
+   `AdCollapsibleSettings.BackgroundColor`, `AdFormatSettings.NativeMRec`,
+   `AdFormatSettings.NativeInFeed` hay `AdNativeRectSettings` thì bỏ đi; màu theo theme
+   máy, không đặt được. `new AdNativeFullScreenSettings(color, close)` thành
+   `new AdNativeFullScreenSettings(close)`.
+3. `AdsSdk.ShowCollapsibleAsync(null)` báo CS0121 (cả `(Action)` lẫn
+   `(AdCollapsiblePlan)` đều nhận `null`): bỏ đối số, hoặc ghi rõ kiểu, ví dụ
+   `ShowCollapsibleAsync((Action)null)`.
+4. Ô Native MRec, Native In-Feed giờ đục: game nào để hình game lộ qua nền trong suốt
+   của ô thì hình đó không còn lộ. Placeholder cho lúc chưa có ad vẫn cần.
+5. Canvas của game đặt sorting order theo bước 1 giữa các lớp ad trong Editor thì đặt lại
+   theo bước 100 (xem bảng lớp trong README).
+6. Giá trị **Cover** và màu nền đã đặt trên trang mất khi asset lưu lại; không cần làm gì.
+
 ## [3.0.0] - 2026-11-26
 
 Bản lớn: luật của game rời pack sang lớp manager, lớp nền `AdsManagerBase` không còn.

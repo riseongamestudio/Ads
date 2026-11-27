@@ -36,23 +36,20 @@ import java.util.Locale;
 final class RectAdViewFactory {
     private static final String TAG = "RectAd";
     private static final String ATTRIBUTION_TEXT = "Ad";
-    private static final String ATTRIBUTION_BACKGROUND_COLOR = "#FFFFC107";
+    // Over the picture's veil, whatever the theme.
     private static final String SECONDARY_TEXT_COLOR = "#CCFFFFFF";
-    private static final String RATING_TEXT_COLOR = "#FFFFC107";
     private static final String MEDIA_CONTENT_REQUIRED_MESSAGE =
             "MediaContent is required for a selected media layout";
 
     private static final int NO_POLICY_TEXT_LIMIT_UNITS = 0;
-    // The 120dp floor belongs to video: the SDK warning that enforces it is
-    // conditional on the media view showing video, and whether it ever will is
-    // the creative's property, known before layout. A creative with no video
-    // keeps its still image in a smaller registered MediaView, so a slot too
-    // small for video does not lose the picture; only a video creative falls
-    // back to media-free layouts there.
+    // The 120dp floor holds for every creative, a still picture's as well as
+    // a video's: the SDK flags a smaller MediaView as an implementation
+    // problem and warns that such slots will be demonetized. A slot too small
+    // for it takes a layout without the picture.
     private static final float MIN_VIDEO_MEDIA_SIZE_DP = 120f;
-    private static final float MIN_IMAGE_MEDIA_SIZE_DP = 48f;
+    private static final float MIN_IMAGE_MEDIA_SIZE_DP = 120f;
     private static final int MIN_ATTRIBUTION_SIZE_PX = 15;
-    private static final int ATTRIBUTION_WIDTH_DP = 24;
+    private static final int ATTRIBUTION_WIDTH_DP = 26;
     private static final int ATTRIBUTION_HEIGHT_DP = 18;
     // The SDK draws its AdChoices mark at this size whatever the cell, at
     // the corner InsetSdkOverlay moves it to. The reserve stands exactly
@@ -96,8 +93,6 @@ final class RectAdViewFactory {
     private static final float OPTIONAL_TEXT_MIN_SP = 10f;
     private static final float BADGE_SHORT_SIDE_RATIO = 0.10f;
     private static final float ATTRIBUTION_ASPECT_RATIO = 4f / 3f;
-    private static final String CTA_BACKGROUND_COLOR = "#FF1A73E8";
-    private static final int ATTRIBUTION_CORNER_DP = 3;
     // An icon's corners, as a launcher rounds them.
     private static final float ICON_CORNER_RATIO = 0.22f;
     private static final String CTA_TEXT_COLOR = "#FFFFFFFF";
@@ -113,7 +108,7 @@ final class RectAdViewFactory {
     // it even a marquee reads as a sliver, so the icon leaves the line and
     // the text takes the full width instead.
     private static final int MIN_ICON_ROW_TEXT_WIDTH_DP = 72;
-    private static final float ATTRIBUTION_TEXT_HEIGHT_RATIO = 0.55f;
+    private static final float ATTRIBUTION_TEXT_HEIGHT_RATIO = 0.62f;
     // Boxes are sized from the ad, labels are sized from their box. The two
     // short-side ratios are deliberately related - the call to action box is
     // 1.8x the badge box - so the labels inside them stay in the same
@@ -188,6 +183,14 @@ final class RectAdViewFactory {
         View scrim;
         View insetContent;
         boolean insetContentAvoidsBadges;
+        // The picture's frame on a side template: the badge and the
+        // AdChoices reserve stand on its top corners, as on the full-screen
+        // faces, not on the cell's. Null: they stand on the cell's.
+        FrameLayout badgeHost;
+        // Where the badge stands when the scrim's first row reached its
+        // corner: beside the icon, over the name. Negative: in its corner.
+        int attributionLeft = -1;
+        int attributionTop = -1;
         // Each text's own right margin, before any mark dodge was added.
         final HashMap<View, Integer> baseRightMargins = new HashMap<>();
     }
@@ -215,6 +218,9 @@ final class RectAdViewFactory {
 
     private final Activity activity;
     private final NativeAd nativeAd;
+    // The text sits on the picture's veil, white, rather than on the
+    // theme's surface in its ink and grey.
+    private boolean onVeil;
     private final float density;
     private final int slotShortSidePx;
     // The clearance every asset keeps from the cell's rounded corners; 0
@@ -335,6 +341,9 @@ final class RectAdViewFactory {
                           , ViewGroup.LayoutParams.MATCH_PARENT);
             InsetSdkOverlay(nativeAdView, contentParams);
             nativeAdView.addView(content, contentParams);
+            if (views.badgeHost != null) {
+                FollowMediaWithSdkMark(nativeAdView, content, views.badgeHost);
+            }
 
             if (views.headline != null) {
                 nativeAdView.setHeadlineView(views.headline);
@@ -397,6 +406,42 @@ final class RectAdViewFactory {
         nativeAdView.setClipToPadding(false);
         contentParams.setMargins(-inset, -inset, -inset, -inset);
         ReportSdkLayerShape(nativeAdView, inset);
+    }
+
+    // On a side template the mark keeps the picture's top right corner, as
+    // the reserve in the picture's frame does. Once the picture is laid
+    // out, the NativeAdView's padding pulls the SDK's layer - and the mark
+    // pinned to its corner - to the picture's top and right edges; the
+    // content takes the padding back through negative margins, as in
+    // InsetSdkOverlay, so nothing else moves.
+    private static void FollowMediaWithSdkMark(
+            NativeAdView nativeAdView
+          , View content
+          , View media) {
+        media.addOnLayoutChangeListener(
+                (view, left, top, right, bottom
+                      , oldLeft, oldTop, oldRight, oldBottom) -> view.post(() -> {
+            Rect frame = new Rect(0, 0, view.getWidth(), view.getHeight());
+            try {
+                nativeAdView.offsetDescendantRectToMyCoords(view, frame);
+            } catch (IllegalArgumentException exception) {
+                return;
+            }
+            int padTop = Math.max(0, frame.top);
+            int padRight = Math.max(0, nativeAdView.getWidth() - frame.right);
+            if (nativeAdView.getPaddingTop() == padTop
+                    && nativeAdView.getPaddingRight() == padRight) {
+                return;
+            }
+            int padLeft = nativeAdView.getPaddingLeft();
+            int padBottom = nativeAdView.getPaddingBottom();
+            nativeAdView.setPadding(padLeft, padTop, padRight, padBottom);
+            nativeAdView.setClipToPadding(false);
+            FrameLayout.LayoutParams params =
+                    (FrameLayout.LayoutParams) content.getLayoutParams();
+            params.setMargins(-padLeft, -padTop, -padRight, -padBottom);
+            content.setLayoutParams(params);
+        }));
     }
 
     // The padding reaches the AdChoices mark only while every layer the SDK
@@ -577,9 +622,7 @@ final class RectAdViewFactory {
             }
             return Dp(180);
         }
-        if (tier == RectAdLayoutEngine.TIER_COMPACT) return Dp(56);
-        if (tier == RectAdLayoutEngine.TIER_REGULAR) return Dp(88);
-        return Dp(120);
+        return Dp(MIN_IMAGE_MEDIA_SIZE_DP);
     }
 
     // The slot is already bounded by the card it sits in, so a tier's own
@@ -675,10 +718,12 @@ final class RectAdViewFactory {
         outer.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         // The corner clearance, spent here once for everything the column
         // holds - media band, side rail, texts, button. The scrim template
-        // spends none: its picture is the cell's background and runs under
-        // the curve; the block in front adds the clearance to its own pad.
+        // spends none here: its ambient backdrop runs under the curve, the
+        // picture over it and the block in front each keep the clearance on
+        // their own.
         boolean mediaIsBackground = plan.template
                 == RectAdLayoutEngine.TEMPLATE_MEDIA_BACKGROUND;
+        onVeil = mediaIsBackground;
         int outerInset = mediaIsBackground ? 0 : cornerInsetPx;
         outer.setPadding(outerInset, outerInset, outerInset, outerInset);
 
@@ -712,11 +757,16 @@ final class RectAdViewFactory {
                             ViewGroup.LayoutParams.MATCH_PARENT
                           , ViewGroup.LayoutParams.MATCH_PARENT));
             }
-            root.addView(
-                    backgroundMedia
-                  , new FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                      , ViewGroup.LayoutParams.MATCH_PARENT));
+            // The picture itself stands clear of the curve, so its corners
+            // touch it and not a pixel of the creative is cut: the native
+            // policy lets a picture lose only width.
+            FrameLayout.LayoutParams backgroundMediaParams =
+                    new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                          , ViewGroup.LayoutParams.MATCH_PARENT);
+            backgroundMediaParams.setMargins(
+                    cornerInsetPx, cornerInsetPx, cornerInsetPx, cornerInsetPx);
+            root.addView(backgroundMedia, backgroundMediaParams);
 
             // One veil over the whole cell, not a band that stops short of
             // the top edge: the media reads as the panel's background
@@ -739,13 +789,10 @@ final class RectAdViewFactory {
             // side - a tiny cell cannot afford more.
             // A hair of breathing room, sized by the cell instead of
             // by the tier: enough that the text is not printed onto the
-            // very edge, never enough to read as a border. The corner
-            // clearance the outer column did not spend on this template is
-            // a FLOOR here, not an addend: both measure from the same cell
-            // edge, so a block already standing back far enough to clear
-            // the arc is already standing off the edge. Adding them spent
-            // the same border twice.
-            int scrimPad = Math.max(CellEdgePaddingPx(), cornerInsetPx);
+            // picture's edge, never enough to read as a border. It counts
+            // from that edge, which stands the corner clearance in from the
+            // cell's.
+            int scrimPad = cornerInsetPx + CellEdgePaddingPx();
             scrim.setPadding(scrimPad, scrimPad, scrimPad, scrimPad);
 
             views.headline = CreateText(
@@ -769,6 +816,7 @@ final class RectAdViewFactory {
                                 - IconSizeForTier(plan.tier)
                                 - gap
                             < Dp(MIN_ICON_ROW_TEXT_WIDTH_DP);
+            LinearLayout headlineRow = null;
             if (iconStandsAlone) {
                 AddIcon(scrim, views, plan.tier, 0, probe);
                 if (views.icon != null) {
@@ -785,7 +833,7 @@ final class RectAdViewFactory {
                             ViewGroup.LayoutParams.MATCH_PARENT
                           , ViewGroup.LayoutParams.WRAP_CONTENT));
             } else {
-                LinearLayout headlineRow = new LinearLayout(activity);
+                headlineRow = new LinearLayout(activity);
                 headlineRow.setOrientation(LinearLayout.HORIZONTAL);
                 headlineRow.setGravity(Gravity.CENTER_VERTICAL);
                 if (plan.showIcon) {
@@ -806,6 +854,9 @@ final class RectAdViewFactory {
             AddBodyAndOptional(scrim, views, plan);
             AddCallToAction(scrim, views, plan, gap, true);
             if (iconStandsAlone) CentreBlockUnderIcon(views);
+            if (headlineRow != null) {
+                SetBadgeBesideIcon(scrim, headlineRow, views, plan, scrimPad);
+            }
 
             // Not the inset content: ConfigureInsetContent would
             // reset the scrim's own padding to the slot edge.
@@ -894,7 +945,7 @@ final class RectAdViewFactory {
                             plan.mediaWidth
                           , plan.mediaHeight);
             mediaLayoutParams.setMarginEnd(gap);
-            row.addView(mediaView, mediaLayoutParams);
+            row.addView(FrameBadgesOnMedia(mediaView, views), mediaLayoutParams);
 
             int leftover = SideLayoutLeftoverHeight(plan);
             boolean callToActionBelow =
@@ -905,7 +956,7 @@ final class RectAdViewFactory {
                   , probe
                   , !callToActionBelow);
             views.insetContent = content;
-            views.insetContentAvoidsBadges = true;
+            views.insetContentAvoidsBadges = false;
             row.addView(
                     content
                   , new LinearLayout.LayoutParams(
@@ -938,7 +989,7 @@ final class RectAdViewFactory {
                   , probe
                   , !callToActionBelow);
             views.insetContent = content;
-            views.insetContentAvoidsBadges = true;
+            views.insetContentAvoidsBadges = false;
             row.addView(
                     content
                   , new LinearLayout.LayoutParams(
@@ -951,7 +1002,7 @@ final class RectAdViewFactory {
                             plan.mediaWidth
                           , plan.mediaHeight);
             sideMediaParams.setMarginStart(gap);
-            row.addView(mediaView, sideMediaParams);
+            row.addView(FrameBadgesOnMedia(mediaView, views), sideMediaParams);
             outer.addView(
                     row
                   , new LinearLayout.LayoutParams(
@@ -1161,13 +1212,30 @@ final class RectAdViewFactory {
         }
     }
 
+    // The picture in a frame of its own size, which the badge and the
+    // AdChoices reserve join (AddBadgeOverlays) so they keep its corners
+    // wherever the row places it.
+    private View FrameBadgesOnMedia(View mediaView, AssetViews views) {
+        FrameLayout frame = new FrameLayout(activity);
+        frame.addView(
+                mediaView
+              , new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                  , ViewGroup.LayoutParams.MATCH_PARENT));
+        views.badgeHost = frame;
+        // The probe sizes the slot for each plan: the frame, the picture
+        // filling it.
+        views.mediaSlot = frame;
+        return frame;
+    }
+
     private void AddBadgeOverlays(
             FrameLayout root
           , AssetViews views) {
+        FrameLayout host = views.badgeHost != null ? views.badgeHost : root;
         views.attribution = new TextView(activity);
         views.attribution.setText(ATTRIBUTION_TEXT);
-        views.attribution.setTextColor(Color.BLACK);
-        views.attribution.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        views.attribution.setTextColor(AdTheme.ATTRIBUTION_TEXT);
         views.attribution.setGravity(Gravity.CENTER);
         views.attribution.setIncludeFontPadding(false);
         views.attribution.setPadding(0, 0, 0, 0);
@@ -1175,17 +1243,15 @@ final class RectAdViewFactory {
         views.attribution.setFocusable(false);
         GradientDrawable attributionBackground = new GradientDrawable();
         attributionBackground.setShape(GradientDrawable.RECTANGLE);
-        attributionBackground.setColor(
-                Color.parseColor(ATTRIBUTION_BACKGROUND_COLOR));
-        attributionBackground.setCornerRadius(Dp(ATTRIBUTION_CORNER_DP));
+        attributionBackground.setColor(AdTheme.ATTRIBUTION);
         views.attribution.setBackground(attributionBackground);
-        root.addView(views.attribution);
+        host.addView(views.attribution);
 
         if (nativeAd.getAdChoicesInfo() != null) {
             views.adChoicesReserve = new View(activity);
             views.adChoicesReserve.setClickable(false);
             views.adChoicesReserve.setFocusable(false);
-            root.addView(views.adChoicesReserve);
+            host.addView(views.adChoicesReserve);
         }
     }
 
@@ -1223,14 +1289,61 @@ final class RectAdViewFactory {
         }
     }
 
+    // The scrim's first row: when the name beside the icon is shorter than
+    // the icon by the badge's height, the badge stands in that room, over
+    // the name, instead of in the cell's corner - the row keeps its height
+    // and the icon its place. The name steps down by a margin, not padding,
+    // so its view stays clear of the badge. The AdChoices side is the mark
+    // dodge's (DodgeAdChoicesMark).
+    private void SetBadgeBesideIcon(
+            LinearLayout scrim
+          , LinearLayout row
+          , AssetViews views
+          , RectAdLayoutEngine.LayoutPlan plan
+          , int scrimPad) {
+        if (views.icon == null || views.icon.getParent() != row) return;
+
+        int width = View.MeasureSpec.makeMeasureSpec(plan.width, View.MeasureSpec.EXACTLY);
+        int free = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        scrim.measure(width, free);
+        TextView headline = views.headline;
+        LinearLayout.LayoutParams iconParams =
+                (LinearLayout.LayoutParams) views.icon.getLayoutParams();
+        int step = BadgeHeightPx(plan) + Dp(2);
+        if (headline.getMeasuredHeight() + step
+                > iconParams.topMargin
+                        + views.icon.getMeasuredHeight()
+                        + iconParams.bottomMargin) {
+            return;
+        }
+
+        LinearLayout.LayoutParams headlineParams =
+                (LinearLayout.LayoutParams) headline.getLayoutParams();
+        headlineParams.topMargin += step;
+        headline.setLayoutParams(headlineParams);
+        scrim.measure(width, free);
+        views.attributionLeft = scrimPad
+                + iconParams.leftMargin
+                + views.icon.getMeasuredWidth()
+                + iconParams.rightMargin;
+        views.attributionTop = plan.height
+                - scrim.getMeasuredHeight()
+                + scrimPad
+                + (row.getMeasuredHeight()
+                        - headline.getMeasuredHeight()
+                        - headlineParams.topMargin) / 2;
+    }
+
     private void ConfigureBadgeOverlays(
             AssetViews views
           , RectAdLayoutEngine.LayoutPlan plan) {
         int badgeHeight = BadgeHeightPx(plan);
         // The badges sit on the root, outside the outer column, so they
         // carry the corner clearance themselves - on every template, the
-        // scrim one included: only the picture runs under the curve.
-        int edgeInset = BadgeEdgeInsetPx();
+        // scrim one included: only the picture runs under the curve. On the
+        // picture's frame they are flush: the outer column already stands
+        // the picture clear of the curve.
+        int edgeInset = views.badgeHost != null ? 0 : BadgeEdgeInsetPx();
         if (views.attribution != null) {
             int attributionWidth = AttributionWidthPx(plan, badgeHeight);
             views.attribution.setTextSize(
@@ -1243,9 +1356,16 @@ final class RectAdViewFactory {
                             attributionWidth
                           , badgeHeight
                           , Gravity.TOP | Gravity.LEFT);
-            attributionParams.leftMargin = edgeInset;
-            attributionParams.topMargin = edgeInset;
+            attributionParams.leftMargin = views.attributionTop >= 0
+                    ? views.attributionLeft
+                    : edgeInset;
+            attributionParams.topMargin = views.attributionTop >= 0
+                    ? views.attributionTop
+                    : edgeInset;
             views.attribution.setLayoutParams(attributionParams);
+            AdTheme.ShapeBadge(
+                    views.attribution
+                  , views.attributionTop < 0 && edgeInset == 0);
         }
         if (views.adChoicesReserve != null) {
             int markSize = Dp(AD_CHOICES_MARK_DP);
@@ -1260,11 +1380,16 @@ final class RectAdViewFactory {
         }
     }
 
+    // The overlay's badge size wherever the cell has room for it; only a
+    // thin cell shrinks it, and a cell of 48dp or more never under 16dp, so
+    // its text stays readable (10dp).
     private int BadgeHeightPx(
             RectAdLayoutEngine.LayoutPlan plan) {
         return Clamp(
                 Math.round(slotShortSidePx * BADGE_SHORT_SIDE_RATIO)
-              , MIN_ATTRIBUTION_SIZE_PX
+              , slotShortSidePx >= Dp(48)
+                        ? Dp(16)
+                        : MIN_ATTRIBUTION_SIZE_PX
               , Dp(ATTRIBUTION_HEIGHT_DP));
     }
 
@@ -1640,6 +1765,7 @@ final class RectAdViewFactory {
                     plan.marqueeSecondary
                   , views.body
                   , BodyMaxLines(plan));
+            views.body.setTextColor(SecondaryTextColor());
             views.body.setIncludeFontPadding(false);
             parent.addView(views.body, WrapContentParams());
         }
@@ -1650,8 +1776,7 @@ final class RectAdViewFactory {
                   , OptionalSp(plan)
                   , false
                   , NO_POLICY_TEXT_LIMIT_UNITS);
-            views.advertiser.setTextColor(
-                    Color.parseColor(SECONDARY_TEXT_COLOR));
+            views.advertiser.setTextColor(SecondaryTextColor());
             ApplyTextMode(
                     plan.marqueeSecondary
                   , views.advertiser
@@ -1663,14 +1788,24 @@ final class RectAdViewFactory {
         double starRating = ResolveStarRating();
         if (plan.showRating && starRating > 0d) {
             views.rating = CreateText(
-                    String.format(
-                        Locale.US, "\u2605 %.1f", starRating)
+                    String.format(Locale.US, "%.1f", starRating)
                   , OptionalSp(plan)
                   , false
                   , NO_POLICY_TEXT_LIMIT_UNITS);
-            views.rating.setTextColor(Color.parseColor(RATING_TEXT_COLOR));
+            views.rating.setText(NativeAdStarRatingView.RatingText(
+                    (float) starRating
+                  , onVeil || AdTheme.IsDark(activity)));
+            views.rating.setContentDescription(
+                    NativeAdStarRatingView.RatingDescription((float) starRating));
+            views.rating.setTextColor(SecondaryTextColor());
             parent.addView(views.rating, WrapContentParams());
         }
+    }
+
+    private int SecondaryTextColor() {
+        return onVeil
+                ? Color.parseColor(SECONDARY_TEXT_COLOR)
+                : AdTheme.Grey(activity);
     }
 
     private static LinearLayout.LayoutParams WrapContentParams() {
@@ -1773,6 +1908,9 @@ final class RectAdViewFactory {
         views.icon = new ImageView(activity);
         views.icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         views.icon.setImageDrawable(iconAsset.getDrawable());
+        // A white tile under it, as the overlay's icon has: a transparent
+        // ground loses an icon's dark marks on a dark surface.
+        views.icon.setBackgroundColor(android.graphics.Color.WHITE);
         // The radius follows whatever size the plan settles on.
         views.icon.setOutlineProvider(new android.view.ViewOutlineProvider() {
             @Override
@@ -1844,8 +1982,7 @@ final class RectAdViewFactory {
         views.callToAction.setTextColor(Color.parseColor(CTA_TEXT_COLOR));
         GradientDrawable callToActionBackground = new GradientDrawable();
         callToActionBackground.setShape(GradientDrawable.RECTANGLE);
-        callToActionBackground.setColor(
-                Color.parseColor(CTA_BACKGROUND_COLOR));
+        callToActionBackground.setColor(AdTheme.Primary(activity));
         // A pill: the radius is past any height the tiers give the button.
         callToActionBackground.setCornerRadius(Dp(1000));
         views.callToAction.setStateListAnimator(null);
@@ -1943,6 +2080,10 @@ final class RectAdViewFactory {
             text.setEllipsize(TextUtils.TruncateAt.MARQUEE);
             text.setMarqueeRepeatLimit(-1);
             text.setSelected(true);
+            // The scrolling line fades at its ends rather than cutting a letter in
+            // half at the edge.
+            text.setHorizontalFadingEdgeEnabled(true);
+            text.setFadingEdgeLength(Math.round(12 * text.getResources().getDisplayMetrics().density));
             return;
         }
 
@@ -2039,7 +2180,7 @@ final class RectAdViewFactory {
                 RectAdLayoutValidator.TruncatePolicyText(
                         value
                       , policyTextLimitUnits));
-        text.setTextColor(Color.WHITE);
+        text.setTextColor(onVeil ? Color.WHITE : AdTheme.Ink(activity));
         text.setTextSize(sizeSp);
         text.setSingleLine(false);
         text.setHorizontallyScrolling(false);

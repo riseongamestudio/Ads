@@ -26,7 +26,6 @@ typedef struct {
 
 - (instancetype)initWithAdUnitID:(NSString *)adUnitID
                        cacheSize:(NSInteger)cacheSize
-                 backgroundColor:(int32_t)backgroundColor
                       instanceID:(int32_t)instanceID;
 
 - (void)setRectAdListenerCallbacks:

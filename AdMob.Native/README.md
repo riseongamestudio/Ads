@@ -61,7 +61,7 @@ rồi thêm package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob.native": "2.1.0"
+    "com.riseon.ads.admob.native": "3.0.0"
   }
 }
 ```
@@ -99,13 +99,11 @@ app, tạo một lần lúc khởi động, sau khi Google Mobile Ads đã khở
 
 ```csharp
 using RiseOn.Ads.AdMob.Native;
-using UnityEngine;
 
 var interstitial = new FullScreenAd(new FullScreenAd.Settings {
-    AdUnitId        = "ca-app-pub-xxxxxxxx/yyyyyyyy",
-    BackgroundColor = Color.black,
-    Format          = "interstitial",                 // tên placement, đi kèm mọi OnAdPaid
-    Close           = new CloseSettings { Cooldown = 3 },
+    AdUnitId = "ca-app-pub-xxxxxxxx/yyyyyyyy",
+    Format   = "interstitial",                 // tên placement, đi kèm mọi OnAdPaid
+    Close    = new CloseSettings { Cooldown = 3 },
 });
 interstitial.OnAdPaid   += info => LogRevenue(info.Format, info.Value, info.Currency);
 interstitial.OnAdHidden += OnInterstitialClosed;
@@ -116,20 +114,23 @@ if (interstitial.IsReady()) interstitial.Show();
 ```
 
 - Kết quả hiển thị về qua `OnAdDisplayed`, `OnAdDisplayFailed`, `OnAdHidden`.
+- Màu không đặt được: nền, chữ và nút theo theme sáng tối của máy; thẻ app open
+  thì game tối đi phía sau. Ô hình chữ nhật và panel nửa màn hình cũng
+  mang màu mặt của theme.
 - Placement nào hiện ad thứ hai ngay khi ad đầu đóng thì đặt `CacheSize = 2`.
 - `CloseSettings` quyết nút đóng: thời gian chờ (`Cooldown`), cạnh đặt nút
   (`CloseSide`), vị trí đồng hồ (`TimerSide`), bấm đóng có mở quảng cáo không
   (`RedirectOnClose`); đổi sau được bằng `SetClose`.
-- `Layout` chọn cách xếp tấm thẻ trắng ở giữa màn hình; bỏ trống là
+- `Layout` chọn cách xếp; bỏ trống là
   `Interstitial`. Đặt lúc tạo, không đổi sau.
 
   | `FullScreenLayout` | Xếp |
   |---|---|
-  | `Interstitial` | Ảnh trên cùng, rồi icon, tên, mô tả, nút bấm |
-  | `AppOpen` | `RedirectOnClose` tắt: như `Interstitial`, thêm thanh ở đầu màn hình với icon và tên game, thay nút đóng và đồng hồ: thanh quay vòng chờ suốt `Cooldown`, rồi ghi "Continue to app" và bấm được. `RedirectOnClose` bật: giống hệt `Interstitial` |
-  | `EndCard` | App trước (icon lớn, tên), rồi ảnh, mô tả, nút bấm |
+  | `Interstitial` | Ảnh to nhất có thể ở giữa, dải app ở chân: icon cạnh tên, mô tả, nút bấm |
+  | `AppOpen` | Thẻ giữa màn hình, game tối đi phía sau: ảnh trên cùng, rồi icon, tên, mô tả, nút bấm căn giữa. `RedirectOnClose` tắt: thêm thanh ở đầu màn hình với icon và tên game, thay nút đóng và đồng hồ: thanh quay vòng chờ suốt `Cooldown`, rồi ghi "Continue to app" và bấm được. `RedirectOnClose` bật: không có thanh, nút đóng và đồng hồ ở hai góc trên màn hình, trên thẻ (màn ngang: hai bên thẻ) |
+  | `EndCard` | Trang store của app: ảnh làm banner trên cùng, rồi icon cạnh tên và nhà quảng cáo, hàng sao, giá, store, mô tả, nút bấm |
 
-  Màn hình ngang thì ảnh nằm bên trái thẻ, chữ bên phải. Ad xoay theo game: game
+  Màn hình ngang thì ảnh nằm bên trái, chữ bên phải. Ad xoay theo game: game
   ngang thì ad ngang.
 
 ### Nửa màn hình: chiều cao và trượt
@@ -138,7 +139,6 @@ if (interstitial.IsReady()) interstitial.Show();
 var collapsible = new HalfScreenAd(new HalfScreenAd.Settings {
     AdUnitId    = "ca-app-pub-xxxxxxxx/wwwwwwww",
     HeightRatio = .5f,
-    BackgroundColor = Color.black,
 });
 
 float height = collapsible.PanelHeight;   // có ngay, trước cả khi nạp ad

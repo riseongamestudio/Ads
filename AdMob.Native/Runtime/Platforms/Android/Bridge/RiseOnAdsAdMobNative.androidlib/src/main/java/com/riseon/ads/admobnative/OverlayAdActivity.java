@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -12,6 +14,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.PixelCopy;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -123,6 +127,7 @@ public final class OverlayAdActivity extends Activity {
             if (targetSession == null || targetSession.completed) return false;
         }
 
+        CopyGameFrame(hostActivity, targetSessionId);
         if (!StartSessionIntent(hostActivity, targetSessionId)) return false;
 
         // The initial start needs the same arrival proof the restore path
@@ -210,6 +215,7 @@ public final class OverlayAdActivity extends Activity {
         try {
             Window window = getWindow();
             ConfigureWindow(window);
+            if (session.gameFrame != null) ShowGameFrame(session.gameFrame);
 
             // The load-time face attaches as it is; only a session without
             // one - the restore path, or a discarded preparation - builds
@@ -240,7 +246,7 @@ public final class OverlayAdActivity extends Activity {
                       , session.closeOnLeft
                       , session.style.ResolveTimerOnLeft(session.closeOnLeft)
                       , true
-                      , session.style.backgroundColor
+                      , AdTheme.Panel(this, true, session.style.layout)
                       , session.style.redirectOnClose
                       , requestedPanelHeight
                       , session.style.layout
@@ -422,6 +428,82 @@ public final class OverlayAdActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
+
+    // The game behind the app open ad's card. The game stops drawing once
+    // this activity covers it and its surface shows black (measured on a
+    // Redmi Note 11, 2026-11-27), so its last frame is copied before the
+    // activity opens and shown under the dimmed panel: the player sees the
+    // game they are returning to, as on iOS, where the paused game keeps
+    // its frame.
+    private static void CopyGameFrame(
+            Activity hostActivity
+          , String targetSessionId) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return;
+
+        Session targetSession;
+        synchronized (SESSION_LOCK) {
+            targetSession = SESSIONS.get(targetSessionId);
+        }
+        if (targetSession == null
+                || targetSession.style.layout
+                        != OverlayAdContentView.LAYOUT_APP_OPEN) {
+            return;
+        }
+
+        SurfaceView surface = FindSurface(
+                hostActivity.getWindow().getDecorView());
+        if (surface == null
+                || surface.getWidth() <= 0
+                || surface.getHeight() <= 0
+                || !surface.getHolder().getSurface().isValid()) {
+            return;
+        }
+
+        Bitmap frame = Bitmap.createBitmap(
+                surface.getWidth()
+              , surface.getHeight()
+              , Bitmap.Config.ARGB_8888);
+        Session copiedFor = targetSession;
+        try {
+            PixelCopy.request(
+                    surface
+                  , frame
+                  , result -> {
+                        if (result != PixelCopy.SUCCESS
+                                || copiedFor.completed) {
+                            return;
+                        }
+                        copiedFor.gameFrame = frame;
+                        if (copiedFor.activity != null) {
+                            copiedFor.activity.ShowGameFrame(frame);
+                        }
+                    }
+                  , MAIN);
+        } catch (RuntimeException exception) {
+            Log.w(TAG, "Game frame not copied: " + exception.getMessage());
+        }
+    }
+
+    private static SurfaceView FindSurface(View view) {
+        if (view instanceof SurfaceView && view.getVisibility() == View.VISIBLE) {
+            return (SurfaceView) view;
+        }
+        if (!(view instanceof ViewGroup)) return null;
+
+        ViewGroup group = (ViewGroup) view;
+        for (int index = 0; index < group.getChildCount(); ++index) {
+            SurfaceView found = FindSurface(group.getChildAt(index));
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private void ShowGameFrame(Bitmap frame) {
+        Window window = getWindow();
+        if (window == null || isFinishing()) return;
+
+        window.setBackgroundDrawable(new BitmapDrawable(getResources(), frame));
     }
 
     private static boolean StartSessionIntent(
@@ -917,6 +999,8 @@ public final class OverlayAdActivity extends Activity {
         final long showRequestedAtMs;
         OverlayAdContentView preparedContentView;
         CloseRelay preparedCloseRelay;
+        // The game's last frame, behind the app open ad's card.
+        Bitmap gameFrame;
         long countdownRemainingMs;
         long countdownStartedElapsedRealtime;
         boolean countdownRunning;

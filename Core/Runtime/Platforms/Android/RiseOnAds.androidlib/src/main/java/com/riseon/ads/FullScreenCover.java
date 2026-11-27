@@ -12,11 +12,11 @@ import android.app.Activity;
 public final class FullScreenCover {
     private FullScreenCover() {}
 
-    public static void Show(Activity currentActivity, int color) {
+    public static void Show(Activity currentActivity) {
         BaseCover.RunOnMainThread(() -> {
             if (!BaseCover.IsActivityUsable(currentActivity)) return;
 
-            FullScreenCoverActivity.Start(currentActivity, color);
+            FullScreenCoverActivity.Start(currentActivity);
         });
     }
 

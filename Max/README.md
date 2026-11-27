@@ -56,7 +56,7 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.max": "1.1.0"
+    "com.riseon.ads.max": "1.2.0"
   }
 }
 ```

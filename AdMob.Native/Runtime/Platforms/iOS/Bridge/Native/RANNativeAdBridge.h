@@ -5,8 +5,8 @@
 //
 // Threading: every function may be called from Unity's thread; the native
 // side hops to the main thread itself, exactly as the Java side posts to its
-// main Handler. Callbacks may arrive on any thread; the C# proxies marshal
-// them through MobileAdsEventExecutor, the same way the Android proxies do.
+// main Handler. Callbacks may arrive on any thread and reach C# on it: the
+// pack does not marshal them to Unity's thread, here as on Android.
 //
 // Handles: Create returns a retained opaque handle. Release both tears the
 // ad down and balances the retain; no call is valid on a handle after it.
@@ -74,7 +74,6 @@ typedef void (*RANNativeAdShowCompletedCallback)(
 void* RANRectAdCreate(
         const char* adUnitID
       , int32_t cacheSize
-      , int32_t backgroundColor
       , int32_t instanceID);
 void RANRectAdSetListener(
         void* handle
@@ -116,7 +115,6 @@ void RANOverlayAdConfigure(
         void* handle
       , bool fullScreen
       , float heightRatio
-      , int32_t backgroundColor
       , int32_t cacheSize
       , int32_t cooldown
       , int32_t closeSide

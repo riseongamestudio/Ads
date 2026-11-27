@@ -195,7 +195,7 @@ namespace RiseOn.Ads.Editor {
                 asset.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            AssetDatabase.SaveAssetIfDirty(settings);
+            DeferredSave.Request(settings);
         }
 
         // An adapter being uninstalled keeps its class until the domain reloads; taking it back would save it into the settings with no class.

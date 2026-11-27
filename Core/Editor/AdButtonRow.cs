@@ -13,8 +13,11 @@ namespace RiseOn.Ads.Editor {
         // and the rows would touch each other and the section's border.
         private static GUIStyle cell;
 
+        /// <summary>A rect with a field's margins above and below, and none at its sides.</summary>
+        public static GUIStyle Cell => cell ??= new GUIStyle { margin = new RectOffset(0, 0, EditorStyles.textField.margin.top, EditorStyles.textField.margin.bottom) };
+
         public static void Draw(Action draw, Action<Rect> button = null, Action<Rect> key = null) {
-            cell ??= new GUIStyle { margin = new RectOffset(0, 0, EditorStyles.textField.margin.top, EditorStyles.textField.margin.bottom) };
+            var cell = Cell;
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical();
             draw();

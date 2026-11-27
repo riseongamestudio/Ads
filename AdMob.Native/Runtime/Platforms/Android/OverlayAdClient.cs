@@ -32,7 +32,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
                 JavaConfigureMethod
               , settings.FullScreen
               , settings.HeightRatio
-              , settings.BackgroundColor
               , settings.CacheSize
               , settings.Close.Cooldown
               , (int)settings.Close.CloseSide

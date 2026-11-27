@@ -42,7 +42,7 @@ namespace RiseOn.Ads.AdMob {
             return format.IsNative();
         }
 
-        public void Show(AdFormat format, string placement, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, in AdCloseSettings close, IAdShowListener listener) {
             // Google's SDK takes no placement, so its paid event gets the show's from here.
             lock (showPlacements) showPlacements[format] = placement;
 
@@ -52,7 +52,7 @@ namespace RiseOn.Ads.AdMob {
                 return;
             }
 
-            slot.Show(listener);
+            slot.Show(close, listener);
         }
 
         private FullScreenSlot SlotOf(AdFormat format) {
@@ -83,13 +83,13 @@ namespace RiseOn.Ads.AdMob {
                     return CreateGmaSlot(format, appOpen, unitId => new AppOpenSlot(this, unitId));
 
                 case AdFormat.NativeInterstitial:
-                    return CreateNativeFullScreenSlot(format, nativeInterstitial, context.Formats.NativeInterstitial);
+                    return CreateNativeFullScreenSlot(format, nativeInterstitial);
 
                 case AdFormat.NativeAppOpen:
-                    return CreateNativeFullScreenSlot(format, nativeAppOpen, context.Formats.NativeAppOpen);
+                    return CreateNativeFullScreenSlot(format, nativeAppOpen);
 
                 case AdFormat.NativeEndCard:
-                    return CreateNativeFullScreenSlot(format, nativeEndCard, context.Formats.NativeEndCard);
+                    return CreateNativeFullScreenSlot(format, nativeEndCard);
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format), format, null);
@@ -113,7 +113,8 @@ namespace RiseOn.Ads.AdMob {
         private abstract class FullScreenSlot {
             public abstract bool IsReady { get; }
             public abstract void Load();
-            public abstract void Show(IAdShowListener listener);
+            /// <param name="close">For a native slot; Google's formats close as their SDK draws them.</param>
+            public abstract void Show(in AdCloseSettings close, IAdShowListener listener);
             public abstract void Dispose();
         }
 
@@ -161,7 +162,7 @@ namespace RiseOn.Ads.AdMob {
                 LoadAd(unitId, owner.NewRequest(), (loaded, error) => UniTask.Post(() => HandleLoaded(loaded, error)));
             }
 
-            public override void Show(IAdShowListener showListener) {
+            public override void Show(in AdCloseSettings close, IAdShowListener showListener) {
                 if (!IsReady) {
                     showListener.OnFailed(new AdError(-1, $"{format} not ready"));
                     return;

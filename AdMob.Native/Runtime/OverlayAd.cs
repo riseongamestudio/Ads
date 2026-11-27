@@ -32,7 +32,6 @@ namespace RiseOn.Ads.AdMob.Native {
           , bool fullScreen
           , float heightRatio
           , int cacheSize
-          , Color backgroundColor
           , in CloseSettings controls
           , FullScreenLayout layout)
             : base(adUnitId, format) {
@@ -49,7 +48,6 @@ namespace RiseOn.Ads.AdMob.Native {
                   , FullScreen = fullScreen
                   , HeightRatio      = heightRatio
                   , CacheSize        = cacheSize
-                  , BackgroundColor  = AdColor.Pack(backgroundColor)
                   , Close         = controls
                   , Layout           = layout
                 }

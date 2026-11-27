@@ -1,4 +1,5 @@
 #import "RANOverlayAd.h"
+#import "RANAdTheme.h"
 
 #import "RANOverlayAdContentView.h"
 #import "RANOverlayAdPresentation.h"
@@ -41,7 +42,6 @@ static NSTimeInterval RANNow(void) {
 @property (nonatomic, readonly) int32_t closeSide;
 @property (nonatomic, readonly) int32_t timerSide;
 @property (nonatomic, readonly) float heightRatio;
-@property (nonatomic, readonly) int32_t backgroundColor;
 // The close button commits the ad's click on its way out.
 @property (nonatomic, readonly) BOOL redirectOnClose;
 // How a full-screen ad arranges its card, ordinals shared with the C#
@@ -56,7 +56,6 @@ static NSTimeInterval RANNow(void) {
                          closeSide:(int32_t)closeSide
                          timerSide:(int32_t)timerSide
                        heightRatio:(float)heightRatio
-                   backgroundColor:(int32_t)backgroundColor
                    redirectOnClose:(BOOL)redirectOnClose
                             layout:(int32_t)layout {
     self = [super init];
@@ -66,7 +65,6 @@ static NSTimeInterval RANNow(void) {
     _closeSide = closeSide;
     _timerSide = timerSide;
     _heightRatio = heightRatio;
-    _backgroundColor = backgroundColor;
     _redirectOnClose = redirectOnClose;
     _layout = layout;
     return self;
@@ -82,7 +80,6 @@ static NSTimeInterval RANNow(void) {
                      closeSide:closeSide
                      timerSide:timerSide
                    heightRatio:self.heightRatio
-               backgroundColor:self.backgroundColor
                redirectOnClose:redirectOnClose
                         layout:self.layout];
 }
@@ -94,7 +91,6 @@ static NSTimeInterval RANNow(void) {
                      closeSide:self.closeSide
                      timerSide:self.timerSide
                    heightRatio:self.heightRatio
-               backgroundColor:self.backgroundColor
                redirectOnClose:self.redirectOnClose
                         layout:layout];
 }
@@ -198,7 +194,6 @@ static NSString *RANMediaSignature(GADNativeAd *nativeAd) {
 
 - (void)configureWithFullScreen:(BOOL)fullScreen
                     heightRatio:(float)heightRatio
-                backgroundColor:(int32_t)backgroundColor
                       cacheSize:(int32_t)cacheSize
                        cooldown:(int32_t)cooldown
                       closeSide:(int32_t)closeSide
@@ -225,7 +220,6 @@ static NSString *RANMediaSignature(GADNativeAd *nativeAd) {
                          closeSide:closeSide
                          timerSide:timerSide
                        heightRatio:heightRatio
-                   backgroundColor:backgroundColor
                    redirectOnClose:redirectOnClose
                             layout:0];
         self->_configured = YES;
@@ -734,7 +728,7 @@ static const int64_t kRANPanelSizeTag = 1LL << 62;
                                             closeOnLeftForPresentation]
                                 fullScreen:style.fullScreen
                                heightRatio:style.heightRatio
-                           backgroundColor:style.backgroundColor
+                           backgroundColor:(int32_t)RANThemePanel(style.fullScreen, style.layout)
                            redirectOnClose:style.redirectOnClose
                                     layout:style.layout];
     __weak RANOverlayAd *weakSelf = self;

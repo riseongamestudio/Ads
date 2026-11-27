@@ -65,7 +65,7 @@ cần dùng:
     }
   ],
   "dependencies": {
-    "com.riseon.ads": "3.0.0"
+    "com.riseon.ads": "4.0.0"
   }
 }
 ```
@@ -127,25 +127,26 @@ https://github.com/riseongamestudio/Ads.git?path=/Core
   native lấy mediation đầu tiên đã khởi động, nên mediation không có unit id của một
   nền tảng thì không đứng trong danh sách của nền tảng đó.
 - **Thiết lập định dạng**: cách định dạng hiện (vị trí và kiểu banner, vị trí MRec,
-  màu nền và nút đóng của native...) đặt một lần trên trang, chung cho cả hai nền
-  tảng; mediation nào phục vụ định dạng đó cũng làm theo.
-- **Key Remote Config**: định dạng nào chọn key Remote Config ở ô cuối dòng
-  **Mediations** của nó (xem dưới) thì đọc danh sách từ key đó, thay cho danh sách
+  nút đóng của native...) đặt một lần trên trang, chung cho cả hai nền tảng;
+  mediation nào phục vụ định dạng đó cũng làm theo. Màu của ad native theo theme sáng
+  hay tối của máy, không có thiết lập.
+- **Key Remote Config**: định dạng nào chọn key Remote Config ở ô cuối hàng
+  mediation trên thanh của nó (xem dưới) thì đọc danh sách từ key đó, thay cho danh sách
   trên trang, trước khi mediation khởi động.
 - **Consent**: pack [`com.riseon.consent`](https://github.com/riseongamestudio/Consent)
   tự chạy luồng UMP + ATT khi mở game. Pack trao `ConsentState` cho từng mediation
   trước khi khởi động, và trao lại khi người chơi đổi lựa chọn trong form privacy.
 - **`AdChain`**: một hay nhiều ad full-screen nối nhau (interstitial rồi end card...).
-  Màn che native full-screen nằm dưới các ad của chuỗi, màu chỉnh trên trang: chỗ ad
-  không phủ (lề tai thỏ...) và khoảng giữa hai ad đều là màu đó, game không lộ ra, và
-  game dừng tới khi ad cuối đóng. Ad mà SDK báo đóng qua player loop của Unity
+  Màn che native full-screen màu đen nằm dưới các ad của chuỗi: chỗ ad không phủ (lề
+  tai thỏ...) và khoảng giữa hai ad đều đen, game không lộ ra, và game dừng tới khi ad
+  cuối đóng. Ad mà SDK báo đóng qua player loop của Unity
   (rewarded của AdMob trên iOS) thì không có màn che và không có bước sau. Chuỗi chỉ có
   một ad App Open cũng không có màn che, game lộ ra quanh ad; banner, MRec và ô native
   rời màn hình trong lúc nó hiện (xem [Chain](Runtime/Chain/README.md)).
 - **`AdCollapsibleChain`**: các native collapsible nối nhau; ad đầu trượt vào, ad
-  cuối trượt ra, giữa các ad không trượt. Màn che half-screen chỉ hiện dưới ad chưa
-  phải cuối. `AdsSdk.ShowCollapsibleAsync(plan)` dựng chuỗi theo các bước của một
-  plan.
+  cuối trượt ra, giữa các ad không trượt. Màn che half-screen, màu nền panel theo
+  theme của máy, chỉ hiện dưới ad chưa phải cuối. `AdsSdk.ShowCollapsibleAsync(plan)`
+  dựng chuỗi theo các bước của một plan.
 - **`NativeRectHandle`**: mỗi chỗ trong game hiện ô quảng cáo native gọi một lần
   `AdsSdk.CreateNativeMRec(sizePx, roundCornerPx)` (một khối native MRec, như chỗ MRec
   trên một màn) hay `AdsSdk.CreateNativeInFeed(sizePx, roundCornerPx)` (một dòng
@@ -183,12 +184,14 @@ Chi tiết từng khái niệm trong README của thư mục:
 
 | Lời gọi | Làm gì |
 |---|---|
-| `ShowInterstitialAsync(placement)`, `ShowAppOpenAsync`, `ShowNativeInterstitialAsync`, `ShowNativeAppOpenAsync`, `ShowNativeEndCardAsync` | Hiện một ad của format; trả `true` khi ad đã hiện |
+| `ShowInterstitialAsync(placement)`, `ShowAppOpenAsync`, `ShowNativeInterstitialAsync`, `ShowNativeAppOpenAsync`, `ShowNativeEndCardAsync` | Hiện một ad của format; trả `true` khi ad đã hiện. Ad native đóng theo **Close** của format trong mục Formats |
+| `ShowNativeInterstitialAsync(close, placement)`, `ShowNativeAppOpenAsync(close, …)`, `ShowNativeEndCardAsync(close, …)` | Như trên, ad đóng theo `close` truyền vào thay cho **Close** trên trang |
 | `ShowRewardedAsync(placement)`, `ShowRewardedInterstitialAsync` | Như trên, trả `true` khi người chơi nhận thưởng |
-| `Show(format, placement, onDisplayed)` | Một ad full-screen của format chỉ biết lúc chạy; trả `AdChainResult` |
+| `Show(format, placement, onDisplayed)`, `Show(format, close, placement, onDisplayed)` | Một ad full-screen của format chỉ biết lúc chạy; trả `AdChainResult`. Ad native đóng theo `close` nếu truyền, không thì theo **Close** trên trang; format không phải native bỏ qua `close` |
 | `IsReady(format)`, `IsCollapsibleReady` | Một mediation đã khởi động trong danh sách của format có ad sẵn, và format không bị chặn |
 | `Chain()`, `CollapsibleChain()` | Chuỗi ad full-screen, chuỗi collapsible (xem [Chain](Runtime/Chain/README.md)) |
-| `ShowCollapsibleAsync(plan, onDisplayed)` | Các bước của plan nối nhau; plan `null` (như khi `AdCollapsiblePlan.Pick` không bốc được plan nào) thì không hiện. `onDisplayed` đến một lần, khi ad đầu hiện; trả số ad đã hiện |
+| `ShowCollapsibleAsync(onDisplayed)`, `ShowCollapsibleAsync(close, onDisplayed)` | Một collapsible, đóng theo `close` nếu truyền, không thì theo **Close** của Native Collapsible trong mục Formats. `onDisplayed` đến khi ad hiện; trả số ad đã hiện |
+| `ShowCollapsibleAsync(plan, onDisplayed)` | Các bước của plan nối nhau, mỗi bước đóng theo bước đó; plan `null` (như khi `AdCollapsiblePlan.Pick` không bốc được plan nào) thì không hiện. `onDisplayed` đến một lần, khi ad đầu hiện; trả số ad đã hiện |
 | `HideCollapsible()` | Trượt collapsible đang hiện ra và kết thúc chuỗi của nó |
 | `ShowBanner()`, `HideBanner()`, `ShowMRec()`, `HideMRec()` | Banner, MRec ở chỗ chọn trong mục Formats; đã hiện thì ở đó tới khi gọi `Hide…`. Gọi lúc chưa mediation nào khởi động xong (màn đầu game) thì hiện khi mediation đầu tiên phục vụ format khởi động xong; mediation đứng trước nó trong danh sách khởi động xong sau thì chuyển sang mediation đó |
 | `CreateNativeMRec(sizePx, roundCornerPx)`, `CreateNativeInFeed(sizePx, roundCornerPx)` | Ô native, xem `NativeRectHandle` ở trên |
@@ -219,10 +222,10 @@ Inspector của asset chỉ có nút mở trang này.
 
 | Mục | Ý nghĩa |
 |---|---|
-| Display | **Cover**: màu màn che dưới ad full-screen và dưới collapsible giữa chuỗi. **Editor Sorting Order**: sorting order thấp nhất của các lớp ad trong Editor; các lớp xếp lên từ đó (xem dưới). Canvas của game phải thấp hơn số này |
+| Editor Sorting Order | Ô số trên thanh: sorting order thấp nhất của các lớp ad trong Editor; mỗi lớp trên cách lớp dưới 100 (xem dưới). Mục gập sẵn; mở ra thì thấy từng lớp với sorting order của nó theo số đang đặt. Canvas của game phải thấp hơn số này, hoặc nằm giữa hai lớp |
 | Manager | Lớp manager của project: ô script trên thanh (chỉ đọc). Field của lớp hiện bên trong; lớp không có field nào thì thanh không gập mở |
 | Mediations | Các SDK quảng cáo. Mỗi class mediation trong project, cả adapter của pack lẫn class game tự viết, tự có một dòng gập mở; trang tự thêm khi class mới compile, không có bước thêm vào danh sách. Mediation không format nào dùng thì không khởi động. Alt+click mở hay gập cả nhánh. Bên trong, trên cùng là thiết lập của mediation (như App Key của LevelPlay) và của SDK, phần của SDK đọc và ghi thẳng vào file settings của chính SDK (xem README của từng mediation); dưới đó là mục con **Networks**, gập sẵn: các network mà SDK của mediation mediate, phiên bản adapter của từng network trong project, và cài, cập nhật, gỡ adapter theo đúng cách của SDK đó (LevelPlay chỉ có nút mở Network Manager của nó; xem mục Network trong README của từng adapter); dưới cùng là mục con **Formats** của mediation, mỗi format một mục con, unit id Android và iOS nằm ngay trên thanh của mục con; format có thêm thiết lập (như **Cache Size** của format native AdMob) thì gập mở được, và format không có thì đứng trước. Adapter của pack (AdMob, MAX, LevelPlay) có dòng dù chưa cài, như network trong mục **Networks**: cột giá trị ghi phiên bản trong project (chưa cài thì **Not installed**), kèm nút cuối dòng. **Install** thêm package của adapter qua Package Manager. Core cài từ thư mục local thì lấy từ thư mục cùng tên adapter cạnh `Core`; thiếu thư mục đó thì dòng không có **Install**, tooltip ghi đường dẫn thiếu. Core cài từ registry thì **Install** hỏi phiên bản, liệt kê các phiên bản registry có, mới nhất trước; danh sách chưa đọc xong (đang đọc, registry lỗi) thì **Install** cài thẳng bản mới nhất. Đã cài từ registry thì bấm vào phiên bản để chọn phiên bản khác, cũ hơn cũng được; có phiên bản mới hơn thì cột ghi `cũ → mới` kèm nút **Update**, và **Update All** trên thanh cập nhật mọi adapter cũ. Danh sách phiên bản đọc từ registry lần đầu mở trang trong mỗi phiên Editor; nút làm mới trên thanh đọc lại. **Uninstall** (khi manifest có tên adapter) hỏi lại một lần, kèm danh sách format đang dùng mediation, bỏ mediation khỏi danh sách và khỏi mọi format, rồi gỡ package. Unit id và thiết lập format của nó trong asset của pack mất theo; file settings của SDK trong `Assets` giữ nguyên, và package SDK chỉ được gỡ theo khi manifest không ghi nó trực tiếp. Cài, cập nhật, gỡ lỗi (ví dụ manifest thiếu scoped registry của SDK, xem README của adapter) thì Console báo `Installing … failed: …` (hay `Updating`, `Uninstalling`). Từ lúc bấm tới khi Package Manager xong, nút vừa bấm quay tại chỗ (di chuột lên nó thì ghi việc đang chạy, như **Uninstalling LevelPlay**), và mọi nút cài, gỡ trên trang mờ đi, vì Package Manager resolve lại mọi package rồi Unity mới compile |
-| Formats | Mỗi format một mục con gập mở, theo thứ tự Banner, MRec, Interstitial, Rewarded, Rewarded Interstitial, App Open, rồi các format native, gập sẵn. Trong mỗi mục, dòng **Mediations** là các mediation phục vụ format, thử từ trái sang phải; hàng hẹp thì ô xuống dòng như chữ, thử tiếp từ trên xuống dưới, mũi tên chỉ nằm giữa hai ô cùng dòng. Kéo một ô để đổi thứ tự, **×** trên ô bỏ mediation khỏi format, **+** thêm một mediation của trang mà format chưa có và phục vụ được format đó (format native chỉ AdMob; App Open có AdMob, MAX; Rewarded Interstitial chỉ AdMob); không mediation nào thì format ghi **Off** và tắt. Nút ở cuối dòng **Mediations** tách danh sách cho format mà mỗi nền tảng dùng mediation khác: bấm thì dòng thành hai dòng **Android** và **iOS**, iOS bắt đầu bằng danh sách đang có; nút ở cuối dòng tên gộp lại, giữ danh sách Android. Ô ngay trước nút ở cuối dòng **Mediations** (khi đã tách là dòng tên) chọn một key kiểu chuỗi của `com.riseon.firebase.remoteconfig` cho danh sách mediation (khai key ở trang **RiseOn > Firebase > Remote Config**), **No Remote Key** là không dùng key; project không có pack đó thì ô mờ, ghi **No Remote Config**. Một key dùng cho cả hai nền tảng; muốn mỗi nền tảng một giá trị thì đặt condition theo nền tảng trên console. Giá trị là id mediation cách nhau bằng dấu phẩy, tốt nhất trước, ví dụ `max,admob`; `off` tắt format; giá trị rỗng thì dùng danh sách của dòng **Mediations**. Id không có trong Mediations bị bỏ, kèm cảnh báo trong Console; id nào cũng bị bỏ thì format tắt, như `off`. Có ít nhất một format chọn key thì mediation khởi động sau khi Remote Config xong lần mở game, theo giá trị nó có lúc đó. Cuối mục là cách hiện của format, mediation nào phục vụ format cũng làm theo, chung cho cả hai nền tảng: Banner có **Position** (bốn góc, giữa trên, giữa dưới, chính giữa vùng an toàn) và **Adaptive** (bật thì rộng hết màn hình, cao theo banner adaptive của mạng; tắt thì 320×50); MRec có **Position**; Native Interstitial, Native App Open, Native End Card có **Background Color** (màu chỗ creative không phủ) và **Close** (số giây chờ, cạnh đặt nút đóng, chỗ đồng hồ, bấm đóng thì mở quảng cáo); Native Collapsible có **Height Ratio** (phần chiều cao màn hình panel chiếm, từ đáy) và **Background Color**; Native MRec, Native In-Feed có **Background Color** (trong suốt thì chỗ game chừa sẵn lộ ra). |
+| Formats | Mỗi format một mục con, theo thứ tự Banner, MRec, Interstitial, Rewarded, Rewarded Interstitial, App Open, rồi các format native. Thanh của mục luôn một dòng: tên format, nút tách, ô mediation, rồi ô key Remote Config. Cột tên rộng bằng tên format dài nhất, nên mọi thanh thẳng cột. Ô mediation ghi các mediation phục vụ format theo thứ tự thử, như `AdMob → MAX`; ô hẹp không đủ chỗ cho tên thì mỗi tên thành icon của mediation, mũi tên giữ nguyên (mediation không có icon thì giữ tên, cắt bằng "…"); di chuột lên ô thì tooltip ghi đủ. Không mediation nào thì ô ghi **Off** và format tắt. Bấm ô thì mở drop-down chọn như mọi ô chọn của trang: các mediation đang dùng có dấu tích, theo thứ tự, cuối dòng có tay cầm; dưới đó là các mediation khác của trang phục vụ được format (format native chỉ AdMob; App Open có AdMob, MAX; Rewarded Interstitial chỉ AdMob). Bấm một dòng thì bỏ mediation khỏi format, hoặc thêm vào cuối; kéo một dòng có dấu tích lên xuống để đổi thứ tự, các dòng khác dạt ra nhường chỗ. Drop-down mở tới khi bấm ra ngoài hay Esc; mỗi thay đổi là một bước Ctrl+Z, và file asset chỉ ghi xuống đĩa một lần khi drop-down đóng. Nút tách (trước ô mediation) cho format mà mỗi nền tảng dùng mediation khác: bấm thì ô thành hai ô trên cùng dòng, ô sau icon Android và ô sau icon Apple, iOS bắt đầu bằng danh sách đang có; khi đã tách, nút là icon xích: bấm thì gộp lại, giữ danh sách Android. Phần sau nút chia ba phần bằng nhau cho ô Android, ô iOS và ô key, không kể icon và khoảng cách; chưa tách thì ô mediation lấy chỗ của hai ô ấy cùng icon và khoảng cách giữa chúng, nên ô key đứng cùng một cột ở mọi thanh và cả ba co giãn theo cửa sổ. Ô key ở cuối thanh chọn một key kiểu chuỗi của `com.riseon.firebase.remoteconfig` cho danh sách mediation (khai key ở trang **RiseOn > Firebase > Remote Config**), **No Remote Key** là không dùng key; project không có pack đó thì ô mờ, ghi **No Remote Config**. Một key dùng cho cả hai nền tảng; muốn mỗi nền tảng một giá trị thì đặt condition theo nền tảng trên console. Giá trị là id mediation cách nhau bằng dấu phẩy, tốt nhất trước, ví dụ `max,admob`; `off` tắt format; giá trị rỗng thì dùng danh sách trên thanh. Id không có trong Mediations bị bỏ, kèm cảnh báo trong Console; id nào cũng bị bỏ thì format tắt, như `off`. Có ít nhất một format chọn key thì mediation khởi động sau khi Remote Config xong lần mở game, theo giá trị nó có lúc đó. Format có cách hiện để chỉnh thì mục gập mở được, gập sẵn với format native; bên trong là cách hiện đó, mediation nào phục vụ format cũng làm theo, chung cho cả hai nền tảng: Banner có **Position** (bốn góc, giữa trên, giữa dưới, chính giữa vùng an toàn) và **Adaptive** (bật thì rộng hết màn hình, cao theo banner adaptive của mạng; tắt thì 320×50); MRec có **Position**; Native Interstitial, Native App Open, Native End Card có **Close** (số giây chờ, cạnh đặt nút đóng, chỗ đồng hồ, bấm đóng thì mở quảng cáo); Native Collapsible có **Height Ratio** (phần chiều cao màn hình panel chiếm, từ đáy) và **Close**. **Close** là cách đóng khi lời gọi hiện ad không truyền `close` của riêng nó (xem `AdsSdk`). Format không có gì để chỉnh thì mục chỉ có thanh. Màu ad native theo theme sáng hay tối của máy. |
 
 Trang báo đỏ và build dừng khi:
 
@@ -393,7 +396,7 @@ card cũng không hiện.
 | `AdsOff` | Switch của tester: bật thì không format nào hiện, format có thưởng thì thưởng luôn; tắt thì Remove Ads giữ như đã đặt. Hai cái cùng quyết định việc chặn ở một chỗ, nên không cái nào gỡ chặn của cái kia |
 | `ReturnAdBlocked` | Đặt `true` khi game tự đưa người chơi ra ngoài (bảng mua hàng, share, trang store), vì lần quay lại đó không phải lượt mở mới |
 | `ReturnFormat`, `ShowReturnAdAsync(placement)` | Format ad khi quay lại sẽ hiện lúc này, và hiện nó, cho game tự hiện ad đó, ví dụ trên màn loading của mình. `ReturnFormat` là `null` khi Format là **None**, chưa tới From Launch, format bị chặn (Remove Ads, `AdsOff`), giãn cách App Open chưa cho phép, hoặc chưa có ad sẵn |
-| `ShowCollapsibleAsync(onDisplayed)` | Không hiện khi collapsible bị chặn hay giãn cách của Native Collapsible chưa cho phép; không thì bốc một plan theo weight và hiện các bước của nó nối nhau. Trả số ad đã hiện |
+| `ShowCollapsibleAsync(onDisplayed)` | Không hiện khi collapsible bị chặn hay giãn cách của Native Collapsible chưa cho phép; không thì bốc một plan theo weight và hiện các bước của nó nối nhau. Không plan nào bốc được (danh sách rỗng, hay không plan nào vừa có bước vừa có weight trên 0) thì hiện một collapsible đóng theo **Close** của Native Collapsible trong mục Formats. Trả số ad đã hiện |
 | `CanShowCollapsible` | Giãn cách cho phép và có ad sẵn |
 | `ShowBanner()`, `HideBanner()` | Như của `AdsSdk` |
 
@@ -407,8 +410,9 @@ sẵn cho các định dạng đó; mediation có cả native thì ad giả có 
 khởi động xong cho native, và không có nếu lần khởi động đó lỗi. Pack vẽ ad giả ghi
 tên mediation đang phục vụ, cùng bố cục với ad native của pack AdMob.Native:
 
-- Interstitial: một thẻ giữa nền đen (ảnh, logo, tên, nhà quảng cáo, mô tả, nút
-  Install hình viên thuốc, badge Ad và AdChoices trên góc thẻ), nút đóng tròn ở góc
+- Interstitial: phủ cả màn hình trên màu mặt của theme, như ad full-screen của các
+  mạng (ảnh rộng hết màn hình, logo, tên, nhà quảng cáo, mô tả, nút Install hình viên
+  thuốc ở đáy, badge Ad và AdChoices trên góc ảnh), nút đóng tròn ở góc
   phải trên.
 - Rewarded và rewarded interstitial: trang app (icon, tên, điểm, thể loại, video,
   nút Install ở đáy) với nhãn "Reward in N seconds" ở góc phải trên; màn dọc thì dải
@@ -416,15 +420,16 @@ tên mediation đang phục vụ, cùng bố cục với ad native của pack Ad
   tối đi; hết 5 giây nhãn thành
   "Reward granted", end card hiện lên và ad đóng được; đóng là nhận thưởng.
 - App open: thanh trên cùng có icon và tên game, spinner trong 2 giây đầu rồi
-  "Continue to app"; bấm thanh để đóng. Dưới thanh là thẻ như interstitial, game tối
-  đi phía sau.
+  "Continue to app"; bấm thanh để đóng. Dưới thanh là một thẻ bo góc (cùng nội dung
+  như interstitial) giữa màn hình, game tối đi phía sau.
 - Banner 320×50 point (Adaptive thì rộng hết vùng an toàn) và MRec 300×250 point, mỗi
   cái ở chỗ chọn trong mục Formats; hai cái cùng chỗ thì đè lên nhau, như trên máy.
 
 Theme của Editor (sáng/tối) chọn màu cho mọi ad giả. Kích thước tính như trên điện
-thoại rộng 360 point. Game view nằm ngang thì thẻ để ảnh bên trái, chữ bên phải, và
-rewarded để video bên trái, trang app bên phải; thẻ không rộng quá 440 point (ngang
-760 point), nên trên tablet nó đứng giữa thay vì kéo hết bề ngang. Nút Install mở
+thoại rộng 360 point. Game view nằm ngang thì interstitial và thẻ app open để ảnh bên
+trái, chữ bên phải, và rewarded để video bên trái, trang app bên phải. Chữ và nút của
+interstitial không rộng quá 560 point, thẻ app open không rộng quá 440 point (ngang
+760 point), nên trên tablet chúng đứng giữa thay vì kéo hết bề ngang. Nút Install mở
 trang của mediation phục vụ ad (AdMob, MAX, LevelPlay), như ad thật mở trang của nhà
 quảng cáo; ad vẫn ở trên màn hình. Native vẫn dùng bản xem trước của mediation, nên
 mediation phục vụ native vẫn khởi động SDK cho các định dạng native.
@@ -435,11 +440,14 @@ Order** lên:
 | Lớp | Sorting order |
 |---|---|
 | Banner, MRec, view không đánh dấu | Editor Sorting Order |
-| Native in-feed, native MRec | +1 |
-| Màn che half-screen | +2 |
-| Collapsible | +3 |
-| Màn che full-screen | +4 |
-| Ad full-screen | +5 |
+| Native in-feed, native MRec | +100 |
+| Màn che half-screen | +200 |
+| Collapsible | +300 |
+| Màn che full-screen | +400 |
+| Ad full-screen | +500 |
+
+Mỗi lớp cách lớp dưới 100 (`AdsEditorLayers.Step`), nên canvas của game đặt được vào
+giữa hai lớp, ví dụ trên banner mà dưới collapsible.
 
 Mediation tự vẽ bản xem trước lấy các số này từ `AdsEditorLayers`.
 

@@ -1,16 +1,16 @@
 #import "RANRectAdViewFactory.h"
-
-#import <objc/runtime.h>
+#import "RANAdTheme.h"
 
 static NSString *const kRANTag = @"RectAd";
 
 // Values carried over verbatim; dp reads as points, px floors convert
 // through the screen scale where noted.
-// The 120pt floor belongs to video: the SDK warning that enforces it is
-// conditional on the media view showing video, and whether it ever will is
-// the creative's property, known before layout.
+// The 120pt floor holds for every creative, a still picture's as well as a
+// video's: the SDK flags a smaller MediaView as an implementation problem and
+// warns that such slots will be demonetized. A slot too small for it takes a
+// layout without the picture.
 static const CGFloat kRANMinVideoMediaSize = 120;
-static const CGFloat kRANMinImageMediaSize = 48;
+static const CGFloat kRANMinImageMediaSize = 120;
 // The least line width worth giving a headline next to an icon. Below it
 // even a marquee reads as a sliver, so the icon leaves the line and the
 // text takes the full width instead.
@@ -21,9 +21,8 @@ static const CGFloat kRANRectAdAmbientDimAlpha = 0.55f;
 static const CGFloat kRANMinAttributionSizePx = 15;
 static const CGFloat kRANAttributionWidth = 24;
 static const CGFloat kRANAttributionHeight = 18;
-// The SDK draws its AdChoices mark at this size whatever the cell, at the
-// corner insetSdkAdChoicesInNativeAdView: moves it to. The reserve stands
-// exactly there, so the validator and the dodge both see the real mark.
+// The AdChoices view's side, whatever the cell: the SDK draws its mark in
+// the view, so the validator and the dodge both see the real mark.
 static const CGFloat kRANAdChoicesMarkSize = 15;
 static const CGFloat kRANAdChoicesDodgeGap = 2;
 static const NSInteger kRANAdChoicesDodgePasses = 3;
@@ -196,6 +195,9 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
     // template but the scrim one, where the background picture is meant
     // to run under the curve and only the block in front stands back.
     CGFloat _cornerInset;
+    // Whether the texts sit on the scrim template's veil, dark whatever the
+    // theme, rather than on the theme's surface.
+    BOOL _onVeil;
 }
 
 - (instancetype)initWithNativeAd:(GADNativeAd *)nativeAd
@@ -277,9 +279,7 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
         if (tier == RANRectAdTierRegular) return 144;
         return 180;
     }
-    if (tier == RANRectAdTierCompact) return 56;
-    if (tier == RANRectAdTierRegular) return 88;
-    return 120;
+    return kRANMinImageMediaSize;
 }
 
 // The slot is already bounded by the card it sits in, so a tier's own edge
@@ -555,6 +555,9 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
         nativeAdView.mediaView = (GADMediaView *)views.media;
     }
 
+    if ([views.adChoicesReserve isKindOfClass:GADAdChoicesView.class]) {
+        nativeAdView.adChoicesView = (GADAdChoicesView *)views.adChoicesReserve;
+    }
     nativeAdView.nativeAd = _nativeAd;
     RANRectAdNativeAdViewResult *result =
             [[RANRectAdNativeAdViewResult alloc] init];
@@ -580,10 +583,12 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
     outer.ran_gravity = RANGravityTop | RANGravityCenterHorizontal;
     // The corner clearance, spent here once for everything the column
     // holds - media band, side rail, texts, button. The scrim template
-    // spends none: its picture is the cell's background and runs under the
-    // curve; the block in front adds the clearance to its own pad.
+    // spends none here: its ambient backdrop runs under the curve, the
+    // picture over it and the block in front each keep the clearance on
+    // their own.
     BOOL mediaIsBackground =
             plan.layoutTemplate == RANRectAdTemplateMediaBackground;
+    _onVeil = mediaIsBackground;
     CGFloat outerInset = mediaIsBackground ? 0 : _cornerInset;
     outer.ran_padding = UIEdgeInsetsMake(
             outerInset, outerInset, outerInset, outerInset);
@@ -614,8 +619,13 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
             ambientBackdrop.ran_layoutHeight = RANLayoutMatchParent;
             [root addSubview:ambientBackdrop];
         }
+        // The picture itself stands clear of the curve, so its corners
+        // touch it and not a pixel of the creative is cut: the native policy
+        // lets a picture lose only width.
         backgroundMedia.ran_layoutWidth = RANLayoutMatchParent;
         backgroundMedia.ran_layoutHeight = RANLayoutMatchParent;
+        backgroundMedia.ran_layoutMargins = UIEdgeInsetsMake(
+                _cornerInset, _cornerInset, _cornerInset, _cornerInset);
         [root addSubview:backgroundMedia];
 
         // One veil over the whole cell, not a band that stops short of the
@@ -634,13 +644,10 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
         // picture, so the block spends only the tier's own gap on every
         // side - a tiny cell cannot afford more.
         // A hair of breathing room, sized by the cell instead of by the
-        // tier: enough that the text is not printed onto the very edge,
-        // never enough to read as a border. The corner clearance the outer
-        // column did not spend on this template is a FLOOR here, not an
-        // addend: both measure from the same cell edge, so a block already
-        // standing back far enough to clear the arc is already standing off
-        // the edge. Adding them spent the same border twice.
-        CGFloat scrimPad = MAX([self ran_cellEdgePadding], _cornerInset);
+        // tier: enough that the text is not printed onto the picture's edge,
+        // never enough to read as a border. It counts from that edge, which
+        // stands the corner clearance in from the cell's.
+        CGFloat scrimPad = _cornerInset + [self ran_cellEdgePadding];
         scrim.ran_padding = UIEdgeInsetsMake(
                 scrimPad, scrimPad, scrimPad, scrimPad);
 
@@ -662,6 +669,7 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
                             - [self ran_iconSizeForTier:plan.tier]
                             - gap
                         < kRANRectAdMinIconRowTextWidth;
+        RANLinearLayoutView *headlineRow = nil;
         if (iconStandsAlone) {
             [self ran_addIconTo:scrim views:views tier:plan.tier gap:0];
             if (views.icon != nil) {
@@ -672,8 +680,7 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
             views.headline.ran_layoutWidth = RANLayoutMatchParent;
             [scrim addSubview:views.headline];
         } else {
-            RANLinearLayoutView *headlineRow =
-                    [[RANLinearLayoutView alloc] init];
+            headlineRow = [[RANLinearLayoutView alloc] init];
             headlineRow.ran_vertical = NO;
             headlineRow.ran_gravity = RANGravityCenterVertical;
             if (plan.showIcon) {
@@ -698,6 +705,13 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
                                gap:gap
                          fullWidth:YES];
         if (iconStandsAlone) RANRectAdCentreBlock(views);
+        if (headlineRow != nil) {
+            [self ran_setBadgeBesideIconInRow:headlineRow
+                                       scrim:scrim
+                                       views:views
+                                        plan:plan
+                                    scrimPad:scrimPad];
+        }
 
         // Not the inset content: the inset pass would reset the scrim's own
         // padding to the slot edge.
@@ -768,10 +782,11 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
         RANLinearLayoutView *row = [[RANLinearLayoutView alloc] init];
         row.ran_vertical = NO;
         row.ran_gravity = RANGravityCenterVertical;
-        mediaView.ran_layoutWidth = plan.mediaWidth;
-        mediaView.ran_layoutHeight = plan.mediaHeight;
-        mediaView.ran_layoutMargins = UIEdgeInsetsMake(0, 0, 0, gap);
-        [row addSubview:mediaView];
+        UIView *mediaFrame = [self ran_frameBadgesOnMedia:mediaView views:views];
+        mediaFrame.ran_layoutWidth = plan.mediaWidth;
+        mediaFrame.ran_layoutHeight = plan.mediaHeight;
+        mediaFrame.ran_layoutMargins = UIEdgeInsetsMake(0, 0, 0, gap);
+        [row addSubview:mediaFrame];
 
         CGFloat leftover =
                 [self ran_sideLayoutLeftoverHeightForPlan:plan];
@@ -782,7 +797,7 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
                                          plan:plan
                           includeCallToAction:!callToActionBelow];
         views.insetContent = content;
-        views.insetContentAvoidsBadges = YES;
+        views.insetContentAvoidsBadges = NO;
         content.ran_layoutWidth = 0;
         content.ran_layoutHeight = RANLayoutWrapContent;
         content.ran_layoutWeight = 1;
@@ -817,19 +832,17 @@ static void RANRectAdCentreBlock(RANRectAdAssetViews *views) {
                                          plan:plan
                           includeCallToAction:!callToActionBelow];
         views.insetContent = content;
-        // The mirror's asymmetry pays on the badge side: AdChoices, the wider
-        // badge, lands on the media, and only the text column reserves the
-        // strip, for the attribution corner alone.
-        views.insetContentAvoidsBadges = YES;
+        views.insetContentAvoidsBadges = NO;
         content.ran_layoutWidth = 0;
         content.ran_layoutHeight = RANLayoutWrapContent;
         content.ran_layoutWeight = 1;
         [row addSubview:content];
 
-        mediaView.ran_layoutWidth = plan.mediaWidth;
-        mediaView.ran_layoutHeight = plan.mediaHeight;
-        mediaView.ran_layoutMargins = UIEdgeInsetsMake(0, gap, 0, 0);
-        [row addSubview:mediaView];
+        UIView *mediaFrame = [self ran_frameBadgesOnMedia:mediaView views:views];
+        mediaFrame.ran_layoutWidth = plan.mediaWidth;
+        mediaFrame.ran_layoutHeight = plan.mediaHeight;
+        mediaFrame.ran_layoutMargins = UIEdgeInsetsMake(0, gap, 0, 0);
+        [row addSubview:mediaFrame];
         row.ran_layoutWidth = RANLayoutMatchParent;
         [outer addSubview:row];
         if (callToActionBelow) {
@@ -973,26 +986,41 @@ static CGFloat RANMarkOverlap(UIView *root, UIView *_Nullable view, CGRect mark)
     view.ran_layoutMargins = margins;
 }
 
+// The picture in a frame of its own size, which the badge and the AdChoices
+// view join (ran_addBadgeOverlaysTo:) so they keep its corners wherever the
+// row places it.
+- (UIView *)ran_frameBadgesOnMedia:(UIView *)mediaView
+                            views:(RANRectAdAssetViews *)views {
+    RANFrameLayoutView *frame = [[RANFrameLayoutView alloc] init];
+    mediaView.ran_layoutWidth = RANLayoutMatchParent;
+    mediaView.ran_layoutHeight = RANLayoutMatchParent;
+    [frame addSubview:mediaView];
+    views.badgeHost = frame;
+    // The probe sizes the slot for each plan: the frame, the picture filling
+    // it.
+    views.mediaSlot = frame;
+    return frame;
+}
+
 - (void)ran_addBadgeOverlaysTo:(RANFrameLayoutView *)root
                         views:(RANRectAdAssetViews *)views {
+    RANFrameLayoutView *host = views.badgeHost ?: root;
     UILabel *attribution = [[UILabel alloc] init];
     attribution.text = @"Ad";
-    attribution.textColor = UIColor.blackColor;
-    attribution.font = [UIFont boldSystemFontOfSize:10];
+    attribution.textColor = RANRectAdARGB(kRANThemeAttributionText);
+    attribution.font = [UIFont systemFontOfSize:10];
     attribution.textAlignment = NSTextAlignmentCenter;
-    attribution.backgroundColor = RANRectAdARGB(0xFFFFC107);
-    attribution.layer.cornerRadius = 3;
+    attribution.backgroundColor = RANRectAdARGB(kRANThemeAttribution);
     attribution.layer.masksToBounds = YES;
     attribution.userInteractionEnabled = NO;
     views.attribution = attribution;
-    [root addSubview:attribution];
+    [host addSubview:attribution];
 
-    // GADNativeAdView places its own AdChoices top-right; the reserve keeps
-    // that corner clear the way the Android reserve view does.
-    UIView *adChoicesReserve = [[UIView alloc] init];
-    adChoicesReserve.userInteractionEnabled = NO;
+    // The SDK's AdChoices mark goes in this view, at the corner the layout
+    // gives it: GADNativeAdView's adChoicesView, set as the ad binds.
+    GADAdChoicesView *adChoicesReserve = [[GADAdChoicesView alloc] init];
     views.adChoicesReserve = adChoicesReserve;
-    [root addSubview:adChoicesReserve];
+    [host addSubview:adChoicesReserve];
 }
 
 - (CGFloat)ran_badgeHeightForPlan:(RANRectAdLayoutPlan *)plan {
@@ -1037,18 +1065,68 @@ static CGFloat RANMarkOverlap(UIView *root, UIView *_Nullable view, CGRect mark)
     }
 }
 
+// The scrim's first row: when the name beside the icon is shorter than the
+// icon by the badge's height, the badge stands in that room, over the name,
+// instead of in the cell's corner - the row keeps its height and the icon its
+// place. The name steps down by a margin, not padding, so its view stays
+// clear of the badge. The AdChoices side is the mark dodge's.
+- (void)ran_setBadgeBesideIconInRow:(RANLinearLayoutView *)row
+                              scrim:(RANLinearLayoutView *)scrim
+                              views:(RANRectAdAssetViews *)views
+                               plan:(RANRectAdLayoutPlan *)plan
+                           scrimPad:(CGFloat)scrimPad {
+    if (views.icon == nil || views.icon.superview != row) return;
+
+    RANMeasureSpec width = RANMeasureSpecMake(RANMeasureSpecExactly, plan.width);
+    RANMeasureSpec free = RANMeasureSpecMake(RANMeasureSpecUnspecified, 0);
+    [scrim ran_measureWithWidthSpec:width heightSpec:free];
+    UIEdgeInsets iconMargins = views.icon.ran_layoutMargins;
+    CGFloat step = [self ran_badgeHeightForPlan:plan] + 2;
+    if (views.headline.ran_measuredSize.height + step
+            > iconMargins.top
+                    + views.icon.ran_measuredSize.height
+                    + iconMargins.bottom) {
+        return;
+    }
+
+    UIEdgeInsets margins = views.headline.ran_layoutMargins;
+    margins.top += step;
+    views.headline.ran_layoutMargins = margins;
+    [scrim ran_measureWithWidthSpec:width heightSpec:free];
+    views.attributionBesideIcon = YES;
+    views.attributionOrigin = CGPointMake(
+            scrimPad
+                    + iconMargins.left
+                    + views.icon.ran_measuredSize.width
+                    + iconMargins.right
+          , plan.height
+                    - scrim.ran_measuredSize.height
+                    + scrimPad
+                    + (row.ran_measuredSize.height
+                            - views.headline.ran_measuredSize.height
+                            - margins.top) / 2);
+}
+
+- (CGFloat)ran_attributionWidthForPlan:(RANRectAdLayoutPlan *)plan
+                           badgeHeight:(CGFloat)badgeHeight {
+    CGFloat minimumPt = [self ran_ptFromPx:kRANMinAttributionSizePx];
+    CGFloat desiredWidth = round(badgeHeight * kRANAttributionAspectRatio);
+    CGFloat maximumWidth = MAX(minimumPt, plan.width - badgeHeight);
+    return MAX(
+            minimumPt
+          , MIN(desiredWidth, MIN(kRANAttributionWidth, maximumWidth)));
+}
+
 - (void)ran_configureBadgeOverlays:(RANRectAdAssetViews *)views
                              plan:(RANRectAdLayoutPlan *)plan {
     CGFloat badgeHeight = [self ran_badgeHeightForPlan:plan];
-    CGFloat minimumPt = [self ran_ptFromPx:kRANMinAttributionSizePx];
-    CGFloat edgeInset = [self ran_badgeEdgeInset];
+    // On the picture's frame the badges are flush: the outer column already
+    // stands the picture clear of the curve.
+    CGFloat edgeInset = views.badgeHost != nil ? 0 : [self ran_badgeEdgeInset];
     if (views.attribution != nil) {
-        CGFloat desiredWidth = round(badgeHeight * kRANAttributionAspectRatio);
-        CGFloat maximumWidth = MAX(minimumPt, plan.width - badgeHeight);
-        CGFloat attributionWidth = MAX(
-                minimumPt
-              , MIN(desiredWidth, MIN(kRANAttributionWidth, maximumWidth)));
-        views.attribution.font = [UIFont boldSystemFontOfSize:
+        CGFloat attributionWidth =
+                [self ran_attributionWidthForPlan:plan badgeHeight:badgeHeight];
+        views.attribution.font = [UIFont systemFontOfSize:
                 MAX(1, badgeHeight * kRANAttributionTextHeightRatio)];
         views.attribution.ran_layoutWidth = attributionWidth;
         views.attribution.ran_layoutHeight = badgeHeight;
@@ -1056,8 +1134,13 @@ static CGFloat RANMarkOverlap(UIView *root, UIView *_Nullable view, CGRect mark)
         // The badges sit on the root, outside the outer column, so they
         // carry the corner clearance themselves - on every template, the
         // scrim one included: only the picture runs under the curve.
-        views.attribution.ran_layoutMargins =
-                UIEdgeInsetsMake(edgeInset, edgeInset, 0, 0);
+        views.attribution.ran_layoutMargins = views.attributionBesideIcon
+                ? UIEdgeInsetsMake(
+                      views.attributionOrigin.y, views.attributionOrigin.x, 0, 0)
+                : UIEdgeInsetsMake(edgeInset, edgeInset, 0, 0);
+        RANShapeBadge(
+                views.attribution
+              , !views.attributionBesideIcon && edgeInset == 0);
     }
     if (views.adChoicesReserve != nil) {
         views.adChoicesReserve.ran_layoutWidth =
@@ -1070,208 +1153,9 @@ static CGFloat RANMarkOverlap(UIView *root, UIView *_Nullable view, CGRect mark)
     }
 }
 
-// Where every corner mark sits: the attribution, the AdChoices reserve and -
-// through insetSDKAdChoicesInNativeAdView: - the SDK's own AdChoices
-// container.
+// Where both corner marks sit: the attribution and the AdChoices view.
 - (CGFloat)ran_badgeEdgeInset {
     return _cornerInset;
-}
-
-// ---------------------------------------------------------------------------
-// The SDK's AdChoices container
-//
-// The AdChoices mark is the SDK's, drawn in a container it adds to
-// GADNativeAdView itself and pins to that view's top and right EDGES with
-// two constraints of constant 0 - the cell's raw corner, which the
-// presentation's rounded clip cuts into. Android moves the same mark by
-// padding its NativeAdView, because there the SDK's layer fills the padded
-// area. Here the SDK pins its container to the edges, which no margin or
-// padding reaches, so the two pins themselves are moved in by the badge
-// inset: the container keeps its own size, only its corner moves.
-//
-// Everything this rests on is the SDK's private layout, measured on device
-// with Google-Mobile-Ads-SDK 13.9.0 (2026-09-21), not promised by any API:
-// the container's class name and the shape of the two pins. So nothing is
-// forced. Anything unexpected is left alone - the mark stays where the SDK
-// put it, which is how every cell looked before - and reported once per run
-// with what was found instead, so an SDK upgrade tells us how to follow it.
-// ---------------------------------------------------------------------------
-
-static NSString *const kRANSDKAdChoicesContainerClass =
-        @"GADNativeAdAttributionView";
-static char kRANSDKAdChoicesInsetAppliedKey;
-
-// The SDK's version, for the log. Read through the runtime rather than a
-// named SDK function: this file only compiles on a Mac, and a guessed name
-// would break the build for the sake of a log line.
-//
-// No @try: this file is compiled without -fobjc-exceptions (its .meta sets
-// no flags), and a @try here broke the first Mac build. Nothing below can
-// throw anyway - the getter is checked for before KVC asks for it, and the
-// buffer handed to getValue:size: is checked to match the boxed size.
-static NSString *RANGoogleMobileAdsVersion(void) {
-    GADMobileAds *mobileAds = [GADMobileAds sharedInstance];
-    if (![mobileAds respondsToSelector:
-                    NSSelectorFromString(@"versionNumber")]) {
-        return @"unknown";
-    }
-    id value = [mobileAds valueForKey:@"versionNumber"];
-    if (![value isKindOfClass:NSValue.class]) return @"unknown";
-
-    NSValue *boxed = (NSValue *)value;
-    NSUInteger size = 0;
-    NSGetSizeAndAlignment(boxed.objCType, &size, NULL);
-    if (size != sizeof(NSInteger) * 3) return @"unknown";
-
-    NSInteger parts[3] = {0, 0, 0};
-    [boxed getValue:parts size:sizeof(parts)];
-    return [NSString stringWithFormat:@"%ld.%ld.%ld"
-          , (long)parts[0]
-          , (long)parts[1]
-          , (long)parts[2]];
-}
-
-static NSString *RANClassNames(NSArray<UIView *> *views) {
-    NSMutableArray<NSString *> *names =
-            [NSMutableArray arrayWithCapacity:views.count];
-    for (UIView *view in views) {
-        [names addObject:NSStringFromClass(view.class)];
-    }
-    return [names componentsJoinedByString:@", "];
-}
-
-- (void)insetSDKAdChoicesInNativeAdView:(GADNativeAdView *)nativeAdView
-                              logResult:(BOOL)logResult {
-    CGFloat inset = [self ran_badgeEdgeInset];
-    if (nativeAdView == nil || inset <= 0) return;
-
-    Class containerClass = NSClassFromString(kRANSDKAdChoicesContainerClass);
-    UIView *container = nil;
-    if (containerClass != Nil) {
-        for (UIView *subview in nativeAdView.subviews) {
-            if ([subview isKindOfClass:containerClass]) {
-                container = subview;
-                break;
-            }
-        }
-    }
-    if (container == nil) {
-        if (logResult) {
-            [self ran_reportSDKAdChoicesInset:@"SKIPPED"
-                                     message:[NSString stringWithFormat:
-                    @"no %@ among the GADNativeAdView's subviews (%@)"
-                  , kRANSDKAdChoicesContainerClass
-                  , RANClassNames(nativeAdView.subviews)]];
-        }
-        return;
-    }
-
-    NSLayoutConstraint *topPin = nil;
-    NSLayoutConstraint *rightPin = nil;
-    CGFloat topTarget = 0;
-    CGFloat rightTarget = 0;
-    NSMutableArray<NSString *> *mentions = [NSMutableArray array];
-    for (NSLayoutConstraint *constraint in nativeAdView.constraints) {
-        BOOL containerFirst = constraint.firstItem == container
-                && constraint.secondItem == nativeAdView;
-        BOOL containerSecond = constraint.firstItem == nativeAdView
-                && constraint.secondItem == container;
-        if (!containerFirst && !containerSecond) continue;
-
-        [mentions addObject:constraint.description];
-        if (constraint.relation != NSLayoutRelationEqual
-                || constraint.multiplier != 1
-                || constraint.firstAttribute != constraint.secondAttribute) {
-            continue;
-        }
-        // container.edge == view.edge + k, or the same written the other
-        // way round, which flips the sign that moves the container inward.
-        CGFloat inward = containerFirst ? inset : -inset;
-        switch (constraint.firstAttribute) {
-            case NSLayoutAttributeTop:
-                topPin = constraint;
-                topTarget = inward;
-                break;
-            case NSLayoutAttributeRight:
-            case NSLayoutAttributeTrailing:
-                rightPin = constraint;
-                rightTarget = -inward;
-                break;
-            default:
-                break;
-        }
-    }
-    if (topPin == nil || rightPin == nil) {
-        if (logResult) {
-            [self ran_reportSDKAdChoicesInset:@"SKIPPED"
-                                     message:[NSString stringWithFormat:
-                    @"%@ is not pinned by top == top and right == right to "
-                     "the GADNativeAdView; constraints naming it: [%@]"
-                  , kRANSDKAdChoicesContainerClass
-                  , [mentions componentsJoinedByString:@"; "]]];
-        }
-        return;
-    }
-    BOOL topKnown = topPin.constant == 0 || topPin.constant == topTarget;
-    BOOL rightKnown = rightPin.constant == 0 || rightPin.constant == rightTarget;
-    if (!topKnown || !rightKnown) {
-        if (logResult) {
-            [self ran_reportSDKAdChoicesInset:@"SKIPPED"
-                                     message:[NSString stringWithFormat:
-                    @"the pins carry constants this code did not set: "
-                     "%@; %@"
-                  , topPin.description
-                  , rightPin.description]];
-        }
-        return;
-    }
-
-    BOOL appliedBefore = [objc_getAssociatedObject(
-            nativeAdView, &kRANSDKAdChoicesInsetAppliedKey) boolValue];
-    BOOL reset = appliedBefore
-            && (topPin.constant == 0 || rightPin.constant == 0);
-    // Only when they differ: every layout pass comes through here, and a
-    // pass where nothing moved has no business touching the layout engine.
-    if (topPin.constant != topTarget) topPin.constant = topTarget;
-    if (rightPin.constant != rightTarget) rightPin.constant = rightTarget;
-    objc_setAssociatedObject(
-            nativeAdView, &kRANSDKAdChoicesInsetAppliedKey, @YES
-          , OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    // Said whatever the pass: the SDK taking its pins back is news on its
-    // own, and the next pass only puts them back again.
-    if (reset) {
-        [self ran_reportSDKAdChoicesInset:@"RESET"
-                                 message:@"the SDK put its pins back to 0 "
-                                          "after they were moved; moved "
-                                          "them again"];
-    }
-    if (logResult) {
-        [self ran_reportSDKAdChoicesInset:@"applied"
-                                 message:[NSString stringWithFormat:
-                @"SDK container inset by %gpt", inset]];
-    }
-}
-
-// Once per run for each outcome: the same SDK builds every ad the same way,
-// so the first report says everything the rest would.
-- (void)ran_reportSDKAdChoicesInset:(NSString *)outcome
-                           message:(NSString *)message {
-    static NSMutableSet<NSString *> *reported;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        reported = [NSMutableSet set];
-    });
-    if ([reported containsObject:outcome]) return;
-
-    [reported addObject:outcome];
-    NSLog(@"%@: Rect ad AdChoices inset %@ (GMA %@): %@%@"
-          , kRANTag
-          , outcome
-          , RANGoogleMobileAdsVersion()
-          , message
-          , [outcome isEqualToString:@"applied"]
-                    ? @""
-                    : @" - update insetSDKAdChoicesInNativeAdView: for this SDK");
 }
 
 // ---------------------------------------------------------------------------
@@ -1486,6 +1370,7 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
         [self ran_applyTextMode:plan.marqueeSecondary
                          label:views.body
                       maxLines:[self ran_bodyMaxLinesForPlan:plan]];
+        views.body.textColor = [self ran_secondaryTextColor];
         [parent addSubview:views.body];
     }
 
@@ -1493,7 +1378,7 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
         views.advertiser = [self ran_createTextWithValue:_nativeAd.advertiser
                                                    size:[self ran_optionalSizeForPlan:plan]
                                                    bold:NO];
-        views.advertiser.textColor = RANRectAdARGB(0xCCFFFFFF);
+        views.advertiser.textColor = [self ran_secondaryTextColor];
         [self ran_applyTextMode:plan.marqueeSecondary
                          label:views.advertiser
                       maxLines:[self ran_advertiserMaxLinesForPlan:plan]];
@@ -1503,12 +1388,21 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
     double starRating = [self resolveStarRating];
     if (plan.showRating && starRating > 0) {
         views.rating = [self ran_createTextWithValue:
-                        [NSString stringWithFormat:@"★ %.1f", starRating]
+                        [NSString stringWithFormat:@"%.1f", starRating]
                                                size:[self ran_optionalSizeForPlan:plan]
                                                bold:NO];
-        views.rating.textColor = RANRectAdARGB(0xFFFFC107);
+        views.rating.textColor = [self ran_secondaryTextColor];
+        views.rating.starsOnDark = _onVeil || RANThemeIsDark();
+        views.rating.stars = starRating;
         [parent addSubview:views.rating];
     }
+}
+
+// The theme's grey on the surface, white at .8 on the veil.
+- (UIColor *)ran_secondaryTextColor {
+    return _onVeil
+            ? RANRectAdARGB(0xCCFFFFFF)
+            : RANRectAdARGB(RANThemeGrey());
 }
 
 // A media-free layout leaves a hole where the picture would have been; the
@@ -1588,7 +1482,7 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
     callToAction.titleLabel.numberOfLines = 0;
     callToAction.titleLabel.textAlignment = NSTextAlignmentCenter;
     callToAction.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    callToAction.backgroundColor = RANRectAdARGB(0xFF1A73E8);
+    callToAction.backgroundColor = RANRectAdARGB(RANThemePrimary());
     callToAction.layer.masksToBounds = YES;
     // The native ad view under it takes the touch and reports the click, as
     // Google's native ad guide asks of the call to action.
@@ -1759,7 +1653,9 @@ static NSString *RANClassNames(NSArray<UIView *> *views) {
                                      bold:(BOOL)bold {
     RANAdTextLabel *text = [[RANAdTextLabel alloc] init];
     text.text = value ?: @"";
-    text.textColor = UIColor.whiteColor;
+    text.textColor = _onVeil
+            ? UIColor.whiteColor
+            : RANRectAdARGB(RANThemeInk());
     text.font = bold
             ? [UIFont boldSystemFontOfSize:size]
             : [UIFont systemFontOfSize:size];

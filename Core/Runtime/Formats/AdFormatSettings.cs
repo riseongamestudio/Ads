@@ -16,22 +16,16 @@ namespace RiseOn.Ads {
         private AdMRecSettings mRec = new();
 
         [SerializeField]
-        private AdNativeFullScreenSettings nativeInterstitial = new(Color.black, new AdCloseSettings { Cooldown = 5, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
+        private AdNativeFullScreenSettings nativeInterstitial = new(new AdCloseSettings { Cooldown = 5, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
 
         [SerializeField]
-        private AdNativeFullScreenSettings nativeAppOpen = new(new Color(0, 0, 0, .88f), new AdCloseSettings { Cooldown = 3, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
+        private AdNativeFullScreenSettings nativeAppOpen = new(new AdCloseSettings { Cooldown = 3, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
 
         [SerializeField]
-        private AdNativeFullScreenSettings nativeEndCard = new(Color.black, new AdCloseSettings { Cooldown = 0, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
+        private AdNativeFullScreenSettings nativeEndCard = new(new AdCloseSettings { Cooldown = 0, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose });
 
         [SerializeField]
         private AdCollapsibleSettings nativeCollapsible = new();
-
-        [SerializeField]
-        private AdNativeRectSettings nativeMRec = new();
-
-        [SerializeField]
-        private AdNativeRectSettings nativeInFeed = new();
 
         public AdBannerSettings Banner => banner;
         public AdMRecSettings MRec => mRec;
@@ -39,7 +33,5 @@ namespace RiseOn.Ads {
         public AdNativeFullScreenSettings NativeAppOpen => nativeAppOpen;
         public AdNativeFullScreenSettings NativeEndCard => nativeEndCard;
         public AdCollapsibleSettings NativeCollapsible => nativeCollapsible;
-        public AdNativeRectSettings NativeMRec => nativeMRec;
-        public AdNativeRectSettings NativeInFeed => nativeInFeed;
     }
 }

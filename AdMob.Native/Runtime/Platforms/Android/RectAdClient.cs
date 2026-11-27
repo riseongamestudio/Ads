@@ -24,8 +24,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Android {
                 JavaClassName
               , AndroidApplication.currentActivity
               , settings.AdUnitId
-              , settings.CacheSize
-              , AdColor.Pack(settings.BackgroundColor));
+              , settings.CacheSize);
             listener = new RectAdListenerProxy(callbacks);
             javaObject.Call(
                 JavaSetListenerMethod

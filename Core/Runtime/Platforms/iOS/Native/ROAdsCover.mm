@@ -147,12 +147,17 @@ static void ROAdsHoldPause(BOOL hold) {
 
 #pragma mark - Color
 
-static UIColor *ROAdsColorFromARGB(int32_t argb) {
-    uint32_t value = (uint32_t)argb;
-    return [UIColor colorWithRed:((value >> 16) & 0xFF) / 255.0
-                           green:((value >> 8) & 0xFF) / 255.0
-                            blue:(value & 0xFF) / 255.0
-                           alpha:((value >> 24) & 0xFF) / 255.0];
+// The device theme's surface, the collapsible panel's own (the AdMob native
+// pack's RANAdTheme.h), so a swap between two ads shows no seam.
+static UIColor *ROAdsHalfScreenColor(void) {
+    BOOL dark = UIScreen.mainScreen.traitCollection.userInterfaceStyle
+            == UIUserInterfaceStyleDark;
+    return dark
+            ? [UIColor colorWithRed:0x29 / 255.0
+                              green:0x29 / 255.0
+                               blue:0x2B / 255.0
+                              alpha:1]
+            : UIColor.whiteColor;
 }
 
 static UIView *ROAdsHostView(void) {
@@ -163,14 +168,12 @@ static UIView *ROAdsHostView(void) {
 
 static UIView *ROAdsFullScreenCover = nil;
 
-static void ROAdsShowFullScreen(int32_t argb) {
-    UIColor *color = ROAdsColorFromARGB(argb);
+static void ROAdsShowFullScreen(void) {
     if (ROAdsFullScreenCover != nil) {
-        // Already up: repaint rather than stack a second one. The pause is
-        // taken again rather than assumed - showing the cover again is the
-        // caller saying it wants the game stopped, and the flag set the first
-        // time may have been cleared by someone else since.
-        ROAdsFullScreenCover.backgroundColor = color;
+        // Already up: never a second one stacked on it. The pause is taken
+        // again rather than assumed - showing the cover again is the caller
+        // saying it wants the game stopped, and the flag set the first time
+        // may have been cleared by someone else since.
         ROAdsHoldPause(YES);
         return;
     }
@@ -179,7 +182,8 @@ static void ROAdsShowFullScreen(int32_t argb) {
     if (hostView == nil) return;
 
     UIView *cover = [[UIView alloc] initWithFrame:hostView.bounds];
-    cover.backgroundColor = color;
+    // Black, as behind the networks' full-screen ads.
+    cover.backgroundColor = UIColor.blackColor;
     // Rotation and split-screen resize the host without anyone calling in, so
     // the cover follows its bounds instead of a size captured at show time.
     cover.autoresizingMask =
@@ -268,8 +272,8 @@ static ROAdsHalfScreenCoverView *ROAdsHalfScreenCover = nil;
 // arrives - and in place whatever order the two arrive in, since the tier
 // decides, not the timing. A cover already in place is repainted and resized
 // where it stands.
-static void ROAdsPrepareHalfScreen(int32_t argb, CGFloat panelHeight) {
-    UIColor *color = ROAdsColorFromARGB(argb);
+static void ROAdsPrepareHalfScreen(CGFloat panelHeight) {
+    UIColor *color = ROAdsHalfScreenColor();
     ROAdsHalfScreenCoverView *existing = ROAdsHalfScreenCover;
     if (existing != nil && existing.superview != nil) {
         existing.cover.backgroundColor = color;
@@ -306,17 +310,17 @@ static void ROAdsRemoveHalfScreen(void) {
 
 extern "C" {
 
-void ROAdsFullScreenCoverShow(int32_t argb) {
-    dispatch_async(dispatch_get_main_queue(), ^{ ROAdsShowFullScreen(argb); });
+void ROAdsFullScreenCoverShow(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{ ROAdsShowFullScreen(); });
 }
 
 void ROAdsFullScreenCoverHide(void) {
     dispatch_async(dispatch_get_main_queue(), ^{ ROAdsHideFullScreen(); });
 }
 
-void ROAdsHalfScreenCoverPrepare(int32_t argb, float panelHeight) {
+void ROAdsHalfScreenCoverPrepare(float panelHeight) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        ROAdsPrepareHalfScreen(argb, panelHeight);
+        ROAdsPrepareHalfScreen(panelHeight);
     });
 }
 

@@ -30,6 +30,7 @@ File này ghi những gì **riêng iOS**.
 | `RANOverlayAdContentView.h/.mm` | `OverlayAdContentView.java` |
 | `RANOverlayAdPresentation.h/.mm` | `OverlayAdActivity.java` + `OverlayAdPresentation.java` |
 | `RANLayerOrder.h` | (window type + thứ tự add, README Android §4) |
+| `RANAdTheme.h` | `AdTheme.java` |
 
 ## 2. Quy ước riêng iOS
 
@@ -82,54 +83,37 @@ File này ghi những gì **riêng iOS**.
   được phép từ chối target. Mất foreground đọc từ
   `UIApplicationWillResignActive` (`onPaused` của presentation); countdown
   giữ thời gian còn lại qua resign-active.
-- **AdChoices của ô hình chữ nhật.** Đo trên iPhone (2026-09-21, GMA 13.9.0):
-  - SDK tạo `GADNativeAdAttributionView` làm **con trực tiếp** của
-    `GADNativeAdView`, ghim bằng Auto Layout vào **mép** của nó:
-    `V:|-(0)-[GADNativeAdAttributionView]` và
-    `GADNativeAdAttributionView.right == GADNativeAdView.right` — inset 0,
-    `translatesAutoresizingMaskIntoConstraints = NO`. Cung bo do
-    `RANRectAdPresentation` cắt (`clipsToBounds`, `cornerRadius`), nên dấu
-    hiện trong view này sẽ bị cắt như Android trước đây.
-  - SDK còn thêm `GADOverlayView` (ẩn) và một `UIView` trơn, cả hai phủ kín
-    `GADNativeAdView` bằng constraint center/width/height.
-  - Header SDK **hứa rõ**: gán `GADAdChoicesView` vào
-    `GADNativeAdView.adChoicesView` trước `setNativeAd:` thì AdChoices "will
-    render inside" view đó. Android không có câu hứa này và trên máy đã không
-    làm vậy. Khi gán, SDK có nhận view (log: nó tắt `userInteractionEnabled`
-    trên view đó như mọi asset view) nhưng **vẫn tạo** attribution view riêng;
-    vì test ad không có AdChoices nên chưa biết nội dung thật đi vào đâu.
-  - **Cách Android không chép sang được**: attribution view ghim vào mép
-    `GADNativeAdView`, không phải con MATCH_PARENT tôn trọng padding. Thu nhỏ
-    `GADNativeAdView` rồi cho nội dung tràn ra thì MediaView phủ cả ô của
-    template scrim sẽ nằm ngoài nó — SDK coi đó là lỗi tích hợp ("Not all
-    asset views lie inside the native ad view") — và chạm ở viền sẽ không tới
-    được ad. Đừng làm.
-  - **Cách đang dùng** — `RANRectAdViewFactory
-    insetSDKAdChoicesInNativeAdView:logResult:`, gọi cuối mỗi
-    `ran_layoutBoundContent` (không log) và một lần lúc layout ready (có log):
-    tìm subview class `GADNativeAdAttributionView`, tìm hai constraint trên
-    `GADNativeAdView` ghim nó `top == top`, `right/trailing == right/trailing`
-    (hệ số 1, quan hệ bằng, viết xuôi hay ngược đều nhận), rồi đổi hằng số
-    thành ±`ran_badgeEdgeInset` — đúng giá trị badge "Ad" dùng, nên hai dấu góc
-    luôn thụt bằng nhau. Chỉ gán khi khác; khung giữ nguyên cỡ.
-  - **Không ép gì khi SDK khác đi**: không thấy class, không thấy đủ hai
-    constraint, hay hằng số không phải 0/giá trị mình đặt → để nguyên (dấu về
-    góc như trước) và log một lần mỗi lần chạy app, dạng
-    `RectAd: Rect ad AdChoices inset SKIPPED (GMA x.y.z): <thấy gì> - update
-    insetSDKAdChoicesInNativeAdView: for this SDK`. Thành công: `... inset
-    applied (GMA x.y.z): SDK container inset by 3pt`. SDK tự đặt lại hằng số
-    về 0 sau khi mình sửa: log `RESET` rồi sửa lại. Phiên bản GMA đọc qua
-    runtime (`valueForKey:@"versionNumber"`), không gọi hàm SDK theo tên —
-    file này chỉ biên dịch trên Mac, đoán sai tên hàm là vỡ build.
+- **AdChoices.** Dấu AdChoices của SDK vẽ trong một `GADAdChoicesView` của
+  pack, gán vào `GADNativeAdView.adChoicesView` trước `setNativeAd:`: header SDK
+  hứa AdChoices "will render inside" view đó. View đặt bằng frame như mọi view
+  của pack:
+  - ô hình chữ nhật (`RANRectAdViewFactory`): 15pt (`kRANAdChoicesMarkSize`, cỡ
+    dấu đo được) ở góc trên phải của ô, thụt `ran_badgeEdgeInset` như badge Ad;
+    template ảnh trái/phải: sát góc trên phải của ảnh, không thụt;
+  - mặt full-screen (`RANOverlayAdContentView`, `ran_layoutCard`): 18pt
+    (`kRANAdChoicesSize`) sát góc trên phải của ảnh, hay của mặt ad khi không có
+    ảnh;
+  - panel nửa màn hình: xếp ảnh trên chữ thì 18pt sát góc trên phải của ảnh; còn
+    lại cách góc trên phải của panel `kRANHalfMarkInset` (6pt).
+  - SDK vẫn tạo `GADNativeAdAttributionView` làm **con trực tiếp** của
+    `GADNativeAdView`, ghim bằng Auto Layout vào mép (`top == top`,
+    `right == right`, inset 0, `translatesAutoresizingMaskIntoConstraints =
+    NO`), cùng `GADOverlayView` (ẩn) và một `UIView` trơn phủ kín
+    `GADNativeAdView` (đo trên iPhone, GMA 13.9.0). Ad của unit native test
+    của Google không có AdChoices; ad của unit thật có, nhưng chưa kiểm dấu thật
+    nằm trong view của pack hay trong attribution view ở mép,
+    nhất là ở góc bo mà `RANRectAdPresentation` cắt (`clipsToBounds`,
+    `cornerRadius`). Kiểm bằng unit thật trên máy đã đăng ký test device.
+  - **Đừng thu nhỏ `GADNativeAdView`** để dấu ở mép lùi vào như cách Android:
+    attribution view ghim vào mép, không tôn trọng padding, và MediaView phủ cả
+    ô của template scrim sẽ nằm ngoài `GADNativeAdView` — SDK coi đó là lỗi tích
+    hợp ("Not all asset views lie inside the native ad view") và chạm ở viền
+    không tới được ad.
   - **Vòng layout của pack bỏ qua view do Auto Layout quản**
     (`translatesAutoresizingMaskIntoConstraints == NO`): không bỏ qua thì
-    `ran_layoutBoundContent` gán frame cả ô cho khung AdChoices của SDK, kéo
-    nó ra phủ cả ô. Mọi view của pack đều đặt bằng frame (không chỗ nào tắt
+    `ran_layoutBoundContent` gán frame cả ô cho các view của SDK, kéo chúng ra
+    phủ cả ô. Mọi view của pack đều đặt bằng frame (không chỗ nào tắt
     tamic), nên chỉ view của SDK bị bỏ qua.
-  - Đã chạy trên iPhone 14 Pro với test ad (2026-09-21): log `In-feed
-    AdChoices inset applied (GMA 13.9.0): SDK container inset by 3pt` (log nay
-    ghi `Rect ad AdChoices…`), không có `RESET`. Chưa thấy dấu thật vì chưa có
-    ad unit iOS thật.
 - Callback của SDK khác (vd. MAX với `InvokeEventsOnUnityMainThread =
   false`) có thể bắn trên một `NSOperationQueue` nền, không phải main queue —
   iOS **không** được miễn luật "không đụng API Unity trong callback".
@@ -203,9 +187,6 @@ pause (tài liệu core B1, B4).
   chuỗi UTF-8 chỉ sống trong thời gian callback — copy nếu cần giữ.
 - Handle: `Create` trả handle đã retain; `Release` vừa tháo ad vừa balance
   retain; không lệnh nào hợp lệ sau đó.
-- Comment đầu `RANNativeAdBridge.h` còn nói "C# proxies marshal qua
-  `MobileAdsEventExecutor`" — **đã cũ**: core C# không marshal (tài liệu core
-  B1). Sửa dòng đó khi chạm file.
 
 ## 7. Kiểm chứng
 

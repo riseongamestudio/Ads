@@ -379,8 +379,15 @@ namespace RiseOn.Ads {
             foreach (var handle in handles.ToArray()) handle.Refresh();
         }
 
-        Color IAdChainHost.CoverColor => settings.CoverColor;
-        Color IAdCollapsibleHost.CoverColor => settings.CoverColor;
+
+        AdCloseSettings IAdChainHost.Close(AdFormat format) => format switch {
+            AdFormat.NativeInterstitial => settings.Formats.NativeInterstitial.Close
+          , AdFormat.NativeAppOpen      => settings.Formats.NativeAppOpen.Close
+          , AdFormat.NativeEndCard      => settings.Formats.NativeEndCard.Close
+          , _                           => default
+        };
+
+        AdCloseSettings IAdCollapsibleHost.CollapsibleClose => settings.Formats.NativeCollapsible.Close;
 
         void IAdChainHost.Displayed(AdFormat format, string placement) {
             lastDisplays[format] = Time.realtimeSinceStartupAsDouble;

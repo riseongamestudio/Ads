@@ -32,25 +32,17 @@ import android.window.OnBackInvokedDispatcher;
 // it. There is no setActive, no show, no hide: start puts it on top, finish
 // takes it away, and every appearance is a task transition.
 public final class FullScreenCoverActivity extends Activity {
-    private static final String EXTRA_COLOR =
-            "com.riseon.ads.COVER_COLOR";
-
     private static FullScreenCoverActivity current;
 
     private FrameLayout coverView;
     private Object backCallback;
 
-    static void Start(Activity host, int color) {
-        FullScreenCoverActivity showing = current;
-        if (showing != null) {
-            // Already up: repaint rather than stack a second one.
-            showing.ApplyColor(color);
-            return;
-        }
+    static void Start(Activity host) {
+        // Already up: never a second one stacked on it.
+        if (current != null) return;
 
         android.content.Intent intent =
                 new android.content.Intent(host, FullScreenCoverActivity.class);
-        intent.putExtra(EXTRA_COLOR, color);
         // No animation either way: the cover exists to hide a seam, and a
         // fade of its own would be one more seam to hide.
         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION);
@@ -97,7 +89,8 @@ public final class FullScreenCoverActivity extends Activity {
         coverView.setFocusable(false);
         coverView.setImportantForAccessibility(
                 View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        ApplyColor(getIntent().getIntExtra(EXTRA_COLOR, Color.BLACK));
+        // Black, as behind the networks' full-screen ads.
+        coverView.setBackgroundColor(Color.BLACK);
         setContentView(coverView);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -125,10 +118,6 @@ public final class FullScreenCoverActivity extends Activity {
     // carries the same pair.
     @Override
     public void onBackPressed() {}
-
-    private void ApplyColor(int color) {
-        if (coverView != null) coverView.setBackgroundColor(color);
-    }
 
     private static final class Api33Impl {
         private Api33Impl() {}

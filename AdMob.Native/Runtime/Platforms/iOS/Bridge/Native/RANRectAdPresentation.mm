@@ -121,9 +121,7 @@ static void *kRANRootBoundsContext = &kRANRootBoundsContext;
                  viewFactory:_viewFactory
                    validator:_validator];
 
-    // Whole from the caller. A fully transparent color is a real answer
-    // here, not an unset value - a feed cell that wants no backdrop of its
-    // own asks for exactly that.
+    // The theme's surface, as every panel of the pack is.
     self.backgroundColor = [UIColor
             colorWithRed:(((uint32_t)_backgroundColor >> 16) & 0xFF) / 255.0
                    green:(((uint32_t)_backgroundColor >> 8) & 0xFF) / 255.0
@@ -392,11 +390,9 @@ static void *kRANRootBoundsContext = &kRANRootBoundsContext;
     _nativeAdView.frame =
             CGRectMake(0, 0, _activePlan.width, _activePlan.height);
     for (UIView *child in _nativeAdView.subviews) {
-        // Views placed by Auto Layout are the SDK's - its AdChoices
-        // container and overlays; everything this pack builds is placed by
-        // frame. A frame from this pass would only fight their constraints:
-        // it stretched the AdChoices container over the whole cell until
-        // Auto Layout next ran, and would undo the pins moved just below.
+        // Views placed by Auto Layout are the SDK's overlays; everything this
+        // pack builds is placed by frame. A frame from this pass would only
+        // fight their constraints.
         if (!child.translatesAutoresizingMaskIntoConstraints) continue;
 
         [child ran_measureWithWidthSpec:RANMeasureSpecMake(
@@ -406,8 +402,6 @@ static void *kRANRootBoundsContext = &kRANRootBoundsContext;
         [child ran_layoutWithFrame:CGRectMake(
                 0, 0, _activePlan.width, _activePlan.height)];
     }
-    [_viewFactory insetSDKAdChoicesInNativeAdView:_nativeAdView
-                                        logResult:NO];
 }
 
 - (void)ran_rejectActivePlanAndTryNext:(NSString *)reason {
@@ -610,10 +604,6 @@ static void *kRANRootBoundsContext = &kRANRootBoundsContext;
 
     [self ran_stopObserving];
     _layoutReady = YES;
-    // The layout has settled, so the SDK has built whatever it was going to:
-    // what the inset finds now is the verdict worth reporting.
-    [_viewFactory insetSDKAdChoicesInNativeAdView:_nativeAdView
-                                        logResult:YES];
     [self ran_startObservingRootBounds];
     NSLog(@"%@: Rect ad layout ready %@ for %@"
           , kRANTag

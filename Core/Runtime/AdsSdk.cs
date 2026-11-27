@@ -86,8 +86,11 @@ namespace RiseOn.Ads {
         /// <summary>A started mediation in the format's list has an ad loaded, and the format is not suppressed.</summary>
         public static bool IsReady(AdFullScreenFormat format) => !IsSuppressed(format.ToFormat()) && Host.IsReady(format.ToFormat());
 
-        /// <summary>One full-screen ad: a chain of one step. <paramref name="placement"/> reaches <see cref="Displayed"/> and the mediation, which reports it with the impression where its SDK takes one.</summary>
+        /// <summary>One full-screen ad: a chain of one step; a native format's ad closes as the page's Formats section says. <paramref name="placement"/> reaches <see cref="Displayed"/> and the mediation, which reports it with the impression where its SDK takes one.</summary>
         public static UniTask<AdChainResult> Show(AdFullScreenFormat format, string placement = null, Action onDisplayed = null) => Chain().Then(format, placement, onDisplayed).Run();
+
+        /// <summary>As <see cref="Show(AdFullScreenFormat, string, Action)"/>, a native format's ad closing as <paramref name="close"/> says.</summary>
+        public static UniTask<AdChainResult> Show(AdFullScreenFormat format, in AdCloseSettings close, string placement = null, Action onDisplayed = null) => Chain().Then(format, close, placement, onDisplayed).Run();
 
         /// <summary>True when an ad displayed.</summary>
         public static UniTask<bool> ShowInterstitialAsync(string placement = null) => DisplayedAsync(AdFullScreenFormat.Interstitial, placement);
@@ -101,16 +104,26 @@ namespace RiseOn.Ads {
         /// <summary>As <see cref="ShowInterstitialAsync"/>.</summary>
         public static UniTask<bool> ShowAppOpenAsync(string placement = null) => DisplayedAsync(AdFullScreenFormat.AppOpen, placement);
 
-        /// <summary>As <see cref="ShowInterstitialAsync"/>.</summary>
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as the page's Formats section says.</summary>
         public static UniTask<bool> ShowNativeInterstitialAsync(string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeInterstitial, placement);
 
-        /// <summary>As <see cref="ShowInterstitialAsync"/>.</summary>
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as <paramref name="close"/> says.</summary>
+        public static UniTask<bool> ShowNativeInterstitialAsync(in AdCloseSettings close, string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeInterstitial, close, placement);
+
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as the page's Formats section says.</summary>
         public static UniTask<bool> ShowNativeAppOpenAsync(string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeAppOpen, placement);
 
-        /// <summary>As <see cref="ShowInterstitialAsync"/>.</summary>
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as <paramref name="close"/> says.</summary>
+        public static UniTask<bool> ShowNativeAppOpenAsync(in AdCloseSettings close, string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeAppOpen, close, placement);
+
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as the page's Formats section says.</summary>
         public static UniTask<bool> ShowNativeEndCardAsync(string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeEndCard, placement);
 
+        /// <summary>As <see cref="ShowInterstitialAsync"/>; the ad closes as <paramref name="close"/> says.</summary>
+        public static UniTask<bool> ShowNativeEndCardAsync(in AdCloseSettings close, string placement = null) => DisplayedAsync(AdFullScreenFormat.NativeEndCard, close, placement);
+
         private static async UniTask<bool> DisplayedAsync(AdFullScreenFormat format, string placement) => (await Show(format, placement)).AnyDisplayed;
+        private static async UniTask<bool> DisplayedAsync(AdFullScreenFormat format, AdCloseSettings close, string placement) => (await Show(format, close, placement)).AnyDisplayed;
         private static async UniTask<bool> RewardedAsync(AdFullScreenFormat format, string placement) => (await Show(format, placement)).Rewarded;
 
         /// <summary>Full-screen ads one after the other, such as an interstitial then the end card; a suppressed format's step is left out, and a suppressed rewarding one counts as rewarded.</summary>
@@ -121,6 +134,12 @@ namespace RiseOn.Ads {
 
         /// <summary>Collapsibles one after the other; one that shows nothing while the collapsible is suppressed.</summary>
         public static AdCollapsibleChain CollapsibleChain() => new(Host, IsSuppressed(AdFormat.NativeCollapsible));
+
+        /// <summary>One collapsible, closing as the page's Formats section says; <paramref name="onDisplayed"/> comes once it displays. Resolves to how many ads displayed.</summary>
+        public static UniTask<int> ShowCollapsibleAsync(Action onDisplayed = null) => CollapsibleChain().Then(onDisplayed).Run();
+
+        /// <summary>One collapsible, closing as <paramref name="close"/> says; <paramref name="onDisplayed"/> comes once it displays. Resolves to how many ads displayed.</summary>
+        public static UniTask<int> ShowCollapsibleAsync(in AdCloseSettings close, Action onDisplayed = null) => CollapsibleChain().Then(close, onDisplayed).Run();
 
         /// <summary>
         /// The plan's steps one after the other, as <see cref="CollapsibleChain"/>; nothing for no plan, such as <see cref="AdCollapsiblePlan.Pick"/> found none.<br/>

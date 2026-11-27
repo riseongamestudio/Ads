@@ -41,7 +41,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
         internal static extern IntPtr RANRectAdCreate(
             string adUnitId
           , int cacheSize
-          , int backgroundColor
           , int instanceId);
         [DllImport("__Internal")]
         internal static extern void RANRectAdSetListener(
@@ -88,7 +87,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
             IntPtr handle
           , [MarshalAs(UnmanagedType.I1)] bool fullScreen
           , float heightRatio
-          , int backgroundColor
           , int cacheSize
           , int cooldown
           , int closeSide

@@ -26,44 +26,39 @@ namespace RiseOn.Ads.Platforms.Editor {
     }
 
     /// <summary>
-    /// The AdChoices mark as Google's ads carry it: a cyan ring with an i, beside the three dots of the ad's menu, on a white chip;
-    /// the two side by side, or one over the other where the ad runs it down its edge.
+    /// The AdChoices mark as the pack's native ads show it on a device: a cyan i in a ring on a light square chip, the same in either appearance.
     /// </summary>
     internal sealed class EditorAdChoicesGraphic : MaskableGraphic {
-        private static readonly Color chip = new(1, 1, 1, .92f);
+        private static readonly Color chip = new(.918f, .918f, .918f, 1);
         private static readonly Color cyan = new(0, .68f, .8f, 1);
-
-        public bool Vertical;
 
         protected override void OnPopulateMesh(VertexHelper mesh) {
             mesh.Clear();
-            var rect = GetPixelAdjustedRect();
-            var cell = Vertical ? rect.width : rect.height;
+            var rect   = GetPixelAdjustedRect();
+            var cell   = Mathf.Min(rect.width, rect.height);
+            var middle = rect.center;
+            var radius = cell * .32f;
             EditorShapes.Quad(mesh, rect, chip, chip);
-
-            // The i in its ring, in the first cell.
-            var first  = Vertical ? new Vector2(rect.center.x, rect.yMax - cell / 2) : new Vector2(rect.xMin + cell / 2, rect.center.y);
-            var radius = cell * .34f;
-            EditorShapes.Ring(mesh, first, radius, cell * .045f, cyan);
-            EditorShapes.Circle(mesh, first + new Vector2(0, radius * .45f), cell * .05f, cyan, 10);
-            EditorShapes.Line(mesh, first + new Vector2(0, radius * .12f), first - new Vector2(0, radius * .55f), cell * .045f, cyan);
-
-            // The menu's dots, in the second.
-            var second = Vertical ? new Vector2(rect.center.x, rect.yMax - cell * 1.5f) : new Vector2(rect.xMin + cell * 1.5f, rect.center.y);
-            for (var i = -1; i <= 1; i++) EditorShapes.Circle(mesh, second + new Vector2(0, i * cell * .22f), cell * .065f, cyan, 10);
+            EditorShapes.Ring(mesh, middle, radius, cell * .056f, cyan);
+            EditorShapes.Circle(mesh, middle + new Vector2(0, radius * .45f), cell * .06f, cyan, 10);
+            EditorShapes.Line(mesh, middle + new Vector2(0, radius * .1f), middle - new Vector2(0, radius * .5f), cell * .048f, cyan);
         }
     }
 
-    /// <summary>A close cross of two strokes, drawn rather than typed, as fonts draw ✕ each their own way.</summary>
+    /// <summary>
+    /// A close cross of two strokes, drawn rather than typed, as fonts draw ✕ each their own way.<br/>
+    /// One mark for every close of every format, AdMob.Native's and the device's included: Google's own, measured on a device, ink across 44% of its disc in strokes a tenth of it.
+    /// </summary>
     internal sealed class EditorCrossGraphic : MaskableGraphic {
-        public float Reach  = .22f;
-        public float Weight = .055f;
+        // Shares of the disc's side: a stroke's centre line from the middle to its end, and half its width; the round ends add the half width to the ink.
+        private const float Reach      = .17f;
+        private const float HalfStroke = .05f;
 
         protected override void OnPopulateMesh(VertexHelper mesh) {
             mesh.Clear();
             var rect   = GetPixelAdjustedRect();
             var reach  = Mathf.Min(rect.width, rect.height) * Reach;
-            var stroke = Mathf.Min(rect.width, rect.height) * Weight;
+            var stroke = Mathf.Min(rect.width, rect.height) * HalfStroke;
             EditorShapes.Line(mesh, rect.center + new Vector2(-reach, -reach), rect.center + new Vector2(reach, reach), stroke, color);
             EditorShapes.Line(mesh, rect.center + new Vector2(-reach, reach), rect.center + new Vector2(reach, -reach), stroke, color);
         }
@@ -273,9 +268,11 @@ namespace RiseOn.Ads.Platforms.Editor {
             Circle(mesh, to, halfWidth, color, 12);
         }
 
-        // A white box with corners of the radius in pixels, nine-sliced at it, its edge smoothed over one pixel; drawn once per radius.
-        public static Sprite Rounded(int radius) {
-            if (rounded.TryGetValue(radius, out var sprite) && sprite != null) return sprite;
+        // A white box with corners of the radius in pixels, nine-sliced at it, its edge smoothed over one pixel; drawn once per radius. A tab rounds the bottom
+        // right corner alone, as the Ad tag flush in a square corner.
+        public static Sprite Rounded(int radius, bool tab = false) {
+            var key = tab ? -radius : radius;
+            if (rounded.TryGetValue(key, out var sprite) && sprite != null) return sprite;
 
             var size   = radius * 2 + 2;
             var half   = size / 2f;
@@ -284,7 +281,8 @@ namespace RiseOn.Ads.Platforms.Editor {
                 for (var x = 0; x < size; x++) {
                     var dx    = Mathf.Max(Mathf.Abs(x + .5f - half) - (half - radius), 0);
                     var dy    = Mathf.Max(Mathf.Abs(y + .5f - half) - (half - radius), 0);
-                    var alpha = Mathf.Clamp01(radius + .5f - Mathf.Sqrt(dx * dx + dy * dy));
+                    var square = tab && (x + .5f < half || y + .5f > half);
+                    var alpha = square ? 1f : Mathf.Clamp01(radius + .5f - Mathf.Sqrt(dx * dx + dy * dy));
                     pixels[y * size + x] = new Color32(255, 255, 255, (byte) Mathf.RoundToInt(alpha * 255));
                 }
             }
@@ -294,7 +292,7 @@ namespace RiseOn.Ads.Platforms.Editor {
             texture.Apply();
             sprite           = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100, 0, SpriteMeshType.FullRect, Vector4.one * radius);
             sprite.hideFlags = HideFlags.HideAndDontSave;
-            rounded[radius]  = sprite;
+            rounded[key]     = sprite;
             return sprite;
         }
 

@@ -52,7 +52,7 @@ OpenUPM với scope `com.cysharp`, `com.google` (phụ thuộc của `com.riseon
     }
   ],
   "dependencies": {
-    "com.riseon.ads.levelplay": "1.1.0"
+    "com.riseon.ads.levelplay": "1.2.0"
   }
 }
 ```

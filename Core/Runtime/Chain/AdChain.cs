@@ -37,6 +37,9 @@ namespace RiseOn.Ads {
         /// <summary>The mediations for a full-screen format, best first.</summary>
         IReadOnlyList<IAdMediationFullScreen> FullScreenCandidates(AdFormat format);
 
+        /// <summary>How the format's ad offers to close when the show brings no close: the page's, for a native format.</summary>
+        AdCloseSettings Close(AdFormat format);
+
         /// <summary>Any thread.</summary>
         void BeginFullScreen();
 
@@ -51,9 +54,6 @@ namespace RiseOn.Ads {
 
         /// <summary>Any thread: that ad gone, the rect ads back as the game wants them.</summary>
         void ShowRectAds();
-
-        /// <summary>The page's cover color.</summary>
-        Color CoverColor { get; }
     }
 
     /// <summary>
@@ -77,13 +77,19 @@ namespace RiseOn.Ads {
             this.skip = skip;
         }
 
+        /// <summary>A step; a native format's ad closes as the page's Formats section says.</summary>
         /// <param name="placement">Reaches <see cref="AdsSdk.Displayed"/> and the mediation, which reports it with the impression where its SDK takes one.</param>
         /// <param name="onDisplayed">Called on Unity's thread once the step displays.</param>
         public AdChain Then(AdFullScreenFormat fullScreenFormat, string placement = null, Action onDisplayed = null) {
+            return Then(fullScreenFormat, host.Close(fullScreenFormat.ToFormat()), placement, onDisplayed);
+        }
+
+        /// <summary>A step whose native ad closes as <paramref name="close"/> says; a format that is not native takes no close.</summary>
+        public AdChain Then(AdFullScreenFormat fullScreenFormat, in AdCloseSettings close, string placement = null, Action onDisplayed = null) {
             var format = fullScreenFormat.ToFormat();
             var reason = skip?.Invoke(fullScreenFormat) ?? AdChainSkip.None;
             if (reason is AdChainSkip.None) {
-                steps.Add(new Step(format, placement, onDisplayed));
+                steps.Add(new Step(format, placement, close, onDisplayed));
                 return this;
             }
 
@@ -98,6 +104,10 @@ namespace RiseOn.Ads {
             return condition ? Then(format, placement, onDisplayed) : this;
         }
 
+        public AdChain ThenIf(bool condition, AdFullScreenFormat format, in AdCloseSettings close, string placement = null, Action onDisplayed = null) {
+            return condition ? Then(format, close, placement, onDisplayed) : this;
+        }
+
         public UniTask<AdChainResult> Run() {
             if (ran) throw new InvalidOperationException($"An {nameof(AdChain)} runs once");
 
@@ -106,13 +116,15 @@ namespace RiseOn.Ads {
         }
 
         private readonly struct Step {
-            public readonly AdFormat Format;
-            public readonly string   Placement;
-            public readonly Action   OnDisplayed;
+            public readonly AdFormat        Format;
+            public readonly string          Placement;
+            public readonly AdCloseSettings Close;
+            public readonly Action          OnDisplayed;
 
-            public Step(AdFormat format, string placement, Action onDisplayed) {
+            public Step(AdFormat format, string placement, AdCloseSettings close, Action onDisplayed) {
                 Format      = format;
                 Placement   = placement;
+                Close       = close;
                 OnDisplayed = onDisplayed;
             }
         }
@@ -159,7 +171,7 @@ namespace RiseOn.Ads {
 
                 host.BeginFullScreen();
                 if (alone) host.HideRectAds();
-                if (usesCover) FullScreenCover.Show(host.CoverColor);
+                if (usesCover) FullScreenCover.Show();
 
                 ShowStep(0, first);
                 return completion.Task;
@@ -181,7 +193,7 @@ namespace RiseOn.Ads {
             private void ShowStep(int index, IAdMediationFullScreen mediation) {
                 var listener = new StepListener(this, index);
                 try {
-                    mediation.Show(steps[index].Format, steps[index].Placement, listener);
+                    mediation.Show(steps[index].Format, steps[index].Placement, steps[index].Close, listener);
                 } catch (Exception exception) {
                     Debug.LogException(exception);
                     listener.OnFailed(new AdError(-1, exception.Message));

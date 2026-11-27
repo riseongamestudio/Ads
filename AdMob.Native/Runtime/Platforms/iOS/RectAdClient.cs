@@ -16,7 +16,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
             handle = NativeAdBridge.RANRectAdCreate(
                 settings.AdUnitId
               , settings.CacheSize
-              , AdColor.Pack(settings.BackgroundColor)
               , instanceId);
             if (handle == IntPtr.Zero) return;
 

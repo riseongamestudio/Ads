@@ -41,7 +41,6 @@ final class RectAdPresentation extends FrameLayout
     private int requestedY;
     private final int requestedWidth;
     private final int requestedHeight;
-    private final int backgroundColor;
     private final int roundCornerPx;
     private final NativeAdPresentation.Listener listener;
     private final RectAdViewFactory viewFactory;
@@ -92,7 +91,6 @@ final class RectAdPresentation extends FrameLayout
           , int yPx
           , int widthPx
           , int heightPx
-          , int backgroundColor
           , int roundCornerPx
           , NativeAdPresentation.Listener listener) {
         super(activity);
@@ -102,7 +100,6 @@ final class RectAdPresentation extends FrameLayout
         this.requestedY = yPx;
         this.requestedWidth = widthPx;
         this.requestedHeight = heightPx;
-        this.backgroundColor = backgroundColor;
         // A radius past half the short side is a pill that no longer has
         // straight edges to inset from; the cell caps it there.
         this.roundCornerPx = Math.max(
@@ -938,10 +935,9 @@ final class RectAdPresentation extends FrameLayout
         return UpdateHostLayoutForActivePlan();
     }
 
-    // The color arrives whole from the caller. A fully transparent one is
-    // a real answer here, not an unset value - a feed cell that wants no
-    // backdrop of its own asks for exactly that.
+    // The cell is the theme's surface, as every panel of the pack is.
     private void ConfigureBackground() {
+        int backgroundColor = AdTheme.Surface(activity);
         if (roundCornerPx <= 0) {
             setBackgroundColor(backgroundColor);
             setClipToOutline(false);
@@ -953,8 +949,6 @@ final class RectAdPresentation extends FrameLayout
         // end at the corner. The assets in front keep clear of the curve
         // on their own (RectAdViewFactory's corner inset); the clip is
         // only ever visible on the one view that is meant to run under it.
-        // A transparent color still clips - the outline is the shape, not
-        // the paint.
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
         background.setColor(backgroundColor);

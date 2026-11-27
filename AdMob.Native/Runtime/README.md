@@ -147,8 +147,8 @@ half). Bảng đối chiếu tên file giữa hai bản native ở README iOS.
   compile; dùng alias hoặc tên đầy đủ.
 - Lỗi: `AdError{Code, Message}` chỉ đi kèm event thất bại. Mã −1 là show bị
   từ chối ngay phía C#; no-fill Android 3, iOS 1 — C# chỉ phân biệt 0/khác 0.
-- Màu đi qua cầu là một `int` ARGB (`AdColor`). **Trong suốt hoàn toàn là câu
-  trả lời thật**, không phải "chưa đặt".
+- Không màu nào đi qua cầu: bên native tự lấy màu theo chế độ sáng tối của
+  máy (`AdTheme.java`, iOS `RANAdTheme`), cùng bộ màu với placeholder trong Editor.
 
 ## A3. Vòng đời một overlay ad (native)
 
@@ -219,7 +219,7 @@ khi post.
 
 `RectAd.java` (ô) + `RectAdSlot.java` + `RectAdPresentation.java`:
 
-1. Constructor(activity, adUnitId, cacheSize, backgroundColor) → vào pool tắt
+1. Constructor(activity, adUnitId, cacheSize) → vào pool tắt
    tiếng của unit ở nhịp main đầu tiên, pool tải ngay khi có Activity (không
    có `Load()` công khai). cacheSize là số ad ô nhờ pool giữ ấm, tối thiểu 1.
 2. `Configure(activity, x, y, w, h, roundCornerPx)` → `AdoptActivity`
@@ -312,7 +312,7 @@ tắt bước 6 — đọc nó trước khi đoán vì sao ô trông như vậy.
 tự co giãn, quyết định theo thứ tự:
 
 1. Media có gì: video / `mainImage` / ảnh fallback (`FindFallbackMediaImage`);
-   `minimumMediaSize` = 120dp (video) hay 48dp (ảnh); aspect từ
+   `minimumMediaSize` = 120dp, video lẫn ảnh; aspect từ
    `GetMediaAspectRatio` (cờ "có báo" hay không).
 2. Panel: full = cả màn; half = `ResolveHalfScreenPanelHeight(ratio)` (một
    nơi duy nhất, công bố ra ngoài qua `PanelHeight`). `panelHostsMedia` = full hoặc panel ≥
@@ -324,8 +324,8 @@ tự co giãn, quyết định theo thứ tự:
    `sideMediaLayout` = có media và `ShouldUseSideMedia` (aspect < 0.85,
    panel ≤ 1.3×bề rộng, media ≥ sàn, rail ≥ 120dp; bề rộng media =
    min(panelH×aspect, 0.56×W)).
-3. Dựng: `NativeAdView` → `contentColumn` (padding 5dp hai bên, 30dp dải
-   control trên, `clipToPadding false` để media bleed bằng margin âm) →
+3. Dựng: `NativeAdView` → `contentColumn` (padding 5dp hai bên, dải control
+   trên 42dp ở half, `clipToPadding false` để media bleed bằng margin âm) →
    `MediaView` (nền đen cố ý, FIT_CENTER, min = sàn) → identity row (icon
    36dp + headline) → advertiser/rating → body → CTA (44–56dp) →
    `CreateAttributionView`, `CreateControlView` ×2 (close vẽ bằng
@@ -343,37 +343,63 @@ tự co giãn, quyết định theo thứ tự:
      bleed media + chạy lại pipeline; vẫn không → ảnh: **scrim**
      (`ApplyScrimLayout`), video: không có đường lùi; scrim không được hoặc
      là video → `layoutUnrenderable` (bỏ ad, xin ad khác).
-   - **Full-screen**: **thẻ** (`BuildCard`), không qua pipeline nào ở trên.
-     Một thẻ trắng bo 20dp giữa màn hình, rộng tối đa 440dp (ngang 760dp),
-     chừa trên cho control (hoặc thanh app open) và 16dp mỗi mép. Dọc: ảnh
-     trên, rồi icon 56dp, headline, advertiser/rating, body ≤3 dòng, CTA pill
-     52dp, tất cả căn giữa; end card đưa app lên đầu (icon 88dp, headline)
-     rồi mới ảnh. Ngang: ảnh bên trái (≤58% bề rộng thẻ), cột chữ bên phải,
-     thẻ cao ≤420dp. `FitCard` chạy **sau `BindAssets`** (đo chữ thật): ảnh
-     lấy phần chữ để lại, tối đa đúng tỉ lệ creative và 60% chiều cao; hụt
-     sàn media thì nhường theo thứ tự body 1 dòng → bỏ body → icon 40dp; vẫn
-     hụt thì media giữ đúng sàn (full-screen không có trạm unrenderable, xem
-     A9): Android để thẻ cao hơn chỗ, tràn mép màn hình; iOS và Editor kẹp
-     thẻ trong chỗ, phần đáy (có thể cả CTA) bị cắt. Ngang: ảnh giữ bề rộng,
-     cột chữ nhường cùng thứ tự tới khi vừa chiều cao thẻ (`ShrinkCardText`,
-     iOS `ran_fitCardInSize`). Badge Ad và AdChoices nằm trên góc thẻ
-     (`NativeAdView` đúng cỡ thẻ); close/timer là đĩa ở góc màn hình, đĩa sáng
-     dấu tối khi panel tối. Thẻ có viền 1dp vẽ đè lên media: `#DADCE0` trên
-     panel sáng (thẻ trắng không có mép), trắng 20% trên panel tối (ảnh tối
-     hay video tối lẫn vào panel thì thẻ mất mép trên). Dải thừa quanh media,
-     ảnh hay video, màu `#F1F3F4` của thẻ: dải đen hai bên video dọc lẫn vào
-     panel tối và cắt thẻ làm hai (đo trên emulator 2026-11-26). Mặt dựng
-     sẵn gắn với cỡ màn hình lúc dựng: màn hình đã xoay thì Android dựng lại
-     lúc show (`TakePreparedFullScreenContent`), iOS xếp lại thẻ trong
-     `ran_layoutCard`. Cửa sổ đổi cỡ khi ad đang hiện (xoay, máy gập, chia
-     màn hình): Android xếp và fit lại thẻ trong `RefitCard` (từ
-     `onConfigurationChanged`), giữ MediaView tại chỗ vì MediaView đã bind
-     không được rời cha (`PlaceCardMedia`); iOS cũng qua `ran_layoutCard`. Layout
-     do C# chọn (`FullScreenLayout`, qua `SetLayout`). App open không
-     `RedirectOnClose` có **thanh app** (`BuildAppBar`): trắng, đầu trái bo
-     tròn, chạy ra ngoài mép phải, icon + tên game, spinner trong lúc đếm,
-     xong thì "Continue to app" + chevron; thanh là lối ra nên close/timer ẩn
-     (`SyncAppBar`). Thẻ không qua settle, né control hay `ResolveContentHeight`.
+   - **Full-screen**: một mặt dựng bởi `BuildCard`, không qua pipeline nào ở
+     trên, xếp theo `FullScreenLayout`. **Interstitial và end card phủ cả màn
+     hình** (`bleedLayout`, iOS `ran_cardBleeds`) trên màu mặt theo theme máy
+     (sáng `#FFFFFF`, tối `#29292B`), như ad full-screen của các mạng. Close và
+     timer là đĩa 30dp ở hai góc trên màn hình. `FitCard` (iOS
+     `ran_fitCardInSize`) chọn cho ảnh chỗ nào to hơn: dưới hàng control với cả
+     bề rộng, hoặc vươn lên đỉnh màn hình giữa hai cột control. Creative cao hơn
+     chỗ (video dọc) thì khung hẹp lại đúng tỉ lệ creative, căn giữa
+     (`SizeCardMedia`, iOS `ran_sizeCardMediaToHeight:width:`), vì trình phát
+     video tự vẽ dải đen hai bên và dải đó trải ngang màn hình sáng trông như vết.
+     - **Interstitial**: ảnh to nhất có thể ở giữa; ở chân là dải app đọc từ
+       trái: icon cạnh tên (headline 2 dòng), body 2 dòng, rồi CTA pill 52dp.
+     - **End card** là trang store (`ArrangeEndCardListing`): ảnh làm banner trên
+       cùng, tối đa 40% chiều cao (`END_CARD_MEDIA_SHARE`), đặt trên bản mờ tối
+       của chính creative trải từ mép trên màn hình tới chân ảnh
+       (`EnsureEndCardBackdrop`, `PlaceEndCardBackdrop`; Android dưới 12 chỉ tối
+       đi, không mờ). Dưới đó: icon 88dp cạnh tên và advertiser, hàng số liệu
+       sao | giá | store ngăn bằng hairline (chỉ những thứ ad có), body ≤3 dòng,
+       CTA ở chân.
+     - Chữ và CTA rộng tối đa 560dp (tablet), căn giữa. Ngang: ảnh bên trái
+       (≤58% bề rộng), cột chữ bên phải; mặt ad cao bằng phần nó chứa, căn giữa
+       màn hình, control đứng trên cột chữ.
+     - **App open là thẻ** bo 20dp giữa màn hình, game tối đi phía sau: rộng tối
+       đa 440dp (ngang 760dp, cao ≤420dp), chừa trên cho thanh app (hoặc control)
+       và 16dp mỗi mép, viền 1dp trắng 20% vẽ đè lên media để ảnh tối hay thẻ
+       tối không lẫn vào nền. Ảnh trên cùng, rồi icon, headline (≤3 dòng),
+       advertiser, body, CTA căn giữa.
+     - `FitCard` chạy **sau `BindAssets`** (đo chữ thật): ảnh lấy phần chữ để
+       lại, tối đa đúng tỉ lệ creative (thẻ app open: 60% chiều cao); hụt sàn
+       media thì nhường theo thứ tự body 1 dòng → bỏ body → icon 40dp; vẫn hụt
+       thì media giữ đúng sàn (full-screen không có trạm unrenderable, xem A9):
+       Android để mặt ad cao hơn chỗ, tràn mép màn hình; iOS và Editor kẹp trong
+       chỗ, phần đáy (có thể cả CTA) bị cắt. Ngang: ảnh giữ bề rộng, cột chữ
+       nhường cùng thứ tự tới khi vừa chiều cao (`ShrinkCardText`).
+     - Badge Ad và AdChoices nằm sát hai góc trên của ảnh (`FollowCardMedia`,
+       iOS `ran_layoutCard`), hay của mặt ad khi không có ảnh: control không bao
+       giờ đè lên creative.
+     - Đĩa close/timer theo tông của thứ nằm dưới (`StyleControls`, iOS
+       `ran_styleControlsOnEndCardBackdrop:`): trên nền tối (game tối đi quanh
+       thẻ app open, bản mờ của end card ở màn dọc, theme tối) đĩa `#24FFFFFF`,
+       dấu `#E3E3E3`; trên theme sáng đĩa `#14000000`, dấu `#444746`.
+     - Dải thừa quanh media, ảnh hay video: màu mặt của theme khi phủ cả màn
+       hình; `#F1F3F4` trong thẻ app open, vì dải đen hai bên video dọc lẫn vào
+       nền tối và cắt thẻ làm hai (đo trên emulator 2026-11-26).
+     - Mặt dựng sẵn gắn với cỡ màn hình lúc dựng: màn hình đã xoay thì Android
+       dựng lại lúc show (`TakePreparedFullScreenContent`), iOS xếp lại thẻ trong
+       `ran_layoutCard`. Cửa sổ đổi cỡ khi ad đang hiện (xoay, máy gập, chia màn
+       hình): Android xếp và fit lại thẻ trong `RefitCard` (từ
+       `onConfigurationChanged`), giữ MediaView tại chỗ vì MediaView đã bind
+       không được rời cha (`PlaceCardMedia`); iOS cũng qua `ran_layoutCard`.
+       Layout do C# chọn (`FullScreenLayout`, qua `SetLayout`).
+     - App open không `RedirectOnClose` có **thanh app** (`BuildAppBar`) cao 48dp,
+       ôm nội dung, neo mép phải, đầu phải chạy ra ngoài màn hình: màu mặt theo
+       theme, icon + tên game (≤40% bề rộng), spinner trong lúc đếm, xong thì
+       "Continue to app" + chevron; thanh là lối ra nên close/timer
+       ẩn (`SyncAppBar`). Thẻ không qua settle, né control hay
+       `ResolveContentHeight`.
 5. **Né control** (`EnableControlAvoidance` → `RecomputeMediaControlAvoidance`):
    stack dồn đáy (`Gravity.BOTTOM`), đo phần dưới (`MeasureLowerContent`),
    bốn ứng viên vị trí media (B10), chọn to nhất chạm tường nhìn thấy,
@@ -422,48 +448,68 @@ MEDIA_LEFT (RIGHT là gương)                    MEDIA_BACKGROUND (scrim)
 Video chỉ có `MEDIA_LEFT` (rail: icon / spacer / CTA, headline dưới); không
 có scrim, không có ảnh tĩnh, không có bản không media.
 
-Full-screen (`OverlayAdContentView`, thẻ): close/timer là đĩa ở góc màn hình,
-badge Ad và AdChoices trên góc thẻ:
+Ô MEDIA_LEFT/RIGHT đặt badge và reserve AdChoices sát hai góc trên của ảnh (khung
+ảnh làm `badgeHost`; Android `FollowMediaWithSdkMark` cho lớp dấu của SDK theo ảnh),
+không ở góc ô. Scrim: tên bên cạnh icon ngắn hơn icon đủ chiều cao badge thì badge
+đứng cạnh icon, trên tên, thay vì ở góc ô (`SetBadgeBesideIcon`).
+
+Full-screen (`OverlayAdContentView`): close/timer là đĩa ở hai góc trên màn hình,
+badge Ad và AdChoices sát hai góc trên của ảnh. Interstitial và end card phủ cả màn
+hình, app open là thẻ:
 
 ```
-Interstitial               AppOpen, RedirectOnClose tắt   EndCard
-                  ( ✕ )    ╭─ [ic] Game   Continue ›                       ( ✕ )
-╭────────────────────╮     ╭────────────────────╮         ╭────────────────────╮
-│Ad               (i)│     │Ad               (i)│         │Ad    [ icon ]   (i)│
-│       media        │     │       media        │         │      Headline      │
-│                    │     │                    │         │     advertiser     │
-├────────────────────┤     ├────────────────────┤         ├────────────────────┤
-│      [ icon ]      │     │      [ icon ]      │         │       media        │
-│      Headline      │     │      Headline      │         ├────────────────────┤
-│     advertiser     │     │     advertiser     │         │    body ≤3 dòng    │
-│    body ≤3 dòng    │     │    body ≤3 dòng    │         │ (       CTA      ) │
-│ (       CTA      ) │     │ (       CTA      ) │         ╰────────────────────╯
-╰────────────────────╯     ╰────────────────────╯
+Interstitial            EndCard
+┌────────────────────┐  ┌────────────────────┐
+│( t )         ( ✕ ) │  │░░░(t)░░░░░░░░(✕)░░░│
+│Ad               (i)│  │░┌Ad───────────(i)┐░│
+│                    │  │░│      media     │░│
+│       media        │  │░└────────────────┘░│
+│                    │  │[ icon ] Headline   │
+├────────────────────┤  │         advertiser │
+│[ic] Headline       │  │★ 4.3 │ Free │ Store│
+│     body 2 dòng    │  │body ≤3 dòng        │
+│ (       CTA      ) │  │ (       CTA      ) │
+└────────────────────┘  └────────────────────┘
+                         ░ = bản mờ tối của creative
+AppOpen, RedirectOnClose tắt
+╭─ [ic] Game   Continue ›
+╭────────────────────╮
+│Ad               (i)│
+│       media        │
+├────────────────────┤
+│      [ icon ]      │
+│      Headline      │
+│     advertiser     │
+│    body ≤3 dòng    │
+│ (       CTA      ) │
+╰────────────────────╯
 
-Ngang (mọi layout xếp như nhau)
-                                    ( ✕ )
-╭───────────────┬──────────────────╮
-│Ad             │    [ icon ]   (i)│
-│               │    Headline      │
-│     media     │   advertiser     │
-│               │      body        │
-│               │ (     CTA      ) │
-╰───────────────┴──────────────────╯
+Ngang, interstitial và end card
+┌──────────────────────────────────────┐
+│Ad             (i)│( t )        ( ✕ ) │
+│      media       │ [ icon ] Headline │
+│                  │  advertiser       │
+│                  │  body             │
+│                  │ (     CTA      )  │
+└──────────────────────────────────────┘
 ```
 
-Media rộng hết thẻ (dọc) hoặc cao hết thẻ, sát mép trái (ngang); badge Ad đè
-lên ảnh, thụt 12dp. `( ✕ )` là close/timer ở góc màn hình theo `CloseSide`,
-`TimerSide`. AppOpen bật `RedirectOnClose` xếp như Interstitial; thanh app
-thay close/timer.
+Ảnh dọc: dưới hàng control với cả bề rộng, hoặc vươn lên đỉnh màn hình giữa hai cột
+control, cách nào to hơn. Ngang: control gần ảnh đứng ngay bên phải ảnh, trên cột
+chữ (`CardNearControlOffsetPx`). `( ✕ )`, `( t )` là close và timer theo `CloseSide`,
+`TimerSide`. AppOpen bật `RedirectOnClose` vẫn là thẻ, xếp như phần dưới thanh app;
+thẻ chừa dải trên cùng (`cardTopReservePx`) cho close/timer ở hai góc trên màn hình,
+màn ngang thì hai cột hai bên thẻ (`cardControlColumnPx`).
 
-Half-screen (`OverlayAdContentView`), dải control 30dp trên cùng với badge Ad,
-close, timer:
+Half-screen (`OverlayAdContentView`), dải control 42dp trên cùng cho close và timer
+(đĩa 30dp, 6dp trên dưới). Xếp chồng có ảnh: badge Ad và AdChoices sát hai góc trên
+của ảnh; side-media: badge bám mép phải media; không ảnh: cả hai cách góc panel 6dp:
 
 ```
 Xếp chồng (mặc định)      Side-media (creative dọc)   Ticker (panel < 120dp)
 ┌────────────────────┐    ┌────────────────────┐      ┌────────────────────┐
-│Ad  [t]        [✕]  │    │Ad [t]         [✕]  │      │Ad[ic]Headline…[CTA]│
-│ ┌────────────────┐ │    │┌──────┐  [ icon ]  │      └────────────────────┘
+│ [t]           [✕]  │    │Ad [t]         [✕]  │      │Ad[ic]Headline…[CTA]│
+│ ┌Ad───────────(i)┐ │    │┌──────┐  [ icon ]  │      └────────────────────┘
 │ │  media (né     │ │    ││      │  Headline  │       icon-hero: icon thế
 │ │  control)      │ │    ││media │  body      │       chỗ media khi không
 │ └────────────────┘ │    ││      │  advertiser│       media / panel thấp
@@ -497,13 +543,13 @@ hết mọi nấc, chỉ cho ảnh; video không có scrim (B7).
 | **scrim / veil** | template ảnh làm nền + tấm phủ đen 70% + khối chữ trên tấm phủ |
 | **ambient** | bản copy ảnh crop-phủ, dim 55%, đứng sau ảnh FIT trong scrim |
 | **ticker / icon-hero** | overlay panel thấp: một hàng cuộn / icon thế chỗ media |
-| **control strip** | dải 30dp chứa badge Ad, close, timer của overlay |
+| **control strip** | dải chứa close và timer của overlay: 42dp ở half (đĩa 30dp), hai góc trên màn hình ở full-screen |
 | **badge** | "Ad" và AdChoices; được đè media/icon, không đè chữ |
 | **reserve** | ô giữ chỗ trong suốt ở góc AdChoices — cho layout và validator, không phải dấu thật (dấu thật do SDK vẽ) |
 | **né control (avoidance)** | pass chọn vị trí media để không nằm dưới close/timer |
 | **tường nhìn thấy** | trần panel, vạch badge, cột close/timer, lề sync — thứ media được chạm |
 | **lề sync** | lề 8dp hai bên mà media và mọi element dưới cùng tôn trọng |
-| **sàn chính sách** | 120dp video / 48dp ảnh cho MediaView đã đăng ký |
+| **sàn chính sách** | 120dp cho mọi MediaView đã đăng ký, video lẫn ảnh |
 | **session / restore** | một lượt show full-screen Activity và máy mở lại nó khi bị hệ thống vứt |
 | **màn che (cover)** | lớp màu trơn của package khác đứng sau/trên ad; pack này không biết tới nó ngoài bảng thứ tự lớp |
 | **bậc lớp (tier)** | số trong `layer.name = "riseon.layer.<bậc>"` quyết vị trí subview trên iOS (B3) |
@@ -532,7 +578,7 @@ hết mọi nấc, chỉ cho ảnh; video không có scrim (B7).
 | Asset rỗng **GONE**, thiếu asset **ẩn** không loại ad | chừa chỗ / xin ad khác | chính sách chỉ đòi hiện thứ SDK có gửi; Google template cũng ẩn | B6 |
 | MediaView **luôn đăng ký** asset chính; ảnh fallback là **con** của nó | `setImageView` | mã 3 "Asset uses ImageView" — unit ngừng fill | B7 |
 | iOS: asset view **không nhận chạm** (`userInteractionEnabled = NO`), cả nút CTA | CTA nhận chạm để có hiệu ứng nhấn | hướng dẫn native của Google: chạm phải tới `GADNativeAdView` để SDK báo click; không tắt thì SDK tự tắt và log "User interactions must be disabled on the asset view to enable click handling" (iPhone, unit thật ở test mode: 86 lần trong 15 ô) | README iOS |
-| Sàn **120dp chỉ video**, ảnh 48dp | 120dp mọi media | warning SDK có điều kiện "shows video"; ô 96dp mất fill | B7 |
+| Sàn **120dp mọi media** | 120dp chỉ video, ảnh 48dp | Chính sách native advanced chỉ đòi 120 với video, nhưng SDK log "slots that have a width or height smaller than 120x120 will be demonetized in the future" với cả ảnh (thấy ở SDK iOS 13.9.0; trên Android có dev báo trên nhóm Google Mobile Ads SDK), và validator iOS báo lỗi tích hợp với ảnh 88pt. Cái giá: ô dưới 120dp không có ảnh | B7 |
 | Video không vừa → **bỏ ad, tải ad khác** | video nhỏ / ảnh tĩnh / scrim / không media | không render / đăng ký dưới sàn là vi phạm / veil trên video = viewability / ad video thiếu MediaView 120 bị validator báo lỗi | B7 |
 | Nền MediaView **đen** | màu panel | tell cho creative render không kín | B7 |
 | **Scrim là phương án cuối** (penalty 6 000), ảnh crop-phủ + ambient | scrim ưu tiên vì diện tích media | không được thắng band cùng element; đen mép xấu | B7 |
@@ -547,14 +593,15 @@ hết mọi nấc, chỉ cho ảnh; video không có scrim (B7).
 | Bộ sàn gọn là **mặc định** của stacked-avoid | phương án cuối | height dôi dồn hết cho media | B10 |
 | Kế hoạch né lập **trong `onMeasure`**, idempotent | `post()` từ `onSizeChanged` (ad67dcb4) | bản post là cú nhảy sau frame đầu trên máy có cutout khác | A6, B6 |
 | Panel thấp: **tôn trọng ratio**, thang media→icon-hero→ticker→nới tối thiểu | nới panel cho vừa media | panel là chiều cao game xin | B10 |
-| Full-screen là **một thẻ giữa màn hình** (trắng, bo 20dp, CTA pill) | media tràn viền + chữ trên nền panel, né control | một khối gọn không phải né control; chữ và màu nhà quảng cáo đọc đúng trên nền trắng | A6, A7 |
-| Thẻ hụt sàn media sau khi nhường hết → **giữ sàn** (Android tràn mép, iOS và Editor cắt đáy thẻ) | đánh unrenderable, bỏ ad | full-screen không có trạm unrenderable (chủ dự án chốt 2026-08, comment ở `OverlayAd.Show`); màn hình điện thoại nào cũng dư chỗ cho thẻ | A6 |
+| Interstitial, end card **phủ cả màn hình**: control ở hai góc trên, ảnh dưới hàng control hoặc vươn lên giữa hai cột control | thẻ giữa nền đen | thẻ trông như popup, phí nửa màn hình; ad full-screen của các mạng đều phủ kín. Ảnh không nằm dưới control nên control không đè creative (luật native: không che asset) | A6, A7 |
+| App open là **thẻ giữa màn hình**, game tối đi phía sau | phủ cả màn hình như interstitial | app open là lối về game: game lộ ra phía sau cho biết đang quay lại đâu, như app open của AdMob | A6, A7 |
+| Mặt full-screen hụt sàn media sau khi nhường hết → **giữ sàn** (Android tràn mép, iOS và Editor cắt đáy) | đánh unrenderable, bỏ ad | full-screen không có trạm unrenderable (chủ dự án chốt 2026-08, comment ở `OverlayAd.Show`); màn hình điện thoại nào cũng dư chỗ cho thẻ | A6 |
 | Overlay Activity xin orientation **BEHIND** | khóa portrait | ad xoay theo game như iOS; BEHIND không phải orientation cố định nên API 26 không crash | README Android §1 |
 | Icon pipeline "tiêu" thì settle **không nở lại** | icon theo chữ | chứng chỉ fit bị vô hiệu sau lưng pipeline | A6 |
-| Bo góc: thụt = **sàn**, không cộng | cộng thêm | tiêu một lề hai lần | B11 |
+| Scrim: ảnh **lùi khỏi cung bo** `cornerInset`, chữ thụt `CellEdgePadding` tính từ mép ảnh | ảnh phủ ô, bị cung cắt; thụt = sàn | chính sách native chỉ cho ảnh mất bề ngang; chữ đo từ mép ảnh thì thẳng hàng với ảnh | B11 |
 | Bán kính đi theo **rect** (`SetSize`) | Settings lúc sinh | ô ấm từ lúc tạo, đo sau | B11 |
 | AdChoices ô hình chữ nhật Android: **padding `NativeAdView`** để lớp của SDK co vào | đăng ký `AdChoicesView`; với vào view con của SDK | đăng ký không dời được dấu (đo trên máy); với vào con của SDK phụ thuộc thứ tự/thời điểm | B12 |
-| AdChoices ô hình chữ nhật iOS: **sửa hai constraint ghim khung của SDK** | gán `adChoicesView` (header); thu nhỏ `GADNativeAdView` | gán: trên máy giống thất bại Android, khung 9pt nhỏ hơn dấu; thu nhỏ: MediaView scrim ra ngoài ad view (SDK coi là lỗi tích hợp), mất chạm ở viền | B12 |
+| AdChoices iOS (ô và overlay): **`GADAdChoicesView` của pack gán vào `adChoicesView`** | sửa hai constraint ghim khung của SDK; thu nhỏ `GADNativeAdView` | gán là API công khai, header hứa dấu vẽ trong view đó; sửa constraint dựa vào layout nội bộ của SDK; thu nhỏ: MediaView scrim ra ngoài ad view (SDK coi là lỗi tích hợp), mất chạm ở viền | B12 |
 | Ô **chỉ giữ ad lúc hiện**; ad đã hiện chưa đủ dwell ở lại cho lần hiện sau của ô | ô ẩn giữ sẵn ad thay thế | ad giữ trong ô ẩn là ad chỗ khác đang thiếu; ad đã hiện thì chỗ khác không hiện được | B13 |
 | Dwell 4s trước khi ad bị thay | xoay theo đồng hồ / mỗi hide | liếc không phải lượt; foreground không phải rotation | B13 |
 | Android: half ad type 1002, window nào muốn nằm dưới nó cũng 1002 và **add trước** | type 1003 cho ad | 1003 vẽ **dưới** 1002 (dumpsys) | B3, README Android |
@@ -581,7 +628,7 @@ Tên là của Java; Obj-C++ cùng tên với prefix `ran_`/không prefix (READM
 | Vì sao chữ cuộn | `TEXT_LADDER_MODES`, `NudgeCutTextsWhole`, `ApplyTextMode`, `BodyMaxLines`/`HeadlineMaxLines`/`AdvertiserMaxLines` |
 | Cây view của ô theo một template | `RectAdViewFactory.BuildContent` (nhánh template), `BuildIdentityAndText`, `BuildHeadlineAndActionStack`, `BuildTextStack`, `AddBodyAndOptional`, `CreateIconFiller` |
 | Badge, dải badge, bo góc | `AddBadgeOverlays`, `ConfigureBadgeOverlays`, `BadgeEdgeInsetPx`, `ConfigureInsetContent`, `CornerInsetForRadius`, `PaddingForTier`, `RectAdPresentation.ConfigureBackground` |
-| Dấu AdChoices của SDK nằm đâu / thụt thế nào / chữ né nó ra sao | Android `RectAdViewFactory.InsetSdkOverlay` + `ReportSdkLayerShape` + `DodgeAdChoicesMark`; iOS `insetSDKAdChoicesInNativeAdView:` (gọi từ `RANRectAdPresentation.ran_layoutBoundContent`); cây view thật: Android `uiautomator dump --windows` (README Android §9), iOS dump tạm trên Mac (README iOS §7) |
+| Dấu AdChoices của SDK nằm đâu / thụt thế nào / chữ né nó ra sao | Android `RectAdViewFactory.InsetSdkOverlay` + `ReportSdkLayerShape` + `DodgeAdChoicesMark`; iOS `GADAdChoicesView` gán vào `adChoicesView` (`RANRectAdViewFactory`, `RANOverlayAdContentView`); cây view thật: Android `uiautomator dump --windows` (README Android §9), iOS dump tạm trên Mac (README iOS §7) |
 | Khi nào ô hiện, hình học có ổn không | `RectAdPresentation.Show`, `ActivateNextLayoutPlan`, `ObserveFinalAssetGeometry`, `RejectActivePlanAndTryNext`, `GeometrySignature` |
 | Ô xoay/không xoay, nhả ad khi ẩn | `RectAdSlot.ReleaseHeldAds`, `IsActiveEntryConsumed`, `TrySwapActiveEntry`, `HandleRefresh`, `CurrentVisibleDurationMs`, `HandleForegroundRecheck` |
 | Ô kẹt/trống | `HandleWatchdog`, `RemoveExpiredMaterializingEntry`, `RemoveExpiredActiveEntry`, `HandleEntryExpiry`, `ScheduleLayoutRetry` |
@@ -592,6 +639,8 @@ Tên là của Java; Obj-C++ cùng tên với prefix `ran_`/không prefix (READM
 | Full-screen không mở / mở lại | `OverlayAdActivity.StartSession`, `VerifyInitialAttach`, `ScheduleSessionRestore`, `RestoreSessionIfPossible`, `RetryOrFailRestore`, `Session` |
 | Overlay chọn side/ticker/hero/scrim | `OverlayAdContentView.Build` (đầu hàm), `ShouldUseSideMedia`, `ConfigureResponsiveCollapsibleContent`, `ApplyScrimLayout` |
 | Thẻ full-screen sai cỡ, mất body/icon, thanh app, không xếp lại khi cửa sổ đổi cỡ | Android `BuildCard`, `FitCard`, `GiveWay`, `RefitCard`, `BuildAppBar`, `SyncAppBar`; iOS `ran_arrangeCard`, `ran_fitCardInSize:safeArea:`, `ran_layoutCard`, `ran_buildAppBar`, `ran_syncAppBar`; Editor `EditorAd.Card.cs` |
+| End card: hàng số liệu, bản mờ, tông control | Android `ArrangeEndCardListing`, `EnsureEndCardBackdrop`, `PlaceEndCardBackdrop`, `StyleControls`; iOS `ran_arrangeEndCardListing`, `ran_ensureEndCardBackdrop`, `ran_placeEndCardBackdrop:`, `ran_styleControlsOnEndCardBackdrop:`; Editor `EndCardListing` |
+| Badge và AdChoices bám ảnh | full-screen: Android `FollowCardMedia`, iOS `ran_layoutCard`, Editor `PlaceBadgesOnPicture`; ô: `badgeHost`, `FollowMediaWithSdkMark`, `SetBadgeBesideIcon` (iOS `ran_setBadgeBesideIconInRow:`) |
 | Media overlay không to ra / đè control | `EnableControlAvoidance`, `RecomputeMediaControlAvoidance`, `TrimChromeForStarvedMedia`, `MeasureLowerContent`, log `avoidance` |
 | Rail side-media | `ConfigureResponsiveSideRail`, `SideRailPadding`, `ApplyRailContentScale`, `GrowTextLines`, `GrowRailIcon`, `RailFits` |
 | Chữ overlay co/cuộn | `SettleContentBeforeLayout`, `SettleTextFitting`, `ApplyResponsiveContentScale`, `MarqueeWhenTooLong` |
@@ -900,8 +949,9 @@ element quan trọng.
 - **Asset chính luôn qua `MediaView`/`GADMediaView`.** `setImageView()` là
   AdMob từ chối request với mã 3. Ảnh fallback là `ImageView` **con** của
   MediaView.
-- **120dp chỉ cho creative có video**; ảnh: thang 56/88/120dp, sàn **48dp**
-  (`MediaPolicyFloorPx`). Video không vừa → layout fail, ad bị bỏ và ô (ô hình
+- **Sàn 120dp cho mọi media**, video lẫn ảnh (`MediaPolicyFloorPx`): ảnh luôn
+  120dp, video 120/144/180dp theo tier. Ô không chứa nổi 120dp dùng template
+  không media. Video không vừa → layout fail, ad bị bỏ và ô (ô hình
   chữ nhật) hoặc overlay tải ad khác ngay. Không video nhỏ, không ảnh tĩnh
   trong MediaView, không scrim, không bỏ MediaView: trang chính sách native
   advanced (support.google.com/admob/answer/6329638) đòi ad video có MediaView
@@ -911,7 +961,8 @@ element quan trọng.
 - **Không cắm view vào TRONG MediaView** (38704204): con của nó thuộc SDK,
   không sống qua bind. Ambient là anh em đứng sau.
 - **Nền đen MediaView là chủ đích** (87652fd1); band letterbox bằng màu panel,
-  đen chỉ cho video. Thẻ full-screen thì khác: nền `#F1F3F4` cho cả video (A6).
+  đen chỉ cho video. Full-screen thì khác (A6): phủ cả màn hình thì nền là màu
+  mặt của theme, thẻ app open thì `#F1F3F4`, cho cả video.
 - **Media trái**; `MEDIA_RIGHT` phạt 500, không thắng hòa.
 - **Scrim là phương án cuối** (penalty 6 000): ảnh FIT + ambient crop-phủ dim
   55% sau, **một** veil `#B3000000` phủ toàn ô, khối chữ neo đáy. Ambient chỉ
@@ -983,8 +1034,8 @@ close/timer là tường. Nở tới tường đầu tiên; slack chỉ khi bị
   len khe giữa hai control bám mép ngay dưới badge / dưới control mép. Chọn
   media to nhất; control **di chuyển theo**; badge được đè, close/timer phải
   né; không ứng viên nào chứa sàn → đè như cũ. Chỉ half chạy (cùng
-  maximizer); thẻ full-screen không né control: control ở góc màn hình, ngoài
-  thẻ (A6).
+  maximizer); full-screen không né control: `FitCard` đặt ảnh dưới hàng
+  control hoặc giữa hai cột control (A6).
 - **Chỉ tường nhìn thấy** (7a7c527c); ứng viên control-mép bắt đầu `top = 0`
   (322ff153).
 - **Cả hai vị trí close/timer là vật cản** dù nút nào đang hiện (b74df31d);
@@ -1000,7 +1051,8 @@ close/timer là tường. Nở tới tường đầu tiên; slack chỉ khi bị
 - Panel thấp **tôn trọng ratio**: media → icon-hero → ticker (< 120dp) → nới
   tới 48dp khi ticker cũng không vừa. Stacked half né dải control trước, co
   CTA 44→36, icon 36→28, padding; chỉ đè media khi thật sự không vừa.
-- Full-screen không có trạm unrenderable. Control box 30dp, close vẽ hai nét.
+- Full-screen không có trạm unrenderable. Đĩa control 30dp ở mọi overlay (dải
+  control của half cao 42dp), close vẽ hai nét.
 - Ad **đang hiện** mà sai: đọc cây view thật trên máy (cách lấy: README
   Android §9) và log `avoidance` (panel/box/top/interval/slack) trước khi
   đoán (f6192ed4).
@@ -1014,12 +1066,12 @@ tạo, đo sau), không có trong Settings. Kẹp ở nửa cạnh ngắn. Hình
 
 - Layout thường: **nội dung thụt vào chạm khít góc bo** — cột ngoài tiêu khoản
   thụt làm padding; engine đo media theo `ContentWidth/Height`.
-- Scrim: **ảnh nền phủ hết ô và bị cung cắt** (`clipToOutline` /
-  `clipsToBounds`), cột ngoài không thụt, khối chữ tự lùi.
-- **Thụt là SÀN, không cộng**: `scrimPad = max(padding ô, cornerInset)`; badge
-  `edgeInset = max(CONTENT_EDGE_INSET_PX, cornerInset)`.
-- Badge trên root, tự mang thụt, mọi template kể cả scrim.
-- Màu trong suốt vẫn clip.
+- Scrim: **ảnh lùi khỏi cung bo** đúng `cornerInset` (chính sách native chỉ
+  cho ảnh mất bề ngang); khối chữ thụt `scrimPad = cornerInset +
+  CellEdgePadding`, tức `CellEdgePadding` tính từ mép ảnh.
+- Badge trên root, thụt `edgeInset = max(CONTENT_EDGE_INSET_PX, cornerInset)`
+  (sàn, vì badge đo từ mép ô), trừ template ảnh trái/phải (sát góc ảnh, thụt 0)
+  và scrim khi badge đứng cạnh icon (A7).
 - Bên gọi đổi bán kính từ đơn vị canvas sang px: A11.
 
 ## B12. Badge "Ad" và AdChoices
@@ -1043,21 +1095,24 @@ tạo, đo sau), không có trong Settings. Kẹp ở nửa cạnh ngắn. Hình
   và dấu theo vào; nội dung của ta bù lại bằng margin âm và
   `setClipToPadding(false)` nên phủ kín ô y như cũ (`InsetSdkOverlay`). Chi
   tiết và bằng chứng bytecode: README Android §7.
-- Cách đang dùng (iOS, ô hình chữ nhật): SDK ghim khung AdChoices của nó
-  (`GADNativeAdAttributionView`) vào **mép** `GADNativeAdView` bằng hai
-  constraint `top == top`, `right == right` — padding hay margin không với
-  tới. Nên **sửa thẳng hai constraint đó** thành ±khoảng thụt badge
-  (`insetSdkAdChoicesInNativeAdView:`), gọi ở mọi lượt layout; khung giữ
-  nguyên cỡ, chỉ góc dời vào. Vòng layout của pack bỏ qua view do Auto Layout
-  quản (chỉ view của SDK mới là loại đó), không thì nó kéo khung ra phủ cả ô.
-  Chi tiết: README iOS §3. Gán `adChoicesView` (cách ghi trong header) đã cân
-  nhắc và bỏ: dấu hiệu trên máy giống kiểu thất bại của Android, và khung 9pt
-  của ta nhỏ hơn dấu.
-- **Cả hai fix dựa vào layout nội bộ của SDK**, nên cả hai tự kiểm và ghi log
-  mỗi lần chạy app một lần: thành công thì in khoảng thụt + phiên bản GMA;
-  cấu trúc SDK khác đi thì **không ép gì** (dấu về góc như trước) và in ra
-  thấy gì thay vào — log chứa `Rect ad AdChoices`, tag `RectAd`.
-  Nâng SDK xong hãy tìm dòng đó đầu tiên.
+- Cách đang dùng (Android, full-screen và half): cùng cách đó. `InsetCardAdChoices`
+  đặt padding ban đầu; khi ảnh có chỗ, `FollowCardMedia` đặt padding theo khung
+  ảnh, nên dấu sát góc trên phải của ảnh như badge "Ad" ở góc trái. Half không
+  ảnh hay ảnh bên cạnh: dấu cách góc panel 6dp (`HALF_MARK_INSET_DP`). Ô
+  MEDIA_LEFT/RIGHT: `FollowMediaWithSdkMark` cho lớp dấu theo khung ảnh.
+- Cách đang dùng (iOS): một `GADAdChoicesView` của pack gán vào
+  `GADNativeAdView.adChoicesView` trước `setNativeAd:`; header SDK hứa dấu vẽ
+  trong view đó. Chỗ của view (ô, full-screen, half): README iOS §3. SDK
+  vẫn tạo `GADNativeAdAttributionView` ghim vào **mép** `GADNativeAdView` bằng
+  Auto Layout; vòng layout của pack bỏ qua view do Auto Layout quản (chỉ view
+  của SDK mới là loại đó), không thì nó kéo khung đó ra phủ cả ô. Dấu thật
+  trên máy nằm trong view của pack hay ở mép thì chưa kiểm (ad test native của
+  Google trên iOS không có AdChoices): README iOS §3.
+- **Fix Android dựa vào layout nội bộ của SDK**, nên tự kiểm và ghi log mỗi
+  lần chạy app một lần: thành công thì in khoảng thụt + phiên bản GMA; cấu
+  trúc SDK khác đi thì **không ép gì** (dấu về góc) và in ra thấy gì thay vào
+  — log chứa `Rect ad AdChoices`, tag `RectAd`. Nâng SDK xong hãy tìm dòng đó
+  đầu tiên.
 - **Reserve của ô = cỡ dấu thật**: SDK vẽ dấu cố định 15dp (đo trên Redmi:
   41×41px ở mật độ 2.75, cách mép 8px), nên `adChoicesReserve` là ô vuông
   `AD_CHOICES_MARK_DP` (iOS `kRANAdChoicesMarkSize`, 15pt) ở đúng góc dấu dời
@@ -1072,7 +1127,7 @@ tạo, đo sau), không có trong Settings. Kẹp ở nửa cạnh ngắn. Hình
   thể xuống dòng đẩy chữ khác vào dấu). Lượng né lưu trong plan
   (`*MarkDodge`) và áp lại y hệt khi dựng cây thật (`ApplyMarkDodges` trong
   `FinishContentRoot`).
-- Overlay chưa sửa (C3). Editor giả định glyph AdChoices 15dp.
+- Editor giả định glyph AdChoices 15dp.
 
 ## B13. Ô hình chữ nhật: giữ ad, xoay vòng, dwell, watchdog
 
@@ -1198,7 +1253,7 @@ ad giữ lại thì lấy ad mới từ pool.
 | 2026-08-30 | 5 cụm ANR "Input dispatching timed out" | main parked ở GC suspend IL2CPP khi Unity pause (9d6667bc) | `AdEventDispatcher` |
 | 2026-08-30 | Game đen sau khi quay lại từ ad | BAL vứt `startActivity` end card (b970cd3d) | `VerifyInitialAttach` → restore |
 | 2026-08-30 | Crash Android 8.0 orientation (7 user) | translucent + `screenOrientation` manifest (dfef7999) | Xin ở `onCreate`, bỏ API 26 |
-| 2026-09 | Thụt góc bo tính hai lần | `scrimPad + cornerInset` | Sàn, không cộng |
+| 2026-09 | Thụt góc bo tính hai lần | `scrimPad + cornerInset`, hai khoản đo từ cùng mép ô | Chỉ cộng hai khoản đo từ hai mép khác nhau (B11) |
 | 2026-09-19 | AdChoices bị cung bo cắt | SDK ghim dấu vào góc thô của lớp riêng nó; reserve của ta không điều khiển được | (xem dòng dưới) |
 | 2026-09-21 | Fix "đăng ký `AdChoicesView`" không có tác dụng | Giả định SDK vẽ vào view đăng ký, chưa kiểm trên máy; cây view cho thấy SDK vẫn vẽ ở lớp của nó | Kiểm bằng cây view thật trước khi báo xong; padding `NativeAdView` (B12) |
 | 2026-09-21 | Build iOS vỡ: "cannot use '@try' with Objective-C exceptions disabled" | `@try` mới trong `RANRectAdViewFactory.mm`, file này không có `-fobjc-exceptions` (chỉ `RANRectAdPresentation.mm` có) | Không dùng `@try` ở file không có cờ; cổng iOS giờ kiểm (C1) |
@@ -1211,13 +1266,10 @@ ad giữ lại thì lấy ad mới từ pool.
 - Body của ô: `BodyMaxLines` = **1** ở COMPACT với `COMPACT_ROW` và scrim →
   body dài luôn cuộn dù ô còn chỗ. Chưa chốt: nới 2 dòng / nấc co CTA / đổi
   trọng số body-trọn vs dòng phụ.
-- AdChoices iOS của ô: cơ chế **đã chạy trên iPhone** với test ad (2026-09-21,
-  GMA 13.9.0): log `In-feed AdChoices inset applied (GMA 13.9.0): SDK
-  container inset by 3pt` (log nay ghi `Rect ad AdChoices…`), không có
-  `RESET`. Dấu thật đã thấy trên simulator với unit thật ở test mode (cỡ và vị
-  trí ở B12, không đè chữ), và trên iPhone 14 Pro với unit thật ở test mode
-  (2026-11-18): góc phải trên, không đè chữ ở 12 ô chụp được, mới nhìn ở ảnh
-  thu nhỏ; chưa rõ dấu có nằm trong `GADNativeAdAttributionView` không.
+- AdChoices iOS qua `GADAdChoicesView` (B12) chưa chạy trên máy: cần ảnh
+  chụp unit thật ở test mode trên iPhone, ở ô, thẻ full-screen và panel nửa
+  màn hình, để biết dấu nằm trong view của pack hay ở mép
+  `GADNativeAdView`.
 - Creative video ở ô không chứa nổi MediaView 120 (B7): app bỏ ad và tải ad
   khác, nên ô nhỏ chỉ hiện được ad ảnh; mỗi creative video bị bỏ là một
   request và một lần match không thành impression. Số đo liên quan:
@@ -1230,30 +1282,28 @@ ad giữ lại thì lấy ad mới từ pool.
   Chưa làm: đặt "Media type" của các ad unit in-feed trên AdMob thành chỉ ảnh,
   để AdMob không gửi video cho ô nhỏ (đổi cài đặt tài khoản, chờ chủ dự án
   đồng ý).
-- Overlay (full/half) vẫn dùng ô giữ chỗ AdChoices ở góc vuông của
-  `NativeAdView`. Thẻ full-screen bo 20dp, nhưng bo góc chỉ cắt cột nội dung
-  (Android `setClipToOutline` của thẻ, iOS `_contentColumn.clipsToBounds`),
-  không cắt lớp của SDK: dấu AdChoices thật nằm ở góc vuông, có thể lấn ra
-  ngoài đường bo. Chưa đo trên máy.
-- Google cảnh báo MediaView dưới 120 ở mọi creative, kể cả ảnh, trái với luật
-  B7 "120dp chỉ cho video":
-  - Android, validator ở test mode: "MediaView is too small for video … if
-    your media view shows video" (Redmi, unit thật ở test mode: 12/12 ô có
-    media ảnh 58–120dp).
-  - SDK iOS 13.9.0: "media views slots that have a width or height smaller
-    than 120x120 will be demonetized in the future".
-  Chưa quyết, đang giữ sàn ảnh 48dp.
-- Obj-C++ đã build sạch trên Mac (2026-09-21, README iOS §7), nhưng hành vi
-  iOS mới được nhìn một phần (ô in-feed với test ad).
+- Dấu AdChoices iOS với unit thật ở test mode chưa nhìn (B12); các phần khác
+  của mọi format đã nhìn trên simulator với unit test của Google (C4 2026-11-27).
 - "Not all asset views lie inside the native ad view" của validator iOS: 4
   lần với unit native ảnh test của Google (2 ở ô 1000×160px, 2 ở ô
   450×260px), 0 lần trong 15 ô với unit thật ở test mode trên cùng iPhone
   (2026-11-18); chưa rõ khác nhau ở đâu.
-- Comment đầu `RANNativeAdBridge.h` về `MobileAdsEventExecutor` đã cũ.
 
 ## C4. Trạng thái bàn giao
 
 Cập nhật mục này ở cuối mỗi phiên làm việc; ngày là của lần cập nhật.
+
+**2026-11-27** (monorepo `Ads`, thư mục `AdMob.Native`)
+
+- Interstitial phủ cả màn hình với ảnh ở giữa và dải app ở chân; end card thành trang
+  store trên bản mờ của creative (A6, A7). Màu theo theme máy, setting màu bỏ.
+  Badge "Ad" và AdChoices sát hai góc trên của ảnh; ảnh lùi khỏi cung bo (B11, B12).
+  Mục 2026-11-26 dưới đây tả bố cục trước đợt này.
+- Chụp mọi format, sáng và tối, dọc và ngang: Android trên emulator Pixel 7
+  (Android 16), iOS trên simulator iPhone 17 Pro (iOS 26.5), cả hai với unit test
+  của Google.
+- Việc kế tiếp: chụp dấu AdChoices iOS với unit thật trên máy đã đăng ký test
+  device (C3).
 
 **2026-11-26** (monorepo `Ads`, thư mục `AdMob.Native`)
 

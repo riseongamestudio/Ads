@@ -22,9 +22,8 @@ final class RectAdLayoutEngine {
     // over its bottom edge. This is the template that serves squarish slots
     // where neither a media band nor a media column fits beside the text.
     static final int TEMPLATE_MEDIA_BACKGROUND = 4;
-    // Mirror of MEDIA_LEFT, and the asymmetry pays on the badge side:
-    // AdChoices - the wider badge - lands on the media, so only the text
-    // column reserves the strip, for the attribution corner alone.
+    // Mirror of MEDIA_LEFT. On both, the badge and the AdChoices mark stand
+    // on the picture's top corners, so the text column keeps no strip.
     static final int TEMPLATE_MEDIA_RIGHT = 5;
     private static final int TEMPLATE_COUNT = TEMPLATE_MEDIA_RIGHT + 1;
 
@@ -1139,20 +1138,22 @@ final class RectAdLayoutEngine {
 
         float aspect = MediaAspectRatio(plan.renderVideo);
         if (plan.template == TEMPLATE_MEDIA_BACKGROUND) {
-            // Both dimensions carry the registered MediaView, so both are
-            // held to the media minimum - video's floor for a video creative,
-            // the far lower image floor otherwise.
+            // Both dimensions carry the registered MediaView, the cell less
+            // its corner clearance, so both are held to the media minimum -
+            // video's floor for a video creative, the far lower image floor
+            // otherwise.
             int minSide = viewFactory.MediaPolicyFloorPx();
-            if (plan.width < minSide || plan.height < minSide) {
+            int mediaHeight = ContentHeight(plan);
+            if (contentWidth < minSide || mediaHeight < minSide) {
                 RecordRejection(
                         plan.template
                       , plan.tier
-                      , "slot " + plan.width + "x" + plan.height
+                      , "picture " + contentWidth + "x" + mediaHeight
                                 + "px is under the media minimum");
                 return false;
             }
-            plan.mediaWidth = plan.width;
-            plan.mediaHeight = plan.height;
+            plan.mediaWidth = contentWidth;
+            plan.mediaHeight = mediaHeight;
             return true;
         }
         if (plan.template == TEMPLATE_MEDIA_TOP) {

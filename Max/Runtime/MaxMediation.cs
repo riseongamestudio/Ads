@@ -223,7 +223,7 @@ namespace RiseOn.Ads.Max {
         // MAX documents its calls for Unity's thread only.
         public bool ShowsFromAnyThread(AdFormat format) => false;
 
-        public void Show(AdFormat format, string placement, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, in AdCloseSettings close, IAdShowListener listener) {
             var unit = UnitOf(format);
             if (unit == null || !IsReady(format)) {
                 listener.OnFailed(new AdError(-1, $"{format} not ready"));

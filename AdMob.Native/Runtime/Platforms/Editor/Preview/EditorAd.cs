@@ -23,7 +23,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         // Filled as a test ad, AdMob as the advertiser with its icon.
         private const string HeadlineText           = "Test Ad";
         private const string AdvertiserText         = "AdMob";
-        private const string StarRatingText         = "★★★★★  4.8";
+        // As the device writes the rating, a star and the score.
+        // Five stars filled to the score in Google's yellow, then the score,
+        // as the device draws the rating; 4.8 fills the fifth all but a
+        // sliver, which a glyph cannot show.
+        private const string StarRatingText         = "<color=#FBBC04>★★★★★</color> 4.8";
         private const string BodyText               = "This native test ad stands in for AdMob's. On a device, the real ad shows here.";
         private const string CallToActionText       = "Install";
         // Where the pack keeps the advertiser's icon, from its folder.
@@ -58,24 +62,30 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         // The device's control strip: CONTROL_STRIP_HEIGHT_DP on Android,
         // kRANControlStripHeight on iOS. Both are 30.
         private const int ControlSizeDp         = 30;
-        private const int ControlBadgeSpacingDp = 2;
         // The mark Google draws in the corner. The Java side only reserves
         // room for it and never paints, so this is the preview's own
         // assumption: the AdChoices asset is a 15dp glyph, while the 24dp
         // square and 76px width the reserve asks for are the overlay's touch
         // area, not the drawing.
         private const int AdChoicesSizeDp                = 15;
-        // The device keeps close and timer this far from the right edge, as
-        // a flat number: RIGHT_CONTROL_INSET_DP on Android. Deriving it from
-        // the AdChoices size would push the controls further out every time
-        // that assumption changed.
-        private const int ControlRightInsetDp = 18;
-        private const int AttributionWidthDp  = 24;
-        private const int ControlLeftInsetDp  =
-                AttributionWidthDp
-              + ControlBadgeSpacingDp;
+        // A control's disc is 30dp; a press counts this far around it.
+        private const int ControlTouchSlopDp = 9;
+        // The stacked half panel's text and button, in from the screen's
+        // edges; the picture runs edge to edge. STACKED_TEXT_INSET_DP.
+        private const int StackedTextInsetDp = 16;
+        private const int HalfBottomPaddingDp = 8;
+        // The gap under the half panel's picture: kRANMediaLowerSeam on iOS.
+        private const int HalfMediaLowerSeamDp = 8;
+        // The half panel's controls, in from its sides.
+        private const int HalfMarkInsetDp = 6;
+        // The Ad tag's corners: a small rounding, not round ends.
+        private const float BadgeCornerDp = 4f;
+        // The half panel's strip: the 30dp disc with 6dp above and below.
+        // HALF_CONTROL_STRIP_DP on Android, kRANHalfControlStrip on iOS.
+        private const int HalfControlStripDp = 42;
+        private const int AttributionWidthDp  = 26;
         private const int AttributionHeightDp    = 18;
-        private const int AttributionFontSize    = 10;
+        private const int AttributionFontSize    = 11;
         private const int IconSizeDp             = 36;
         private const int IconGapDp              = 8;
         private const int IconFontSize           = 10;
@@ -105,16 +115,15 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private const int FullScreenHeadlineFontSize   = 18;
         private const int CompactHeadlineFontSize      = 15;
         private const int AdvertiserFontSize           = 12;
-        private const int RatingFontSize               = 12;
         private const int BodyFontSize                 = 13;
         private const int MediaLabelFontSize           = 15;
         // The device's own numbers, not a size that merely looks close:
         // OverlayAdContentView draws these at CLOSE_TEXT_SIZE_SP 20 and
-        // COUNTDOWN_TEXT_SIZE_SP 18 inside a 30dp box. This canvas works in
+        // COUNTDOWN_TEXT_SIZE_SP 15 inside a 30dp box. This canvas works in
         // dp already, so sp carries over unchanged. Close is deliberately
         // the larger of the two - that difference is part of the look.
         private const int CloseFontSize              = 20;
-        private const int CountdownFontSize          = 18;
+        private const int CountdownFontSize          = 15;
         private const int CallToActionFontSize       = 14;
         private const int CallToActionHeightDp       = 44;
         private const float CanvasMatchWidthOrHeight = 0.5f;
@@ -164,19 +173,55 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private const int   AttributionTextMaxSize   = 12;
         private static readonly Vector2 referenceResolution =
                 new(360f, 800f);
+        // Over a picture's veil, whatever the theme.
         private static readonly Color secondaryTextColor =
                 new(1f, 1f, 1f, 0.8f);
-        private static readonly Color primaryTextOnLightColor =
-                new(0f, 0f, 0f, 0.87f);
-        private static readonly Color secondaryTextOnLightColor =
-                new(0f, 0f, 0f, 0.6f);
-        private static readonly Color controlColor =
-                new(0f, 0f, 0f, 0.7f);
+        // The close and the timer are tonal discs, as the device draws them:
+        // a faint tint of what is behind them (#14000000, or #24FFFFFF over
+        // what is dark) and a glyph in the theme's secondary ink. Over the
+        // panel the tint is blended here, opaque, so a linear project shows
+        // the device's colour; over the dimmed game around the app open ad's
+        // card only a translucent white can follow what shows through.
+        private Color DiscColor => DimmedBackdrop || EndCardBackdrop
+                ? new(1f, 1f, 1f, QualitySettings.activeColorSpace == ColorSpace.Linear
+                        ? Mathf.Pow(.14f, 2.2f)
+                        : .14f)
+                : Color.Lerp(
+                    Theme.Surface
+                  , DarkSurface ? Color.white : Color.black
+                  , DarkSurface ? .14f : .078f);
+        private Color GlyphColor => DimmedBackdrop || EndCardBackdrop || DarkSurface
+                ? new(.89f, .89f, .89f, 1f)
+                : new(.267f, .278f, .275f, 1f);
+        private bool DimmedBackdrop => cardLayout && !Bleeds(config);
+        // The end card's controls stand on its dimmed copy of the creative in
+        // portrait; in landscape they stand on the listing.
+        private bool EndCardBackdrop =>
+                cardLayout && config.Layout is FullScreenLayout.EndCard && !cardLandscape;
+        // A grey pill with white text, solid: Google's grey 700, as the
+        // device draws it.
         private static readonly Color attributionColor =
-                new(1f, 0.76f, 0.03f, 1f);
-        // The device call to action verbatim: a #1A73E8 pill.
-        private static readonly Color callToActionColor =
-                new(0x1A / 255f, 0x73 / 255f, 0xE8 / 255f, 1f);
+                new(.373f, .388f, .408f, 1f);
+
+        // The device's light and dark appearance, the Ads placeholders'
+        // Material 3 colors: surface, ink, grey and the call to action.
+        private sealed class Palette {
+            public Color Surface, Ink, Grey, Primary;
+        }
+
+        private static readonly Palette lightPalette = new() {
+            Surface = Color.white, Ink = new(.12f, .12f, .12f, 1f), Grey = new(.27f, .28f, .27f, 1f), Primary = new(.04f, .34f, .82f, 1f)
+        };
+
+        private static readonly Palette darkPalette = new() {
+            Surface = new(.16f, .16f, .17f, 1f), Ink = new(.89f, .89f, .89f, 1f), Grey = new(.77f, .78f, .77f, 1f), Primary = new(.1f, .45f, .91f, 1f)
+        };
+
+        // The Editor's theme stands in for the device's.
+        private static bool DarkTheme => UnityEditor.EditorGUIUtility.isProSkin;
+        private static Palette Theme => DarkTheme ? darkPalette : lightPalette;
+        // What the controls stand on: dark when the palette's surface is.
+        private static bool DarkSurface => Theme.Surface.grayscale < .5f;
 
         private enum Slide {
             None
@@ -321,7 +366,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             }
             if (!cardLayout) adChoicesRect = CreateBadges(panel);
             CreateControls(panel, config);
-            if (cardLayout) StyleCardControls(config);
+            StyleControls();
             Canvas.ForceUpdateCanvases();
             RefreshResponsiveLayout(true);
 
@@ -358,12 +403,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , ResolveUIScale());
 
             panelGraphic = panelObject.GetComponent<Image>();
-            // The device paints exactly the color the caller named, so the
-            // preview does too - INCLUDING a fully transparent one. Reading
-            // alpha 0 as "nothing was set" and substituting a house color
-            // made the preview disagree with both device sides on the one
-            // case a caller has to be able to ask for: no backdrop at all.
-            panelGraphic.color = config.BackgroundColor;
+            panelGraphic.color = PanelColor(config);
             var backgroundIsClickable =
                     config.Mode is not EditorAdMode.RectAd;
             panelGraphic.raycastTarget = backgroundIsClickable;
@@ -422,7 +462,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             backdropObject.transform.SetAsFirstSibling();
             Stretch(backdropObject.GetComponent<RectTransform>());
             var backdrop = backdropObject.GetComponent<Image>();
-            backdrop.color = config.BackgroundColor;
+            backdrop.color = PanelColor(config);
             backdrop.raycastTarget = false;
         }
 
@@ -433,10 +473,13 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private static readonly Dictionary<int, Sprite> roundedRectSprites =
                 new();
 
-        private static Sprite RoundedRectSprite(float radius) {
+        // tab: only the bottom right corner round, as the Ad tag flush in a
+        // square corner.
+        private static Sprite RoundedRectSprite(float radius, bool tab = false) {
             const int texelsPerUnit = 4;
             var r = Mathf.Max(1, Mathf.RoundToInt(radius * texelsPerUnit));
-            if (roundedRectSprites.TryGetValue(r, out var cached)
+            var key = tab ? -r : r;
+            if (roundedRectSprites.TryGetValue(key, out var cached)
                     && cached != null) {
                 return cached;
             }
@@ -450,9 +493,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     var q = new Vector2(Mathf.Abs(p.x), Mathf.Abs(p.y))
                           - half
                           + Vector2.one * r;
-                    var d = Vector2.Max(q, Vector2.zero).magnitude
-                          + Mathf.Min(Mathf.Max(q.x, q.y), 0f)
-                          - r;
+                    var d = tab && (p.x < 0f || p.y > 0f)
+                          ? Mathf.Max(q.x, q.y) - r
+                          : Vector2.Max(q, Vector2.zero).magnitude
+                                + Mathf.Min(Mathf.Max(q.x, q.y), 0f)
+                                - r;
                     var alpha = Mathf.Clamp01(.5f - d);
                     pixels[y * size + x] = new Color32(
                         255, 255, 255, (byte)Mathf.RoundToInt(alpha * 255f));
@@ -476,7 +521,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , SpriteMeshType.FullRect
               , new Vector4(r, r, r, r));
             sprite.hideFlags = HideFlags.HideAndDontSave;
-            roundedRectSprites[r] = sprite;
+            roundedRectSprites[key] = sprite;
             return sprite;
         }
 
@@ -564,15 +609,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var content = contentObject.GetComponent<RectTransform>();
             content.anchorMin = Vector2.zero;
             content.anchorMax = Vector2.one;
-            // Both overlay modes share the device's inset: the media box is
-            // an element like every other, 5dp off the sides, sitting below
-            // the control band.
-            content.offsetMin = new(
-                ContentHorizontalPaddingDp
-              , 0f);
-            content.offsetMax = new(
-                -ContentHorizontalPaddingDp
-              , -ControlSizeDp);
+            // Below the control strip: the disc's own height on a full-screen
+            // face, the half panel's strip with room around the disc.
+            content.offsetMin = Vector2.zero;
+            content.offsetMax = new(0f, -(fullScreen ? ControlSizeDp : HalfControlStripDp));
 
             contentLayout =
                     contentObject
@@ -601,6 +641,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             detailsLayout =
                     detailsObject.GetComponent<VerticalLayoutGroup>();
             detailsLayout.spacing = ContentSpacingDp;
+            detailsLayout.padding = new(
+                StackedTextInsetDp, StackedTextInsetDp, 0, HalfBottomPaddingDp);
             detailsLayout.childAlignment = TextAnchor.MiddleLeft;
             detailsLayout.childControlWidth = true;
             detailsLayout.childControlHeight = true;
@@ -609,14 +651,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
             var identityTextParent =
                     CreateIdentityRow(detailsObject.transform);
-            // The device's rule: dark text on a light panel, white otherwise.
-            var onLight = IsLight(config.BackgroundColor);
-            var primaryColor = onLight
-                    ? primaryTextOnLightColor
-                    : Color.white;
-            var secondaryColor = onLight
-                    ? secondaryTextOnLightColor
-                    : secondaryTextColor;
+            // On the theme's surface, as the panel is.
+            var primaryColor = Theme.Ink;
+            var secondaryColor = Theme.Grey;
             var headlineFontSize = fullScreen
                     ? FullScreenHeadlineFontSize
                     : CompactHeadlineFontSize;
@@ -638,10 +675,10 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             CreateText(
                 identityTextParent
               , StarRatingText
-              , RatingFontSize
+              , AdvertiserFontSize
               , TextAnchor.MiddleLeft
-              , attributionColor);
-            CreateText(
+              , secondaryColor);
+            halfBodyText = CreateText(
                 detailsObject.transform
               , BodyText
               , BodyFontSize
@@ -733,7 +770,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             iconObject.transform.SetParent(parent, false);
 
             var image = iconObject.GetComponent<Image>();
-            image.color = callToActionColor;
+            image.color = Theme.Primary;
             // Rounded as a launcher rounds it; the mask cuts the picture.
             Round(image, sizeDp * IconCornerRatio);
             iconObject.AddComponent<Mask>();
@@ -783,27 +820,26 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             return layout;
         }
 
-        // As the device reads a panel: light when mostly opaque and bright.
-        // A panel mostly see-through shows the game, whose shade is unknown.
-        private static bool IsLight(Color color) {
-            if (color.a < 0.5f) {
-                return false;
-            }
 
-            var luminance =
-                    0.2126f * color.r
-                  + 0.7152f * color.g
-                  + 0.0722f * color.b;
-            return luminance > 0.5f;
-        }
+        // Black at the given alpha as the device blends it, in gamma: a
+        // project in linear space blends a translucent black lighter, so the
+        // alpha rises to match.
+        private static Color Shade(float alpha) =>
+                new(0f, 0f, 0f, QualitySettings.activeColorSpace == ColorSpace.Linear
+                        ? 1f - Mathf.Pow(1f - alpha, 2.2f)
+                        : alpha);
+
+        // Where the creative has nothing else to show.
+        private static Color PanelColor(EditorAdConfig config) => config.Mode switch {
+            // The game dimmed around an app open ad's card, as AdMob's own.
+            EditorAdMode.FullScreen when config.Layout is FullScreenLayout.AppOpen => Shade(.72f)
+            // Everything else, the interstitial and the end card spread over the screen included: the theme's surface.
+          , _ => Theme.Surface
+        };
 
         // The format's name on the creative, over what it may carry.
         private static string MediaText(EditorAdConfig config) {
-            var format = config.Mode switch {
-                EditorAdMode.FullScreen => "Native Full Screen"
-              , EditorAdMode.Collapsible => "Native Half Screen"
-              , _ => "Native Rect"
-            };
+            var format = config.FormatName;
             return config.AllowsVideo
                     ? format + "\nTest ad · image or video"
                     : format + "\nTest ad · image";
@@ -880,7 +916,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             buttonObject.transform.SetParent(parent, false);
 
             var image = buttonObject.GetComponent<Image>();
-            image.color = callToActionColor;
+            image.color = Theme.Primary;
             Round(image, heightDp / 2f);
 
             var button = buttonObject.GetComponent<Button>();
@@ -950,9 +986,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     || innerWidth < RectAdMediaFloorDp;
 
             // Where the column's content lives. On the scrim template the
-            // picture is the cell's background and runs under the curve, so
-            // everything stays on the panel and only the text block stands
-            // back; every other template stands its whole column back from
+            // picture is the cell's background, so everything stays on the
+            // panel and the picture and the text block each stand back on
+            // their own; every other template stands its whole column back from
             // the corners, the way the device pads its outer column.
             var contentArea = panel;
             if (!scrimTemplate && rectAdCornerInset > 0f) {
@@ -969,8 +1005,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                         new(-rectAdCornerInset, -rectAdCornerInset);
             }
 
-            // The media: the whole cell on the scrim template, the top band
-            // of the column otherwise.
+            // The media: the whole cell less its corner clearance on the
+            // scrim template, the top band of the column otherwise.
             var mediaObject = new GameObject(
                 MediaObjectName
               , typeof(RectTransform)
@@ -1004,7 +1040,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , followsShortSide: true);
 
             if (scrimTemplate) {
+                // Clear of the curve, as the device stands the picture, so
+                // its corners touch it and nothing of it is cut.
                 Stretch(mediaRect);
+                mediaRect.offsetMin = new(rectAdCornerInset, rectAdCornerInset);
+                mediaRect.offsetMax = new(-rectAdCornerInset, -rectAdCornerInset);
 
                 // One veil over the whole cell, exactly like the device: no
                 // uncovered strip above the text block.
@@ -1015,7 +1055,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 scrimObject.transform.SetParent(panel, false);
                 Stretch(scrimObject.GetComponent<RectTransform>());
                 var scrimImage = scrimObject.GetComponent<Image>();
-                scrimImage.color = new(0f, 0f, 0f, ScrimAlpha);
+                scrimImage.color = Shade(ScrimAlpha);
                 scrimImage.raycastTarget = false;
             } else {
                 // The media absorbs whatever the text stack leaves free,
@@ -1068,16 +1108,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             // the corner clearance, and the content area above already
             // carries it. The scrim template is the exception: its block
             // sits over the media on the panel itself, so it pads by its
-            // own hair of room, floored by the clearance the column did not
-            // spend. A floor, not a sum: both measure from the same cell
-            // edge, so adding them would spend that border twice.
+            // own hair of room from the picture's edge, which stands the
+            // corner clearance in from the cell's.
             var pad = scrimTemplate
-                    ? Mathf.Max(
-                        Mathf.Clamp(
+                    ? Mathf.Clamp(
                             Mathf.RoundToInt(shortSide * RectAdScrimPaddingRatio)
                           , RectAdScrimPaddingMinDp
                           , RectAdScrimPaddingMaxDp)
-                      , Mathf.RoundToInt(rectAdCornerInset))
+                      + Mathf.RoundToInt(rectAdCornerInset)
                     : 0;
             stack.padding = new(pad, pad, pad, pad);
             stack.spacing = gap;
@@ -1207,7 +1245,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , HeadlineText
               , headlineFontSize
               , TextAnchor.MiddleLeft
-              , Color.white
+              , Theme.Ink
               , RectAdTextHeightMultiplier);
             headlineLayoutElement =
                     headlineText.GetComponent<LayoutElement>();
@@ -1217,7 +1255,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , BodyText
               , secondaryFontSize
               , TextAnchor.MiddleLeft
-              , secondaryTextColor
+              , Theme.Grey
               , RectAdTextHeightMultiplier);
             bodyLine.verticalOverflow = VerticalWrapMode.Truncate;
             CreateText(
@@ -1225,7 +1263,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , AdvertiserText
               , secondaryFontSize
               , TextAnchor.MiddleLeft
-              , secondaryTextColor
+              , Theme.Grey
               , RectAdTextHeightMultiplier);
             if (tier is not RectAdTier.Compact) {
                 CreateText(
@@ -1233,7 +1271,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                   , StarRatingText
                   , secondaryFontSize
                   , TextAnchor.MiddleLeft
-                  , attributionColor
+                  , Theme.Grey
                   , RectAdTextHeightMultiplier);
             }
 
@@ -1293,9 +1331,9 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             };
         }
 
-        // The image policy floor the device applies to a registered
-        // MediaView; only a video creative demands the 120dp minimum.
-        private const int RectAdMediaFloorDp = 48;
+        // The policy floor the device applies to a registered MediaView,
+        // a still picture's as well as a video's.
+        private const int RectAdMediaFloorDp = 120;
 
         // ------------------------------------------------------------------
         // Badges and controls
@@ -1317,15 +1355,15 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                   , AttributionHeightDp));
             var attributionImage = attributionObject.GetComponent<Image>();
             attributionImage.color = attributionColor;
-            // As the device rounds it: 3dp on a rect ad, 4dp on an overlay.
-            Round(attributionImage, config.Mode is EditorAdMode.RectAd ? 3f : 4f);
+            Round(attributionImage, BadgeCornerDp);
             attributionText = CreateOverlayText(
                 attributionObject.transform
               , AdAttributionText
               , AttributionFontSize
               , TextAnchor.MiddleCenter
-              , Color.black);
+              , Color.white);
             Stretch(attributionText.rectTransform);
+            attributionText.fontStyle = FontStyle.Bold;
             attributionText.horizontalOverflow = HorizontalWrapMode.Overflow;
             ScaleToBox(
                 attributionText
@@ -1407,6 +1445,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , CountdownFontSize
               , countdownControlOnLeft
               , out countdownText);
+            countdownText.fontStyle = FontStyle.Bold;
             countdownRemaining = config.Close.Cooldown;
 
             var countdownFinished = config.Close.Cooldown <= 0;
@@ -1416,8 +1455,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         // The close mark's geometry, the device's own two numbers: it spans
         // this share of the box's shorter side, in strokes this thick.
-        private const float CloseGlyphSpanRatio = .44f;
-        private const float CloseGlyphStrokeDp  = 2.5f;
+        private const float CloseGlyphSpanRatio = .34f;
+        private const float CloseGlyphStrokeDp  = 3f;
 
         // Drawn, not typed - the device draws two strokes because U+2715 has
         // no single font behind it across OEMs, so a typed mark never looks
@@ -1517,9 +1556,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             var rect = buttonObject.GetComponent<RectTransform>();
             SetControlRect(rect, onLeft);
 
+            // Its colours follow the backdrop: StyleControls.
             var image = buttonObject.GetComponent<Image>();
-            image.color = controlColor;
             Round(image, ControlSizeDp / 2f);
+            // A press just around the disc is the control's, a 48dp target.
+            image.raycastPadding = -ControlTouchSlopDp * Vector4.one;
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -1552,7 +1593,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     controlObject.GetComponent<RectTransform>();
             SetControlRect(controlRect, onLeft);
             var image = controlObject.GetComponent<Image>();
-            image.color = controlColor;
             Round(image, ControlSizeDp / 2f);
 
             label = CreateOverlayText(
@@ -1567,19 +1607,22 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             return controlObject;
         }
 
+        // The half panel's strip holds the controls alone, both sides in by
+        // the panel's inset, the disc in the strip's middle.
         private static void SetControlRect(
             RectTransform rect
           , bool onLeft
           , float topInset = 0f) {
+            var y = -(topInset + (HalfControlStripDp - ControlSizeDp) / 2f);
             if (onLeft) {
                 SetTopLeftRect(
                     rect
-                  , new(ControlLeftInsetDp, -topInset)
+                  , new(HalfMarkInsetDp, y)
                   , new(ControlSizeDp, ControlSizeDp));
             } else {
                 SetTopRightRect(
                     rect
-                  , new(-ControlRightInsetDp, -topInset)
+                  , new(-HalfMarkInsetDp, y)
                   , new(ControlSizeDp, ControlSizeDp));
             }
         }
@@ -1666,14 +1709,16 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         // The mark hugs the corner, the way the SDK draws it. Both the build
         // and the safe-inset pass come through here, so neither can undo the
         // other.
-        private static void PlaceAdChoices(
+        private void PlaceAdChoices(
             RectTransform adChoices
           , float safeTopInset) {
             if (adChoices == null) return;
 
+            // On a card, in from its corner; the half panel's, off its own.
+            var inset = cardLayout ? CardAdChoicesInsetDp : HalfMarkInsetDp;
             SetTopRightRect(
                 adChoices
-              , new(0f, -safeTopInset)
+              , new(-inset, -inset - safeTopInset)
               , new(AdChoicesSizeDp, AdChoicesSizeDp));
         }
 
@@ -1820,6 +1865,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 safeTopInset
               , uiScale);
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            FitHalfPanel();
+            if (config.Mode is EditorAdMode.Collapsible) {
+                PlaceBadgesOnPicture(
+                    panel
+                  , mediaLayoutElement.GetComponent<RectTransform>());
+            }
 
             lastScreenWidth = Screen.width;
             lastScreenHeight = Screen.height;
@@ -1883,14 +1934,12 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     -ContentHorizontalPaddingDp
                   , -(ControlSizeDp + safeTopInset));
             } else {
-                content.offsetMax = new(
-                    -ContentHorizontalPaddingDp
-                  , -ControlSizeDp);
+                content.offsetMax = new(0f, -HalfControlStripDp);
             }
             if (attributionRect != null) {
                 SetTopLeftRect(
                     attributionRect
-                  , new(0f, -safeTopInset)
+                  , new(HalfMarkInsetDp, -(HalfMarkInsetDp + safeTopInset))
                   , new(
                         AttributionWidthDp
                       , AttributionHeightDp));
@@ -1933,6 +1982,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                         attributionRect
                       , new(rectAdCornerInset, -rectAdCornerInset)
                       , new(attributionWidth, badgeSize));
+                    ShapeBadge(rectAdCornerInset <= 0f);
                 }
                 if (adChoicesRect != null) {
                     SetTopRightRect(
@@ -1946,12 +1996,73 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             if (attributionRect != null) {
                 SetTopLeftRect(
                     attributionRect
-                  , new(0f, -safeTopInset)
+                  , new(HalfMarkInsetDp, -(HalfMarkInsetDp + safeTopInset))
                   , new(
                         AttributionWidthDp
                       , AttributionHeightDp));
+                ShapeBadge(false);
             }
             PlaceAdChoices(adChoicesRect, safeTopInset);
+        }
+
+        // The half panel's picture over its text, as the device stacks a
+        // landscape creative; the device goes beside the picture only for a
+        // portrait one, which the preview never shows. When the stack runs
+        // over, the body gives way first, as on the device.
+        private void FitHalfPanel() {
+            if (cardLayout
+                    || config.Mode is EditorAdMode.RectAd
+                    || mediaLayoutElement == null
+                    || detailsLayout == null) {
+                return;
+            }
+
+            halfBodyText.gameObject.SetActive(true);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            if (LayoutUtility.GetPreferredHeight(content) > content.rect.height + .5f) {
+                halfBodyText.gameObject.SetActive(false);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+            }
+            if (config.Mode is EditorAdMode.Collapsible) PlaceHalfPicture();
+        }
+
+        // The device's placements for the half panel's picture. The controls
+        // stand in the panel's top corners; the picture either starts under
+        // the strip they stand in, at the panel's whole width, or rises to
+        // the panel's top between the two columns they stand in. The larger
+        // picture wins, a tie going to the higher; the stack then sits in the
+        // middle of what is left under its top.
+        private void PlaceHalfPicture() {
+            var width = panel.rect.width;
+            var height = panel.rect.height;
+            var details = detailsLayout.GetComponent<RectTransform>();
+            var available = height
+                    - LayoutUtility.GetPreferredHeight(details)
+                    - contentLayout.spacing
+                    - HalfMediaLowerSeamDp;
+            var bestArea = -1f;
+            var best = (Top: 0f, Width: 0f, Height: 0f);
+            foreach (var (top, room) in new[] {
+                         ((float) HalfControlStripDp, width)
+                       , (0f, width - 2 * HalfControlStripDp) }) {
+                var boxHeight = Mathf.Min(available - top, room / CardMediaAspect);
+                var boxWidth = Mathf.Min(room, boxHeight * CardMediaAspect);
+                if (boxWidth < MediaMinSizeDp || boxHeight < MediaMinSizeDp) continue;
+
+                if (boxWidth * boxHeight > bestArea + .5f) {
+                    bestArea = boxWidth * boxHeight;
+                    best = (top, boxWidth, boxHeight);
+                }
+            }
+            if (bestArea < 0f) return;
+
+            content.offsetMax = new(0f, -best.Top);
+            contentLayout.childForceExpandWidth = false;
+            contentLayout.childAlignment = TextAnchor.MiddleCenter;
+            mediaLayoutElement.flexibleHeight = 0f;
+            mediaLayoutElement.minWidth = mediaLayoutElement.preferredWidth = best.Width;
+            mediaLayoutElement.minHeight = mediaLayoutElement.preferredHeight = best.Height;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         }
 
         private float ResolveRectAdBadgeSize(float uiScale) {

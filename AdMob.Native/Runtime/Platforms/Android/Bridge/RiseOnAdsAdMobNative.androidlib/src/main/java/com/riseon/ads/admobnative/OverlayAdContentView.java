@@ -9,7 +9,10 @@ import android.graphics.ColorFilter;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -28,17 +31,20 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Space;
 import android.widget.TextView;
 
 import com.google.android.gms.ads.nativead.MediaView;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.gms.ads.nativead.NativeAd;
 
+import java.util.ArrayList;
 import java.util.List;
 
 final class OverlayAdContentView extends FrameLayout {
@@ -80,28 +86,29 @@ final class OverlayAdContentView extends FrameLayout {
 
     private static final String TAG = "OverlayAd";
     private static final String ATTRIBUTION_TEXT = "Ad";
+    // Over a picture's veil, whatever the theme.
     private static final String SECONDARY_TEXT_COLOR = "#CCFFFFFF";
-    // The text on a light panel, where the white would vanish.
-    private static final String PRIMARY_TEXT_ON_LIGHT_COLOR = "#DE000000";
-    private static final String SECONDARY_TEXT_ON_LIGHT_COLOR = "#99000000";
-    private static final String ATTRIBUTION_BACKGROUND_COLOR = "#FFFFC107";
-    private static final int ATTRIBUTION_CORNER_DP = 4;
-    private static final String TIMER_BACKGROUND_COLOR = "#66000000";
-    private static final String CLOSE_BACKGROUND_COLOR = "#AA000000";
-    // Over a dark panel the close is Google's: a light disc with a dark
-    // cross, the countdown dark on the same disc.
-    private static final String LIGHT_DISC_COLOR = "#E6E3E3E3";
-    private static final String DARK_GLYPH_COLOR = "#FF1F1F1F";
+    // The countdown and the close share one tonal disc, as the placeholders
+    // draw. The controls only ever stand on the panel or the dimmed game,
+    // never on the creative, so a faint wash of the ink is enough to show
+    // the target without outweighing the call to action.
+    private static final String CLOSE_BACKGROUND_COLOR = "#14000000";
+    private static final String CLOSE_GLYPH_COLOR = "#FF444746";
+    // The same over what is dark: a dark theme's panel or the dimmed game.
+    private static final String DARK_BACKDROP_DISC_COLOR = "#24FFFFFF";
+    private static final String DARK_BACKDROP_GLYPH_COLOR = "#FFE3E3E3";
     // Sized to fill the chip: a mark lost in the middle of its box leaves
     // the box reading as empty space.
     private static final float CLOSE_TEXT_SIZE_SP = 20f;
     // The close mark's geometry: it spans this share of its box's shorter
     // side, in strokes this thick. Numbers, not a glyph - see
     // CloseGlyphDrawable for why.
-    private static final float CLOSE_GLYPH_SPAN_RATIO = 0.44f;
-    private static final float CLOSE_GLYPH_STROKE_DP = 2.5f;
-    private static final float COUNTDOWN_TEXT_SIZE_SP = 18f;
-    private static final String CTA_BACKGROUND_COLOR = "#FF1A73E8";
+    // One mark for every close of every format, the Ads placeholders' and
+    // Google's own: ink across 44% of the disc in strokes a tenth of it, so
+    // the stroke ends' centres span 34%.
+    private static final float CLOSE_GLYPH_SPAN_RATIO = 0.34f;
+    private static final float CLOSE_GLYPH_STROKE_DP = 3f;
+    private static final float COUNTDOWN_TEXT_SIZE_SP = 15f;
     private static final String CTA_TEXT_COLOR = "#FFFFFFFF";
     private static final String CTA_RIPPLE_COLOR = "#55FFFFFF";
     // An icon's corners, as a launcher rounds them.
@@ -112,19 +119,14 @@ final class OverlayAdContentView extends FrameLayout {
     static final int LAYOUT_INTERSTITIAL = 0;
     static final int LAYOUT_APP_OPEN = 1;
     static final int LAYOUT_END_CARD = 2;
-    // The full-screen face is one card, as Google renders a responsive ad:
-    // white whatever the panel, so the advertiser's colors read as theirs.
-    private static final String CARD_COLOR = "#FFFFFFFF";
     // Behind media narrower or shorter than its box, a picture's or a
     // video's: light, so the letterbox reads as part of the card. Black bars
     // beside a tall video merged into a dark panel and cut the card in two.
     private static final String CARD_MEDIA_BACKDROP_COLOR = "#FFF1F3F4";
     private static final int CARD_CORNER_DP = 20;
-    // The card's hairline: grey on a light panel, where the white card has no
-    // edge of its own; faint white on a dark one, where a dark picture or a
-    // video's letterbox would merge into the panel and the card lose its top.
-    private static final String CARD_EDGE_COLOR = "#FFDADCE0";
-    private static final String CARD_DARK_EDGE_COLOR = "#33FFFFFF";
+    // The card's rim on the dark ground behind it, where a dark picture or a
+    // dark card would merge into it and lose its edge.
+    private static final String CARD_EDGE_COLOR = "#33FFFFFF";
     private static final int CARD_MARGIN_DP = 16;
     private static final int CARD_MAX_WIDTH_DP = 440;
     private static final int CARD_LANDSCAPE_MAX_WIDTH_DP = 760;
@@ -133,6 +135,8 @@ final class OverlayAdContentView extends FrameLayout {
     private static final float CARD_LANDSCAPE_MEDIA_SHARE = 0.58f;
     // And of the card's height in portrait, so the text keeps its room.
     private static final float CARD_PORTRAIT_MEDIA_SHARE = 0.6f;
+    // The end card's picture, at most: the app is what the page is about.
+    private static final float END_CARD_MEDIA_SHARE = 0.4f;
     private static final int CARD_PADDING_DP = 20;
     private static final int CARD_ICON_DP = 56;
     private static final int CARD_SMALL_ICON_DP = 40;
@@ -140,22 +144,35 @@ final class OverlayAdContentView extends FrameLayout {
     private static final int CARD_CTA_HEIGHT_DP = 52;
     private static final int CARD_CONTROL_INSET_DP = 12;
     private static final int CARD_CONTROL_TOP_DP = 8;
+    // Where the SDK's AdChoices mark sits on the card: 6dp in from its
+    // corner, where the Ads placeholders and the Editor preview draw it.
+    private static final int CARD_AD_CHOICES_INSET_DP = 6;
+    // The card's text follows the device's font scale up to this, as iOS
+    // caps Dynamic Type: past it the face has nothing left to give.
+    private static final float CARD_MAX_FONT_SCALE = 1.3f;
+    private static final int CARD_HEADLINE_MAX_LINE_COUNT = 3;
+    // The SDK's AdChoices mark, measured on a device (15dp square).
+    private static final int CARD_AD_CHOICES_MARK_DP = 15;
+    // The text and the button of a full-screen face, at most, so a tablet's
+    // lines stay readable while the picture spans the screen.
+    private static final int BLEED_TEXT_MAX_WIDTH_DP = 560;
     // The app open ad's bar back to the game, as AdMob draws its own: white,
     // its left end round, running off the screen's right edge.
-    private static final int APP_BAR_HEIGHT_DP = 40;
+    // The way out, so a full finger target.
+    private static final int APP_BAR_HEIGHT_DP = 48;
     private static final int APP_BAR_GAP_DP = 8;
-    private static final float APP_BAR_WIDTH_SHARE = 0.82f;
+    // Between the game's name and Continue to app.
+    private static final int APP_BAR_NAME_GAP_DP = 24;
     private static final int APP_BAR_ICON_DP = 26;
-    private static final String APP_BAR_COLOR = "#FFFFFFFF";
-    private static final String APP_BAR_ACTION_COLOR = "#FF1A73E8";
-    private static final String APP_BAR_SECONDARY_COLOR = "#FF5F6368";
     private static final String APP_BAR_CONTINUE_TEXT = "Continue to app";
     private static final String CLOSE_CONTENT_DESCRIPTION = "Close ad";
 
+    // The 120dp floor holds for every creative, a still picture's as well as
+    // a video's: the SDK flags a smaller MediaView as an implementation
+    // problem and warns that such slots will be demonetized. A slot too small
+    // for it takes a layout without the picture.
     private static final float MIN_VIDEO_MEDIA_SIZE_DP = 120f;
-    // The 120dp floor is video's; a creative with no video keeps its picture
-    // in shorter panels instead of handing the band to the icon.
-    private static final float MIN_IMAGE_MEDIA_SIZE_DP = 48f;
+    private static final float MIN_IMAGE_MEDIA_SIZE_DP = 120f;
     // A probe value only, for the fit checks that need a number. It never
     // frames the media: a creative with an unreported ratio is handed the
     // whole band and renders inside it as it pleases.
@@ -169,9 +186,27 @@ final class OverlayAdContentView extends FrameLayout {
     // one used to spend, so the nicer arrangement can never be the one
     // that runs out of width first.
     private static final int HORIZONTAL_PADDING_DP = 5;
+    // The stacked half panel's text and button, in from the screen's edges
+    // as a page's text is; the picture still runs edge to edge. The side
+    // layouts keep HORIZONTAL_PADDING_DP (B8).
+    private static final int STACKED_TEXT_INSET_DP = 16;
+    // Under the half panel's button, off the screen's bottom edge.
+    private static final int HALF_BOTTOM_PADDING_DP = 8;
+    // The half panel's controls, in from its sides, and the badge and
+    // AdChoices mark off its corners where there is no picture to carry them.
+    private static final int HALF_MARK_INSET_DP = 6;
     private static final int CONTROL_STRIP_HEIGHT_DP = 30;
+    // The half panel's strip: the 30dp disc with 6dp above and below, so a
+    // control neither meets the panel's edge nor touches the picture.
+    private static final int HALF_CONTROL_STRIP_DP = 42;
     private static final int CONTROL_GAP_DP = 2;
-    private static final int RIGHT_CONTROL_INSET_DP = 18;
+    // Clear of the AdChoices mark (15dp, 6dp in from the corner) by the
+    // close's own reach past its disc and 3dp more, so a press meant for
+    // one never lands on the other.
+    private static final int RIGHT_CONTROL_INSET_DP = 33;
+    // A control's disc is 30dp; a press counts this far around it, so it
+    // answers a 48dp finger target as the platform asks.
+    private static final int CONTROL_TOUCH_SLOP_DP = 9;
     // How long a let-through close press waits for the SDK's click report.
     // When it runs out the press is forgotten, not acted on: the SDK did not
     // accept the touch, so as far as the ad is concerned nothing was pressed,
@@ -203,7 +238,7 @@ final class OverlayAdContentView extends FrameLayout {
     // creative nobody anticipated cannot spin.
     private static final int SETTLE_MAX_PASSES = 4;
     private static final int MIN_BADGE_SIZE_PX = 15;
-    private static final int ATTRIBUTION_WIDTH_DP = 24;
+    private static final int ATTRIBUTION_WIDTH_DP = 26;
     private static final int ATTRIBUTION_HEIGHT_DP = 18;
     private static final int AD_CHOICES_WIDTH_PX = 76;
     private static final int AD_CHOICES_SIZE_DP = 24;
@@ -267,7 +302,7 @@ final class OverlayAdContentView extends FrameLayout {
     private static final float BODY_LINE_HEIGHT_RATIO = 1.5f;
     // The seam between the media and the identity row below it - a hair,
     // not a margin.
-    private static final int MEDIA_LOWER_SEAM_DP = 2;
+    private static final int MEDIA_LOWER_SEAM_DP = 8;
     // A panel meaningfully taller than wide reads as a page: media belongs
     // stacked on top of it, not beside it. Side media only suits panels near
     // screen proportions, where a portrait creative would otherwise sit in a
@@ -311,7 +346,6 @@ final class OverlayAdContentView extends FrameLayout {
     private int sideRailHeightPx;
     private boolean sideBodySpilled;
     private boolean controlAvoidanceActive;
-    private boolean controlsAtEdgesBelowBadges;
     private LinearLayout avoidanceColumn;
     private MediaView avoidanceMediaView;
     private TextView avoidanceBodyView;
@@ -367,9 +401,15 @@ final class OverlayAdContentView extends FrameLayout {
     // The full-screen card replaces the adaptive pipeline outright: one
     // arrangement fitted here, nothing negotiated after the first layout.
     private boolean cardLayout;
+    // The interstitial and the end card: the card's arrangement spread over
+    // the whole screen on the theme's surface, as the networks' own
+    // full-screen ads; only the app open ad keeps the card over the game.
+    private boolean bleedLayout;
     private int cardWidthPx;
     private int cardHeightPx;
     private int cardTopReservePx;
+    // The column each control stands in at the side of a landscape face.
+    private int cardControlColumnPx;
     private View appBar;
     private View appBarSpinner;
     private View appBarReady;
@@ -383,12 +423,30 @@ final class OverlayAdContentView extends FrameLayout {
     private int cardMaxHeightPx;
     private int cardMinimumMediaPx;
     private int cardNaturalMediaHeightPx;
+    // The portrait picture's inset from the card's sides (CardMediaInsetPx).
+    private int cardMediaInsetPx;
     private boolean cardLandscape;
+    // The landscape picture's height: the creative's own at its width, so a
+    // player never letterboxes it in black.
+    private int cardLandscapeMediaHeightPx;
+    // The landscape full-screen face's picture width: the near control
+    // stands right of it (FollowCardMedia).
+    private int cardLandscapeMediaWidthPx;
+    // The badge, kept on the picture's top-left corner (FollowCardMedia).
+    private TextView cardAttribution;
+    // The stacked half panel's column and picture, which FollowCardMedia
+    // follows as it follows the card's.
+    private LinearLayout halfColumn;
+    private MediaView halfMedia;
+    private final Rect cardMarkPadding = new Rect();
     // What BuildCard arranged the card from, kept so a window that changes
     // size while the ad shows - a foldable opening, split screen, a turn -
     // gets the card arranged and fitted again (RefitCard).
     private int cardBuiltWidthPx;
     private int cardBuiltHeightPx;
+    // The cutout's bands the card was arranged inside: insets that arrive
+    // later with other bands arrange it again.
+    private final Rect cardBuiltCutout = new Rect();
     private LinearLayout cardColumn;
     private float cardMediaAspectRatio;
     private LinearLayout cardIdentityText;
@@ -396,6 +454,12 @@ final class OverlayAdContentView extends FrameLayout {
     private TextView cardAdvertiser;
     private NativeAdStarRatingView cardStarRating;
     private Button cardCallToAction;
+    // The end card's store figures beside the rating - the price and the
+    // store - and the dimmed, blurred copy of the creative its banner stands
+    // on (ArrangeEndCardListing, PlaceEndCardBackdrop).
+    private TextView cardPrice;
+    private TextView cardStore;
+    private View cardBackdrop;
     private boolean cardBodyBound;
     private final Runnable onClose;
     private CountDownTimer timer;
@@ -409,6 +473,9 @@ final class OverlayAdContentView extends FrameLayout {
     private boolean touchLocked;
     private TextView countdown;
     private TextView close;
+    // The tone the controls were last given (StyleControls).
+    private Boolean controlsDark;
+    private boolean closeSlopTouch;
     private Button callToActionView;
     private boolean released;
     // A press on the close button that has been let through to the ad view
@@ -548,7 +615,43 @@ final class OverlayAdContentView extends FrameLayout {
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (touchLocked) return true;
+
+        // A press just around the close disc is the close's: the whole
+        // gesture goes to it, landing on its centre.
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            closeSlopTouch = close != null
+                    && close.getVisibility() == View.VISIBLE
+                    && close.getParent() == this
+                    && !InsideControl(close, event, 0)
+                    && InsideControl(
+                            close
+                          , event
+                          , Math.round(
+                                CONTROL_TOUCH_SLOP_DP
+                                        * getResources().getDisplayMetrics().density));
+        }
+        if (closeSlopTouch && close != null) {
+            MotionEvent forwarded = MotionEvent.obtain(event);
+            forwarded.setLocation(close.getWidth() / 2f, close.getHeight() / 2f);
+            boolean handled = close.dispatchTouchEvent(forwarded);
+            forwarded.recycle();
+            if (action == MotionEvent.ACTION_UP
+                    || action == MotionEvent.ACTION_CANCEL) {
+                closeSlopTouch = false;
+            }
+            return handled;
+        }
         return super.dispatchTouchEvent(event);
+    }
+
+    private static boolean InsideControl(View control, MotionEvent event, int slop) {
+        float x = event.getX();
+        float y = event.getY();
+        return x >= control.getLeft() + control.getTranslationX() - slop
+                && x < control.getRight() + control.getTranslationX() + slop
+                && y >= control.getTop() + control.getTranslationY() - slop
+                && y < control.getBottom() + control.getTranslationY() + slop;
     }
 
     void OnPresented() {
@@ -730,8 +833,6 @@ final class OverlayAdContentView extends FrameLayout {
         DisplayMetrics displayMetrics =
                 context.getResources().getDisplayMetrics();
         float density = displayMetrics.density;
-        int horizontalPadding =
-                (int) (HORIZONTAL_PADDING_DP * density);
         com.google.android.gms.ads.MediaContent mediaContent =
                 nativeAd.getMediaContent();
         boolean hasVideoContent =
@@ -759,8 +860,10 @@ final class OverlayAdContentView extends FrameLayout {
                                 * density);
         float mediaAspectRatio =
                 GetMediaAspectRatio(fallbackMediaImage);
-        int controlStripHeight =
-                (int) (CONTROL_STRIP_HEIGHT_DP * density);
+        int controlStripHeight = (int) ((fullScreen
+                        ? CONTROL_STRIP_HEIGHT_DP
+                        : HALF_CONTROL_STRIP_DP)
+                * density);
         boolean panelHostsMedia = fullScreen
                 || requestedPanelHeight
                         >= minimumMediaSize
@@ -793,12 +896,18 @@ final class OverlayAdContentView extends FrameLayout {
                 ? displayMetrics.heightPixels
                 : requestedPanelHeight;
         cardLayout = fullScreen;
+        bleedLayout = fullScreen && layout != LAYOUT_APP_OPEN;
         sideMediaLayout = !cardLayout
                 && hasDisplayableMedia
                 && ShouldUseSideMedia(
                         displayMetrics
                       , mediaAspectRatio
                       , sidePanelHeight);
+        boolean stackedHalf = !cardLayout && !sideMediaLayout && !tickerLayout;
+        int horizontalPadding = (int) ((stackedHalf
+                        ? STACKED_TEXT_INSET_DP
+                        : HORIZONTAL_PADDING_DP)
+                * density);
 
         ConfigureBackground();
 
@@ -810,7 +919,7 @@ final class OverlayAdContentView extends FrameLayout {
                 horizontalPadding
               , controlStripHeight
               , horizontalPadding
-              , 0);
+              , stackedHalf ? (int) (HALF_BOTTOM_PADDING_DP * density) : 0);
         // The media is the one child allowed to ignore the side padding: it
         // bleeds edge to edge through negative margins while every text stays
         // inset, so the padding cannot cost the picture anything.
@@ -868,6 +977,10 @@ final class OverlayAdContentView extends FrameLayout {
                         (int) (MIN_ICON_SIZE_DP * density)
                       , (int) (MIN_ICON_SIZE_DP * density));
         iconLayoutParams.setMarginEnd((int) (ICON_GAP_DP * density));
+        // A white tile under the icon, as a launcher draws one: an icon with
+        // a transparent ground otherwise loses its dark marks on a dark
+        // surface.
+        if (!iconHero) icon.setBackgroundColor(Color.WHITE);
         if (iconHero) {
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         } else if (!sideMediaLayout) {
@@ -893,7 +1006,7 @@ final class OverlayAdContentView extends FrameLayout {
         headline.setSingleLine(false);
 
         TextView advertiser = new TextView(context);
-        advertiser.setTextColor(Color.parseColor(SECONDARY_TEXT_COLOR));
+        advertiser.setTextColor(AdTheme.Grey(context));
         advertiser.setTextSize(MIN_ADVERTISER_TEXT_SIZE_SP);
         advertiser.setMaxLines(1);
         MarqueeWhenTooLong(advertiser);
@@ -912,7 +1025,7 @@ final class OverlayAdContentView extends FrameLayout {
         identityRow.addView(identityText, identityTextLayoutParams);
 
         TextView body = new TextView(context);
-        body.setTextColor(Color.parseColor(SECONDARY_TEXT_COLOR));
+        body.setTextColor(AdTheme.Grey(context));
         body.setTextSize(MIN_BODY_TEXT_SIZE_SP);
         body.setMaxLines(MAX_BODY_LINE_COUNT);
         body.setPadding(
@@ -1193,11 +1306,14 @@ final class OverlayAdContentView extends FrameLayout {
         // In the side-media layout even the badge steps off the picture:
         // it hugs the media's right edge, and the left corner control then
         // lines up beside it.
-        if (cardLayout) {
-            // On the card's corner, over its picture, as the card is the
-            // ad and the panel around it is not.
-            int cardInset = Math.round(CARD_CONTROL_INSET_DP * density);
-            attributionLayoutParams.setMargins(cardInset, cardInset, 0, 0);
+        if (cardLayout || stackedHalf) {
+            // On the picture's corner, as the picture is the ad and the
+            // panel around it is not (FollowCardMedia keeps it there).
+            // Placed for the picture's top left until the picture is laid
+            // out (FollowCardMedia).
+            int badgeInset = CardMediaInsetPx(density);
+            attributionLayoutParams.setMargins(badgeInset, badgeInset, 0, 0);
+            AdTheme.ShapeBadge(attribution, true);
         } else if (sideMediaLayout) {
             attributionLayoutParams.leftMargin =
                     sideRowLeftInsetPx
@@ -1221,11 +1337,53 @@ final class OverlayAdContentView extends FrameLayout {
                     adChoicesReserveWidth
                   , adChoicesReserveHeight
                   , Gravity.TOP | Gravity.END));
+        if (cardLayout) {
+            InsetCardAdChoices(
+                    nativeAdView
+                  , Math.round(CARD_AD_CHOICES_INSET_DP * density)
+                  , contentColumn
+                  , attribution);
+            cardAttribution = attribution;
+            cardMarkPadding.setEmpty();
+            contentColumn.addOnLayoutChangeListener(
+                    (view, left, top, right, bottom
+                          , oldLeft, oldTop, oldRight, oldBottom) ->
+                            post(this::FollowCardMedia));
+        } else if (stackedHalf) {
+            // The badge and the mark on the picture's corners, as on the
+            // card; the strip above it is left to the controls.
+            InsetCardAdChoices(
+                    nativeAdView
+                  , Math.round(CARD_AD_CHOICES_INSET_DP * density)
+                  , contentColumn
+                  , attribution);
+            cardAttribution = attribution;
+            halfColumn = contentColumn;
+            halfMedia = mediaView;
+            cardMarkPadding.setEmpty();
+            contentColumn.addOnLayoutChangeListener(
+                    (view, left, top, right, bottom
+                          , oldLeft, oldTop, oldRight, oldBottom) ->
+                            post(this::FollowCardMedia));
+        } else {
+            // The badge and the mark off the panel's corners; the content
+            // reaches back out and keeps its place.
+            InsetCardAdChoices(
+                    nativeAdView
+                  , (int) (HALF_MARK_INSET_DP * density)
+                  , contentColumn);
+        }
 
         nativeAdView.setIconView(icon);
         nativeAdView.setHeadlineView(headline);
         nativeAdView.setAdvertiserView(advertiser);
         nativeAdView.setStarRatingView(starRating);
+        if (layout == LAYOUT_END_CARD) {
+            cardPrice = CreateEndCardFigure(context, nativeAd.getPrice());
+            cardStore = CreateEndCardFigure(context, nativeAd.getStore());
+            nativeAdView.setPriceView(cardPrice);
+            nativeAdView.setStoreView(cardStore);
+        }
         nativeAdView.setBodyView(body);
         nativeAdView.setCallToActionView(callToAction);
         callToActionView = callToAction;
@@ -1247,7 +1405,7 @@ final class OverlayAdContentView extends FrameLayout {
         settleBody = body;
         settleAdvertiser = advertiser;
         settleStarRating = starRating;
-        ColorText(cardLayout || IsLight(backgroundColor));
+        ColorText(true);
         // The card is fitted once in BuildCard; the settle's text and icon
         // rules belong to the adaptive pipeline.
         if (cardLayout) settleColumn = null;
@@ -1333,20 +1491,17 @@ final class OverlayAdContentView extends FrameLayout {
         if (cardLayout) {
             // The card in the middle of what the controls leave free.
             nativeAdContainer.setPadding(
-                    0
+                    cardControlColumnPx
                   , cardTopReservePx
-                  , 0
-                  , Math.round(CARD_MARGIN_DP * density));
+                  , cardControlColumnPx
+                  , bleedLayout ? 0 : Math.round(CARD_MARGIN_DP * density));
         }
         nativeAdContainer.addView(
                 nativeAdView
                // The card's own width, not its content's: the SDK's
                // AdChoices overlay inside it asks for the whole parent.
                , cardLayout
-                        ? new FrameLayout.LayoutParams(
-                              cardWidthPx
-                            , cardHeightPx
-                            , Gravity.CENTER)
+                        ? CardParams()
                         : new FrameLayout.LayoutParams(
                               ViewGroup.LayoutParams.MATCH_PARENT
                             , ViewGroup.LayoutParams.MATCH_PARENT));
@@ -1364,9 +1519,19 @@ final class OverlayAdContentView extends FrameLayout {
         int controlGap = Math.max(
                 1
               , (int) (CONTROL_GAP_DP * density));
-        int leftControlInset = attribution.getMinWidth() + controlGap;
-        int rightControlInset =
-                (int) (RIGHT_CONTROL_INSET_DP * density);
+        // The stacked half panel's strip holds the controls alone, the marks
+        // being on the picture: both sides in by the panel's inset, the disc
+        // in the strip's middle.
+        int leftControlInset = stackedHalf
+                ? (int) (HALF_MARK_INSET_DP * density)
+                : attribution.getMinWidth() + controlGap;
+        int rightControlInset = (int) ((stackedHalf
+                        ? HALF_MARK_INSET_DP
+                        : RIGHT_CONTROL_INSET_DP)
+                * density);
+        int controlTop = cardLayout
+                ? 0
+                : Math.max(0, (controlStripHeight - controlSize) / 2);
 
         countdown = CreateControlView(
                 context
@@ -1375,7 +1540,8 @@ final class OverlayAdContentView extends FrameLayout {
                                 countDownRemainingMs
                                         / (double) MILLIS_PER_SECOND))
               , COUNTDOWN_TEXT_SIZE_SP
-              , TIMER_BACKGROUND_COLOR);
+              , CLOSE_BACKGROUND_COLOR);
+        countdown.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         FrameLayout.LayoutParams countdownLayoutParams =
                 new FrameLayout.LayoutParams(
                         controlSize
@@ -1383,7 +1549,7 @@ final class OverlayAdContentView extends FrameLayout {
                       , numberGravity);
         countdownLayoutParams.setMargins(
                 leftControlInset
-              , 0
+              , controlTop
               , rightControlInset
               , 0);
         countdown.setLayoutParams(countdownLayoutParams);
@@ -1393,12 +1559,7 @@ final class OverlayAdContentView extends FrameLayout {
               , ""
               , CLOSE_TEXT_SIZE_SP
               , CLOSE_BACKGROUND_COLOR);
-        boolean lightDisc = cardLayout && !IsLight(backgroundColor);
-        ApplyCloseGlyph(close, density, lightDisc);
-        if (lightDisc) {
-            countdown.setBackground(Disc(LIGHT_DISC_COLOR));
-            countdown.setTextColor(Color.parseColor(DARK_GLYPH_COLOR));
-        }
+        StyleControls(false);
         close.setVisibility(View.GONE);
         close.setContentDescription(CLOSE_CONTENT_DESCRIPTION);
         FrameLayout.LayoutParams closeLayoutParams =
@@ -1408,7 +1569,7 @@ final class OverlayAdContentView extends FrameLayout {
                       , closeGravity);
         closeLayoutParams.setMargins(
                 leftControlInset
-              , 0
+              , controlTop
               , rightControlInset
               , 0);
         close.setLayoutParams(closeLayoutParams);
@@ -1446,8 +1607,9 @@ final class OverlayAdContentView extends FrameLayout {
         if (cardLayout) {
             int cardInset = Math.round(CARD_CONTROL_INSET_DP * density);
             int cardTop = Math.round(CARD_CONTROL_TOP_DP * density);
-            UpdateControlInsets(countdown, cardInset, cardInset, cardTop);
-            UpdateControlInsets(close, cardInset, cardInset, cardTop);
+            int nearInset = cardInset + CardNearControlOffsetPx();
+            UpdateControlInsets(countdown, nearInset, cardInset, cardTop);
+            UpdateControlInsets(close, nearInset, cardInset, cardTop);
         }
         addView(countdown);
         addView(close);
@@ -1476,12 +1638,16 @@ final class OverlayAdContentView extends FrameLayout {
                   , mediaView
                   , fallbackMediaImage);
         }
-        ObserveBadgePositions(
-                attribution
-              , countdown
-              , close
-              , controlGap
-              , rightControlInset);
+        // The stacked half panel's controls keep the strip's own insets:
+        // its badge is on the picture, not beside them.
+        if (!stackedHalf) {
+            ObserveBadgePositions(
+                    attribution
+                  , countdown
+                  , close
+                  , controlGap
+                  , rightControlInset);
+        }
     }
 
     private void ConfigureResponsiveCollapsibleContent(
@@ -1650,7 +1816,7 @@ final class OverlayAdContentView extends FrameLayout {
 
         scrimLayoutActive = true;
         lastResortPanelHeight = panelHeight;
-        // The text moves onto the veil, which is dark whatever the panel.
+        // The text moves onto the veil, which is dark whatever the theme.
         ColorText(false);
         mediaAvoidsControlStrip = false;
         ((ViewGroup) mediaView.getParent()).removeView(mediaView);
@@ -2556,7 +2722,9 @@ final class OverlayAdContentView extends FrameLayout {
         avoidanceCallToAction = callToAction;
         avoidanceMediaAspect = mediaAspectRatio;
         avoidanceMinimumMediaSize = minimumMediaSize;
-        avoidanceHorizontalPadding = horizontalPadding;
+        // The picture runs edge to edge, as on the full-screen faces; the
+        // text stands in by STACKED_TEXT_INSET_DP.
+        avoidanceHorizontalPadding = 0;
         avoidancePanelHeight = panelHeight;
         contentColumn.setGravity(
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
@@ -2630,12 +2798,9 @@ final class OverlayAdContentView extends FrameLayout {
         }
 
         float density = getResources().getDisplayMetrics().density;
-        int controlSize = (int) (CONTROL_STRIP_HEIGHT_DP * density);
-        int badgeHeight = (int) (ATTRIBUTION_HEIGHT_DP * density);
-        int controlGap = Math.max(
-                1
-              , (int) (CONTROL_GAP_DP * density));
-        // The lower stack's height, measured with the media collapsed.
+        // The lower stack's height, measured with the media collapsed. The
+        // button keeps its gap above the screen's bottom edge.
+        int bottomPadding = (int) (HALF_BOTTOM_PADDING_DP * density);
         LinearLayout.LayoutParams mediaLayoutParams =
                 (LinearLayout.LayoutParams)
                         avoidanceMediaView.getLayoutParams();
@@ -2643,67 +2808,30 @@ final class OverlayAdContentView extends FrameLayout {
                 avoidanceColumn.getPaddingLeft()
               , 0
               , avoidanceColumn.getPaddingRight()
-              , 0);
+              , bottomPadding);
         int lowerContentHeight =
                 MeasureLowerContent(panelWidth, mediaLayoutParams);
         int availableHeight = Math.max(
                 0
-              , panelHeight - lowerContentHeight);
+              , panelHeight - lowerContentHeight - bottomPadding);
 
-        // Both corner controls share one spot until the countdown ends, so
-        // a side is an obstacle when either of them lives there.
-        // Close and timer are a pair, and the caller may put both on the same
-        // side. The media still has to clear the side it was not put on: a
-        // field that depended on the draw would move the picture whenever the
-        // draw changed. So both sides are walls, always.
-        boolean leftOccupied = true;
-        boolean rightOccupied = true;
-        // The media's field: its sides NEVER pass the panel's side padding
-        // - the same 5dp every element below wears - its ceiling is the
-        // panel's top edge, and rising into the control band adds the two
-        // control columns as walls. The walls stand on both sides whatever
-        // is currently visible there, so the media never re-anchors when the
-        // timer hands over to the close, or when the caller moves the pair.
-        // The picture then grows on the panel's center line until it touches
-        // the nearer wall or the band's ceiling - touching without
-        // overlapping is the goal.
+        // The media's field: the panel's width, under the control strip.
+        // The picture grows on the panel's center line until it touches the
+        // field's sides or the strip.
         int syncLeft = avoidanceHorizontalPadding;
         int syncRight = panelWidth - avoidanceHorizontalPadding;
-        int topRowIntervalLeft = Math.max(
-                syncLeft
-              , leftOccupied
-                        ? (int) (ATTRIBUTION_WIDTH_DP * density)
-                                + controlGap + controlSize
-                        : syncLeft);
-        int topRowIntervalRight = Math.min(
-                syncRight
-              , rightOccupied
-                        ? panelWidth
-                                - (int) (RIGHT_CONTROL_INSET_DP * density)
-                                - controlSize
-                        : syncRight);
-        int edgeIntervalLeft = Math.max(
-                syncLeft
-              , leftOccupied ? controlSize : syncLeft);
-        int edgeIntervalRight = Math.min(
-                syncRight
-              , rightOccupied ? panelWidth - controlSize : syncRight);
 
-        // {media top, interval left, interval right, controls at edges}.
+        // {media top, interval left, interval right}.
+        // The controls stand in the panel's top corners. The picture either
+        // starts under the strip they stand in, at the panel's whole width,
+        // or rises to the panel's top between the two columns they stand
+        // in; the larger picture wins, so the controls only ever claim room
+        // the picture could not have used. The badge and the AdChoices mark
+        // ride the picture either way.
+        int controlColumn = (int) (HALF_CONTROL_STRIP_DP * density);
         int[][] candidates = {
-                { 0, topRowIntervalLeft, topRowIntervalRight, 0 }
-              , { controlSize, syncLeft, syncRight, 0 }
-                // Controls at the edges leave the whole top band free: the
-                // badges may sit over media, so the media starts at the
-                // panel's very top and only the control columns hold it in.
-              , { 0
-                  , edgeIntervalLeft
-                  , edgeIntervalRight
-                  , 1 }
-              , { badgeHeight + controlSize
-                  , syncLeft
-                  , syncRight
-                  , 1 }
+                { controlColumn, syncLeft, syncRight }
+              , { 0, controlColumn, panelWidth - controlColumn }
         };
         // A reported ratio sizes the box to the creative itself: it grows
         // until it touches whichever limit binds, and the band's slack
@@ -2724,7 +2852,6 @@ final class OverlayAdContentView extends FrameLayout {
         int bestTop = 0;
         int bestIntervalLeft = 0;
         int bestIntervalWidth = panelWidth;
-        boolean bestEdges = false;
         // One sweep, at the media's honest floor. The floor IS the
         // definition of a picture worth showing: 120dp is the SDK's
         // line below which video does not render, 48dp is this pack's
@@ -2779,7 +2906,6 @@ final class OverlayAdContentView extends FrameLayout {
                 bestTop = top;
                 bestIntervalLeft = intervalLeft;
                 bestIntervalWidth = intervalWidth;
-                bestEdges = candidate[3] == 1;
             }
         }
         // The sweep found nothing: the lower stack alone has eaten the
@@ -2823,7 +2949,7 @@ final class OverlayAdContentView extends FrameLayout {
                       , mediaLayoutParams);
                 int grownAvailable = Math.max(
                         0
-                      , panelHeight - grownLower);
+                      , panelHeight - grownLower - bottomPadding);
                 int grownSlack =
                         grownAvailable - bestTop - bestBoxHeight;
                 if (grownSlack < 0) {
@@ -2837,12 +2963,11 @@ final class OverlayAdContentView extends FrameLayout {
                 slack = grownSlack;
             }
         }
-        controlsAtEdgesBelowBadges = bestEdges;
         avoidanceColumn.setPadding(
                 avoidanceColumn.getPaddingLeft()
               , bestTop
               , avoidanceColumn.getPaddingRight()
-              , slack / 2);
+              , bottomPadding + slack / 2);
         mediaLayoutParams.width = bestBoxWidth;
         mediaLayoutParams.height = bestBoxHeight;
         mediaLayoutParams.bottomMargin = mediaSeam;
@@ -2933,14 +3058,19 @@ final class OverlayAdContentView extends FrameLayout {
         return lowerContentHeight;
     }
 
-    // The full-screen face: one rounded card in the middle of the panel, as
-    // Google renders a responsive ad - the picture across its top, then the
-    // icon, the headline, the advertiser and rating, the body, all centred,
-    // and a wide pill to act. In landscape the picture takes the card's left
-    // and the rest stands beside it. The end card leads with the app: a big
-    // icon and the name over the picture. The picture yields first when the
-    // screen is short, then the body's lines, then the icon; a card that
-    // still cannot fit keeps the picture at its floor (FitCard).
+    // The full-screen face. The interstitial over the whole screen: the
+    // picture as large as it goes in the middle - under the controls' row
+    // across the width, or up to the screen's top between the two controls'
+    // columns, whichever is larger - and the app's strip at the foot, read
+    // from the left: the icon beside the name, the pitch, the button. The end
+    // card as the app's store page: the picture as a banner over its dimmed,
+    // blurred copy, then the listing (ArrangeEndCardListing) and the button at
+    // the foot. The app open ad a rounded card in the middle of the dimmed
+    // game: the picture across its top, then the app, the pitch and the
+    // button, centred. In landscape the picture takes the left and the rest
+    // stands beside it. The picture yields first when the screen is short,
+    // then the body's lines, then the icon; a face that still cannot fit keeps
+    // the picture at its floor (FitCard).
     private void BuildCard(
             Context context
           , DisplayMetrics displayMetrics
@@ -2956,28 +3086,59 @@ final class OverlayAdContentView extends FrameLayout {
           , NativeAdStarRatingView starRating
           , TextView body
           , Button callToAction) {
-        int width = displayMetrics.widthPixels;
-        int height = displayMetrics.heightPixels;
+        Point window = CardWindowSize(context);
+        // The window counts the cutout's bands, which this view's padding
+        // keeps clear (ApplyFullScreenContentInset): on the top edge upright,
+        // on a side edge turned. The card is arranged before that padding is
+        // set, so the bands are read from the display.
+        Rect cutout = CutoutInsets();
+        int width = window.x - cutout.left - cutout.right;
+        int height = window.y;
         boolean landscape = width > height;
         boolean endCard = layout == LAYOUT_END_CARD;
         boolean appBarShown = layout == LAYOUT_APP_OPEN && !redirectOnClose;
-        int margin = Math.round(CARD_MARGIN_DP * density);
+        int margin = bleedLayout ? 0 : Math.round(CARD_MARGIN_DP * density);
         int padding = Math.round(CARD_PADDING_DP * density);
+        int textWidth = Math.min(
+                width
+              , Math.round(BLEED_TEXT_MAX_WIDTH_DP * density));
+        // The controls never take a strip across the top. A landscape
+        // full-screen face has two gaps of its own beside its picture: one
+        // controls stands right of the picture, the other at the screen's
+        // right edge, both over the text's column (BuildCard). A landscape
+        // card has the screen's sides, so they take a column at each side; a
+        // full-screen portrait face lets them stand over its picture's
+        // corners or beside it (FitCard). Only the app open card without its
+        // bar keeps the strip, as the game around it is not the ad's to lay
+        // out.
+        int controlColumn = Math.round(
+                (CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_INSET_DP) * density);
+        boolean controlColumns = landscape && !appBarShown && !bleedLayout;
+        cardControlColumnPx = controlColumns ? controlColumn : 0;
         cardTopReservePx = Math.round(
                 (appBarShown
                         ? APP_BAR_HEIGHT_DP + 2 * APP_BAR_GAP_DP
-                        : CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_TOP_DP)
+                        : controlColumns || bleedLayout
+                                ? 0
+                                : CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_TOP_DP)
                         * density);
-        cardWidthPx = Math.min(
-                width - 2 * margin
-              , Math.round(
-                    (landscape
-                            ? CARD_LANDSCAPE_MAX_WIDTH_DP
-                            : CARD_MAX_WIDTH_DP)
-                            * density));
-        int cardMaxHeight = height - cardTopReservePx - margin;
-        cardBuiltWidthPx = width;
-        cardBuiltHeightPx = height;
+        cardWidthPx = bleedLayout
+                ? width - 2 * cardControlColumnPx
+                : Math.min(
+                      width - 2 * Math.max(margin, cardControlColumnPx)
+                    , Math.round(
+                          (landscape
+                                  ? CARD_LANDSCAPE_MAX_WIDTH_DP
+                                  : CARD_MAX_WIDTH_DP)
+                                  * density));
+        int cardMaxHeight = height
+                - cutout.top
+                - cutout.bottom
+                - cardTopReservePx
+                - margin;
+        cardBuiltWidthPx = window.x;
+        cardBuiltHeightPx = window.y;
+        cardBuiltCutout.set(cutout);
         cardColumn = card;
         cardMediaAspectRatio = mediaAspectRatio;
         cardIdentityText = identityText;
@@ -2998,23 +3159,28 @@ final class OverlayAdContentView extends FrameLayout {
         card.setGravity(Gravity.CENTER_HORIZONTAL);
         GradientDrawable shape = new GradientDrawable();
         shape.setShape(GradientDrawable.RECTANGLE);
-        shape.setColor(Color.parseColor(CARD_COLOR));
-        shape.setCornerRadius(CARD_CORNER_DP * density);
-        card.setBackground(shape);
-        card.setClipToOutline(true);
-        // Drawn over the media, so it holds the card's shape where the
-        // picture runs to the edge.
-        GradientDrawable edge = new GradientDrawable();
-        edge.setShape(GradientDrawable.RECTANGLE);
-        edge.setColor(Color.TRANSPARENT);
-        edge.setCornerRadius(CARD_CORNER_DP * density);
-        edge.setStroke(
-                Math.max(1, Math.round(density))
-              , Color.parseColor(
-                    IsLight(backgroundColor)
-                            ? CARD_EDGE_COLOR
-                            : CARD_DARK_EDGE_COLOR));
-        card.setForeground(edge);
+        shape.setColor(AdTheme.Surface(context));
+        if (bleedLayout) {
+            // The end card's face is see-through: its banner's backdrop
+            // stands behind it, on the surface the panel paints.
+            card.setBackground(endCard ? null : shape);
+            card.setClipToOutline(false);
+            card.setForeground(null);
+        } else {
+            shape.setCornerRadius(CARD_CORNER_DP * density);
+            card.setBackground(shape);
+            card.setClipToOutline(true);
+            // Drawn over the media, so it holds the card's shape where the
+            // picture runs to the edge.
+            GradientDrawable edge = new GradientDrawable();
+            edge.setShape(GradientDrawable.RECTANGLE);
+            edge.setColor(Color.TRANSPARENT);
+            edge.setCornerRadius(CARD_CORNER_DP * density);
+            edge.setStroke(
+                    Math.max(1, Math.round(density))
+                  , Color.parseColor(CARD_EDGE_COLOR));
+            card.setForeground(edge);
+        }
 
         Detach(icon);
         Detach(identityText);
@@ -3025,16 +3191,25 @@ final class OverlayAdContentView extends FrameLayout {
         CentreUnderIcon(advertiser);
         CentreUnderIcon(starRating);
         CentreUnderIcon(body);
-        headline.setTextSize(endCard ? 22f : 20f);
-        headline.setMaxLines(2);
+        SetCardTextSize(headline, endCard ? 22f : 20f);
+        headline.setMaxLines(CARD_HEADLINE_MAX_LINE_COUNT);
         headline.setEllipsize(TextUtils.TruncateAt.END);
-        advertiser.setTextSize(13f);
-        body.setTextSize(14f);
+        // Centred lines of even length, no word left alone on the last.
+        headline.setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED);
+        // The advertiser a step under the headline and over the body: its
+        // own weight and the ink at 70%, where the body is the grey.
+        SetCardTextSize(advertiser, 13f);
+        advertiser.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        advertiser.setTextColor(
+                (AdTheme.Ink(context) & 0x00FFFFFF) | 0xB3000000);
+        advertiser.setPadding(0, Math.round(2 * density), 0, 0);
+        SetCardTextSize(body, 14f);
         body.setMaxLines(MAX_BODY_LINE_COUNT);
         body.setLineSpacing(0f, 1.15f);
         body.setEllipsize(TextUtils.TruncateAt.END);
-        body.setPadding(0, Math.round(8 * density), 0, 0);
-        callToAction.setTextSize(16f);
+        body.setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED);
+        body.setPadding(0, Math.round(12 * density), 0, 0);
+        SetCardTextSize(callToAction, 16f);
         callToAction.setSingleLine(true);
         callToAction.setMinHeight(0);
         callToAction.setMinimumHeight(0);
@@ -3056,8 +3231,12 @@ final class OverlayAdContentView extends FrameLayout {
         callToActionParams.topMargin = Math.round(16 * density);
 
         if (mediaView != null) {
+            // Spread over the screen there is no card to cut in two: the
+            // letterbox is the surface the rest stands on.
             mediaView.setBackgroundColor(
-                    Color.parseColor(CARD_MEDIA_BACKDROP_COLOR));
+                    bleedLayout
+                            ? AdTheme.Surface(context)
+                            : Color.parseColor(CARD_MEDIA_BACKDROP_COLOR));
             mediaView.setMinimumWidth(0);
             mediaView.setMinimumHeight(0);
         }
@@ -3067,27 +3246,70 @@ final class OverlayAdContentView extends FrameLayout {
         info.setGravity(Gravity.CENTER);
         info.setPadding(padding, padding, padding, padding);
 
+        if (landscape && bleedLayout) {
+            // The text's column keeps the controls' strip at its top.
+            info.setPadding(
+                    padding
+                  , Math.max(
+                        padding
+                      , Math.round(
+                            (CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_TOP_DP)
+                                    * density))
+                  , padding
+                  , padding);
+        }
         if (landscape) {
-            cardHeightPx = Math.min(
-                    cardMaxHeight
-                  , Math.round(CARD_LANDSCAPE_MAX_HEIGHT_DP * density));
+            cardHeightPx = bleedLayout
+                    ? cardMaxHeight
+                    : Math.min(
+                          cardMaxHeight
+                        , Math.round(CARD_LANDSCAPE_MAX_HEIGHT_DP * density));
             int mediaWidth = 0;
+            cardLandscapeMediaHeightPx = 0;
+            cardLandscapeMediaWidthPx = 0;
+            // In from the card's left, top and bottom (CardMediaInsetPx).
+            int mediaInset = CardMediaInsetPx(density);
             if (mediaView != null) {
+                int mediaRoom = cardHeightPx - 2 * mediaInset;
                 mediaWidth = Math.max(
                         minimumMediaSize
                       , Math.min(
                             Math.round(cardWidthPx * CARD_LANDSCAPE_MEDIA_SHARE)
-                          , Math.round(cardHeightPx * mediaAspectRatio)));
-                PlaceCardMedia(
-                        card
-                      , mediaView
-                      , new LinearLayout.LayoutParams(
-                            mediaWidth
-                          , ViewGroup.LayoutParams.MATCH_PARENT));
+                          , Math.round(mediaRoom * mediaAspectRatio)));
+                // The creative's own height at that width, centred beside
+                // the column: a full-height box made the player draw black
+                // bands above and below a wide video.
+                cardLandscapeMediaHeightPx = Math.min(
+                        mediaRoom
+                      , Math.max(
+                            minimumMediaSize
+                          , Math.round(mediaWidth / mediaAspectRatio)));
+                LinearLayout.LayoutParams mediaParams =
+                        new LinearLayout.LayoutParams(
+                                mediaWidth
+                              , cardLandscapeMediaHeightPx);
+                mediaParams.gravity = Gravity.CENTER_VERTICAL;
+                mediaParams.setMargins(mediaInset, mediaInset, 0, mediaInset);
+                PlaceCardMedia(card, mediaView, mediaParams);
+                cardLandscapeMediaWidthPx = mediaWidth;
             }
-            info.addView(icon, iconParams);
-            info.addView(identityText, textParams);
-            info.addView(body, new LinearLayout.LayoutParams(textParams));
+            if (endCard) {
+                ArrangeEndCardListing(
+                        context
+                      , density
+                      , info
+                      , icon
+                      , iconParams
+                      , identityText
+                      , headline
+                      , advertiser
+                      , starRating
+                      , body);
+            } else {
+                info.addView(icon, iconParams);
+                info.addView(identityText, textParams);
+                info.addView(body, new LinearLayout.LayoutParams(textParams));
+            }
             info.addView(callToAction, callToActionParams);
             card.addView(
                     info
@@ -3096,8 +3318,11 @@ final class OverlayAdContentView extends FrameLayout {
                       , ViewGroup.LayoutParams.MATCH_PARENT
                       , 1f));
             cardLandscape = true;
+            cardMediaInsetPx = 0;
             cardFitColumn = info;
-            cardFitWidthPx = cardWidthPx - mediaWidth;
+            cardFitWidthPx = cardWidthPx
+                    - mediaWidth
+                    - (mediaView != null ? mediaInset : 0);
             cardMaxHeightPx = cardHeightPx;
             cardMedia = mediaView;
             cardBody = body;
@@ -3106,52 +3331,110 @@ final class OverlayAdContentView extends FrameLayout {
             return;
         }
 
-        cardHeightPx = ViewGroup.LayoutParams.WRAP_CONTENT;
-        LinearLayout lower = info;
-        if (endCard) {
-            // The app first, then its picture, then the pitch and the button.
-            LinearLayout head = new LinearLayout(context);
-            head.setOrientation(LinearLayout.VERTICAL);
-            head.setGravity(Gravity.CENTER_HORIZONTAL);
-            head.setPadding(padding, padding + Math.round(8 * density), padding, Math.round(12 * density));
-            head.addView(icon, iconParams);
-            head.addView(identityText, textParams);
-            card.addView(
-                    head
-                  , 0
-                  , new LinearLayout.LayoutParams(
+        cardHeightPx = bleedLayout
+                ? cardMaxHeight
+                : ViewGroup.LayoutParams.WRAP_CONTENT;
+        LinearLayout.LayoutParams mediaParams =
+                new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT
-                      , ViewGroup.LayoutParams.WRAP_CONTENT));
-            if (mediaView != null) {
-                PlaceCardMedia(
-                        card
-                      , mediaView
-                      , new LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                          , 0));
-            }
-            info.setPadding(padding, Math.round(4 * density), padding, padding);
-            info.addView(body, new LinearLayout.LayoutParams(textParams));
-            info.addView(callToAction, callToActionParams);
-        } else {
-            if (mediaView != null) {
-                PlaceCardMedia(
-                        card
-                      , mediaView
-                      , new LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                          , 0));
-            }
+                      , 0);
+        mediaParams.gravity = Gravity.CENTER_HORIZONTAL;
+        // In from the card's top and sides (CardMediaInsetPx).
+        int mediaInset = CardMediaInsetPx(density);
+        mediaParams.setMargins(mediaInset, mediaInset, mediaInset, 0);
+        cardMediaInsetPx = mediaInset;
+        LinearLayout.LayoutParams footParams =
+                new LinearLayout.LayoutParams(
+                        textWidth - 2 * padding
+                      , Math.round(CARD_CTA_HEIGHT_DP * density));
+        // The button apart from the pitch above it, however tight the face.
+        footParams.topMargin = padding;
+        footParams.bottomMargin = padding + Math.round(8 * density);
+        if (!bleedLayout) {
+            // The app open card: the picture across its top, then the app,
+            // the pitch and the button, centred.
+            if (mediaView != null) PlaceCardMedia(card, mediaView, mediaParams);
             info.addView(icon, iconParams);
             info.addView(identityText, textParams);
             info.addView(body, new LinearLayout.LayoutParams(textParams));
             info.addView(callToAction, callToActionParams);
+            card.addView(
+                    info
+                  , new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                      , ViewGroup.LayoutParams.WRAP_CONTENT));
+        } else if (endCard) {
+            // The end card is the app's store page, as the networks draw the
+            // card after a video: the creative as the page's banner across
+            // the top, then the listing read from the left - the big icon
+            // beside the name and the advertiser, the figures a store shows,
+            // the pitch - and the button at the foot.
+            if (mediaView != null) PlaceCardMedia(card, mediaView, mediaParams);
+            info.setPadding(padding, padding, padding, 0);
+            ArrangeEndCardListing(
+                    context
+                  , density
+                  , info
+                  , icon
+                  , iconParams
+                  , identityText
+                  , headline
+                  , advertiser
+                  , starRating
+                  , body);
+            card.addView(
+                    info
+                  , new LinearLayout.LayoutParams(
+                        textWidth
+                      , ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.addView(new Space(context), new LinearLayout.LayoutParams(0, 0, 1f));
+            card.addView(callToAction, footParams);
+        } else {
+            // The interstitial is the creative's stage, as Google's own
+            // full-screen native ads are: the picture as large as it goes in
+            // the middle of what the app's strip leaves; the strip at the
+            // foot, read from the left as a store's listing row - the icon
+            // beside the name, the pitch, then the button.
+            if (mediaView != null) PlaceCardMedia(card, mediaView, mediaParams);
+            card.addView(new Space(context), 0, new LinearLayout.LayoutParams(0, 0, 1f));
+            card.addView(new Space(context), new LinearLayout.LayoutParams(0, 0, 1f));
+            for (View text : new View[] {
+                    identityText, headline, advertiser, starRating, body }) {
+                AlignStart(text);
+            }
+            identityText.setGravity(Gravity.START);
+            headline.setMaxLines(2);
+            headline.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+            body.setMaxLines(2);
+            body.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            iconParams.gravity = Gravity.CENTER_VERTICAL;
+            iconParams.bottomMargin = 0;
+            iconParams.rightMargin = Math.round(12 * density);
+            row.addView(icon, iconParams);
+            row.addView(
+                    identityText
+                  , new LinearLayout.LayoutParams(
+                        0
+                      , ViewGroup.LayoutParams.WRAP_CONTENT
+                      , 1f));
+            info.setGravity(Gravity.START);
+            info.setPadding(padding, padding, padding, 0);
+            info.addView(
+                    row
+                  , new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                      , ViewGroup.LayoutParams.WRAP_CONTENT));
+            info.addView(body, new LinearLayout.LayoutParams(textParams));
+            card.addView(
+                    info
+                  , new LinearLayout.LayoutParams(
+                        textWidth
+                      , ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.addView(callToAction, footParams);
         }
-        card.addView(
-                lower
-              , new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                  , ViewGroup.LayoutParams.WRAP_CONTENT));
 
         cardLandscape = false;
         cardFitColumn = card;
@@ -3161,7 +3444,8 @@ final class OverlayAdContentView extends FrameLayout {
         cardBody = body;
         cardIcon = icon;
         cardMinimumMediaPx = minimumMediaSize;
-        cardNaturalMediaHeightPx = Math.round(cardWidthPx / mediaAspectRatio);
+        cardNaturalMediaHeightPx =
+                Math.round((cardWidthPx - 2 * mediaInset) / mediaAspectRatio);
     }
 
     // Sizes the card BuildCard arranged, now that its text is bound. In
@@ -3177,56 +3461,255 @@ final class OverlayAdContentView extends FrameLayout {
                     cardFitColumn
                   , cardFitWidthPx
                   , cardMaxHeightPx
+                  , cardHeadline
                   , cardBody
                   , cardIcon
                   , density);
+            // The face no taller than what it holds, centred in its room:
+            // the picture then reaches the face's top, where the badge and
+            // the AdChoices mark sit.
+            int textHeight = MeasureColumnHeight(cardFitColumn, cardFitWidthPx);
+            cardHeightPx = Math.min(
+                    cardMaxHeightPx
+                  , Math.max(
+                        cardLandscapeMediaHeightPx
+                                + 2 * CardMediaInsetPx(density)
+                      , textHeight));
+            ApplyCardHeight();
             return;
         }
 
-        int mediaCap = Math.round(cardMaxHeightPx * CARD_PORTRAIT_MEDIA_SHARE);
+        boolean endCard = layout == LAYOUT_END_CARD;
+        // The end card's picture gives the app the middle; the
+        // interstitial's is the face.
+        int mediaCap = Math.round(
+                cardMaxHeightPx
+                        * (!bleedLayout
+                                ? CARD_PORTRAIT_MEDIA_SHARE
+                                : endCard ? END_CARD_MEDIA_SHARE : 1f));
+        // The controls stand in the face's top corners. The picture either
+        // keeps under the strip they stand in, at the face's whole width,
+        // or rises to the face's top between the columns they stand in; the
+        // larger picture wins.
+        int strip = Math.round(
+                (CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_TOP_DP) * density);
+        int column = Math.round(
+                (CONTROL_STRIP_HEIGHT_DP + 2 * CARD_CONTROL_INSET_DP) * density);
         for (int step = 0; ; ++step) {
+            cardFitColumn.setPadding(0, 0, 0, 0);
             // The picture's row measures at zero, so this is the text alone.
             int textHeight = MeasureColumnHeight(cardFitColumn, cardFitWidthPx);
+            int room = cardMaxHeightPx - textHeight;
             int mediaHeight = cardMedia == null
                     ? 0
                     : Math.min(
                           cardNaturalMediaHeightPx
-                        , Math.min(mediaCap, cardMaxHeightPx - textHeight));
+                        , Math.min(mediaCap, room - (bleedLayout ? strip : 0)));
+            int top = bleedLayout && cardMedia != null ? strip : 0;
+            if (bleedLayout && cardMedia != null) {
+                int between = Math.min(
+                        Math.round((cardFitWidthPx - 2 * column) / cardMediaAspectRatio)
+                      , Math.min(mediaCap, room));
+                int underWidth = Math.min(
+                        cardFitWidthPx
+                      , Math.round(mediaHeight * cardMediaAspectRatio));
+                int betweenWidth = Math.round(between * cardMediaAspectRatio);
+                if ((long) betweenWidth * between > (long) underWidth * mediaHeight) {
+                    mediaHeight = between;
+                    top = 0;
+                }
+            }
             boolean fits = cardMedia == null
                     ? textHeight <= cardMaxHeightPx
                     : mediaHeight >= cardMinimumMediaPx;
             if (fits) {
-                if (cardMedia != null) {
-                    cardMedia.getLayoutParams().height = mediaHeight;
-                    cardMedia.requestLayout();
-                }
+                cardFitColumn.setPadding(0, top, 0, 0);
+                if (cardMedia != null) SizeCardMedia(mediaHeight);
                 return;
             }
-            if (!GiveWay(step, cardBody, cardIcon, density)) {
+            if (!GiveWay(step, cardHeadline, cardBody, cardIcon, density)) {
                 if (cardMedia != null) {
-                    cardMedia.getLayoutParams().height = cardMinimumMediaPx;
-                    cardMedia.requestLayout();
+                    cardFitColumn.setPadding(0, bleedLayout ? strip : 0, 0, 0);
+                    SizeCardMedia(cardMinimumMediaPx);
                 }
                 return;
             }
         }
     }
 
-    // One step of giving way, in order: the body to one line, the body
-    // gone, the icon smaller. False when nothing is left to give.
+    // The picture at this height, its box no wider than the creative at that
+    // height: a player letterboxes in black, which a tall video's sides would
+    // show across the face, and on the app open card would split it.
+    private void SizeCardMedia(int height) {
+        ViewGroup.LayoutParams params = cardMedia.getLayoutParams();
+        params.height = height;
+        params.width = Math.min(
+                cardFitWidthPx - 2 * cardMediaInsetPx
+              , Math.round(height * cardMediaAspectRatio));
+        cardMedia.requestLayout();
+    }
+
+    // The card's column and view at the height FitCard settled on.
+    private void ApplyCardHeight() {
+        if (cardColumn != null
+                && cardColumn.getLayoutParams() != null) {
+            cardColumn.getLayoutParams().height = cardHeightPx;
+            cardColumn.requestLayout();
+        }
+        if (nativeAdView != null
+                && nativeAdView.getParent() != null) {
+            nativeAdView.setLayoutParams(CardParams());
+        }
+    }
+
+    // The badge and the SDK's AdChoices mark on the picture's top corners,
+    // their centres on one line. The SDK pins its mark to the NativeAdView's
+    // padded corner (InsetCardAdChoices), so the padding follows the
+    // picture and our own views reach back out by as much.
+    private void FollowCardMedia() {
+        LinearLayout column = cardLayout ? cardColumn : halfColumn;
+        View media = cardLayout ? cardMedia : halfMedia;
+        if (released
+                || nativeAdView == null
+                || column == null
+                || cardAttribution == null) {
+            return;
+        }
+
+        float density = getResources().getDisplayMetrics().density;
+        int inset = Math.round(CARD_CONTROL_INSET_DP * density);
+        if (cardLayout && countdown != null && close != null) {
+            int nearInset = inset + CardNearControlOffsetPx();
+            int top = Math.round(CARD_CONTROL_TOP_DP * density);
+            UpdateControlInsets(countdown, nearInset, inset, top);
+            UpdateControlInsets(close, nearInset, inset, top);
+        }
+        boolean onMedia = media != null
+                && media.getVisibility() == View.VISIBLE
+                && media.getWidth() > 0;
+        int mediaLeft = onMedia ? media.getLeft() : 0;
+        int mediaTop = onMedia ? media.getTop() : 0;
+        int mediaRight = onMedia ? media.getRight() : column.getWidth();
+        PlaceEndCardBackdrop(media, onMedia);
+        // Flush on the picture's top corners, as on the rect ads: they are
+        // square everywhere, the app open card's picture standing clear of
+        // its rounding (CardMediaInsetPx). A half panel with no picture keeps
+        // them off its corners instead.
+        int markInset = !cardLayout && !onMedia
+                ? Math.round(HALF_MARK_INSET_DP * density)
+                : 0;
+        AdTheme.ShapeBadge(cardAttribution, markInset == 0);
+        Rect padding = new Rect(
+                0
+              , mediaTop + markInset
+              , Math.max(0, column.getWidth() - mediaRight) + markInset
+              , 0);
+        if (padding.equals(cardMarkPadding)) return;
+
+        cardMarkPadding.set(padding);
+        nativeAdView.setPadding(
+                padding.left
+              , padding.top
+              , padding.right
+              , padding.bottom);
+        nativeAdView.setClipToPadding(false);
+        FrameLayout.LayoutParams columnParams =
+                (FrameLayout.LayoutParams) column.getLayoutParams();
+        columnParams.setMargins(
+                -padding.left
+              , -padding.top
+              , -padding.right
+              , -padding.bottom);
+        column.setLayoutParams(columnParams);
+        FrameLayout.LayoutParams badgeParams =
+                (FrameLayout.LayoutParams) cardAttribution.getLayoutParams();
+        badgeParams.setMargins(
+                mediaLeft + markInset - padding.left
+              , mediaTop + markInset - padding.top
+              , 0
+              , 0);
+        cardAttribution.setLayoutParams(badgeParams);
+    }
+
+    // How far the app open card's picture stands in from each edge it
+    // meets: by what the card's rounding takes from a corner, so its own
+    // corners touch the curve and not a pixel of the creative is cut - the
+    // native policy lets a picture lose only width, a video nothing.
+    // Nothing on the full-screen faces, whose corners are square.
+    private int CardMediaInsetPx(float density) {
+        return cardLayout && !bleedLayout
+                ? RectAdViewFactory.CornerInsetForRadius(
+                        Math.round(CARD_CORNER_DP * density))
+                : 0;
+    }
+
+    // How far right of the screen's left edge the left control's gap is: on
+    // the landscape full-screen face, the picture's right edge as laid out,
+    // or as arranged before that.
+    private int CardNearControlOffsetPx() {
+        if (!cardLandscape || !bleedLayout) return 0;
+
+        View media = cardMedia;
+        if (media == null
+                || media.getVisibility() != View.VISIBLE
+                || media.getWidth() <= 0) {
+            return cardLandscapeMediaWidthPx;
+        }
+        int[] mediaAt = new int[2];
+        int[] selfAt = new int[2];
+        media.getLocationInWindow(mediaAt);
+        getLocationInWindow(selfAt);
+        // From the padding's edge, where the controls' margins count from.
+        return Math.max(
+                0, mediaAt[0] - selfAt[0] - getPaddingLeft() + media.getWidth());
+    }
+
+    // The card's window: the whole screen, as the full-screen activity hides
+    // the system bars and lays out into the cutout. displayMetrics leaves the
+    // navigation bar's side out in landscape (2307 of 2400px on a Redmi Note
+    // 11, 2026-11-27), which pushed the face off centre.
+    @SuppressWarnings("deprecation")
+    private static Point CardWindowSize(Context context) {
+        WindowManager windowManager =
+                (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Rect bounds = windowManager.getMaximumWindowMetrics().getBounds();
+            return new Point(bounds.width(), bounds.height());
+        }
+        DisplayMetrics real = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getRealMetrics(real);
+        return new Point(real.widthPixels, real.heightPixels);
+    }
+
+    // One step of giving way, in order: the body a line at a time to one,
+    // the headline to two lines, the headline a size smaller, the body gone,
+    // the icon smaller. The headline holds its lines before the body; it is
+    // the ad's name. False when nothing is left to give.
     private static boolean GiveWay(
             int step
+          , TextView headline
           , TextView body
           , ImageView icon
           , float density) {
         switch (step) {
             case 0:
-                body.setMaxLines(MIN_BODY_LINE_COUNT);
+                body.setMaxLines(MAX_BODY_LINE_COUNT - 1);
                 return true;
             case 1:
-                body.setVisibility(View.GONE);
+                body.setMaxLines(MIN_BODY_LINE_COUNT);
                 return true;
             case 2:
+                headline.setMaxLines(CARD_HEADLINE_MAX_LINE_COUNT - 1);
+                return true;
+            case 3:
+                headline.setTextSize(
+                        TypedValue.COMPLEX_UNIT_PX
+                      , headline.getTextSize() * 0.9f);
+                return true;
+            case 4:
+                body.setVisibility(View.GONE);
+                return true;
+            case 5:
                 int small = Math.round(CARD_SMALL_ICON_DP * density);
                 ViewGroup.LayoutParams params = icon.getLayoutParams();
                 params.width = small;
@@ -3243,13 +3726,33 @@ final class OverlayAdContentView extends FrameLayout {
             LinearLayout info
           , int width
           , int height
+          , TextView headline
           , TextView body
           , ImageView icon
           , float density) {
         for (int step = 0; ; ++step) {
             if (MeasureColumnHeight(info, width) <= height) return true;
-            if (!GiveWay(step, body, icon, density)) return false;
+            if (!GiveWay(step, headline, body, icon, density)) return false;
         }
+    }
+
+    // Card text at the device's font scale, up to CARD_MAX_FONT_SCALE.
+    private static void SetCardTextSize(TextView view, float sp) {
+        float scale = Math.min(
+                view.getResources().getConfiguration().fontScale
+              , CARD_MAX_FONT_SCALE);
+        view.setTextSize(
+                TypedValue.COMPLEX_UNIT_PX
+              , sp * view.getResources().getDisplayMetrics().density * scale);
+    }
+
+    // Where the card stands: in the middle of what the controls leave, or
+    // from under them to the foot of the screen when it spreads over it.
+    private FrameLayout.LayoutParams CardParams() {
+        return new FrameLayout.LayoutParams(
+                cardWidthPx
+              , cardHeightPx
+              , bleedLayout && !cardLandscape ? Gravity.TOP : Gravity.CENTER);
     }
 
     // A bound MediaView may not leave its parent, so a card arranged again
@@ -3277,8 +3780,8 @@ final class OverlayAdContentView extends FrameLayout {
         if (released || cardColumn == null || nativeAdView == null) return;
 
         DisplayMetrics metrics = getContext().getResources().getDisplayMetrics();
-        if (metrics.widthPixels == cardBuiltWidthPx
-                && metrics.heightPixels == cardBuiltHeightPx) {
+        Point window = CardWindowSize(getContext());
+        if (window.x == cardBuiltWidthPx && window.y == cardBuiltHeightPx) {
             return;
         }
         float density = metrics.density;
@@ -3303,25 +3806,209 @@ final class OverlayAdContentView extends FrameLayout {
                 new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT
                       , cardHeightPx));
-        nativeAdView.setLayoutParams(
-                new FrameLayout.LayoutParams(
-                        cardWidthPx
-                      , cardHeightPx
-                      , Gravity.CENTER));
+        nativeAdView.setLayoutParams(CardParams());
+        // The new column has lost the reach-back margins: placed again.
+        cardMarkPadding.setEmpty();
         if (nativeAdContainer != null) {
             nativeAdContainer.setPadding(
-                    0
+                    cardControlColumnPx
                   , cardTopReservePx
-                  , 0
-                  , Math.round(CARD_MARGIN_DP * density));
+                  , cardControlColumnPx
+                  , bleedLayout ? 0 : Math.round(CARD_MARGIN_DP * density));
         }
-        if (appBar != null) {
-            int barHeight = Math.round(APP_BAR_HEIGHT_DP * density);
-            ViewGroup.LayoutParams barParams = appBar.getLayoutParams();
-            barParams.width = Math.round(metrics.widthPixels * APP_BAR_WIDTH_SHARE)
-                    + Math.round(barHeight / 2f);
-            appBar.setLayoutParams(barParams);
+    }
+
+    // The end card's listing in its info column, read from the left: the
+    // icon beside the name and the advertiser, the store's figures - the
+    // rating's stars, the price, the store, apart by hairlines, only those
+    // the ad carries - and the pitch.
+    private void ArrangeEndCardListing(
+            Context context
+          , float density
+          , LinearLayout info
+          , ImageView icon
+          , LinearLayout.LayoutParams iconParams
+          , LinearLayout identityText
+          , TextView headline
+          , TextView advertiser
+          , NativeAdStarRatingView starRating
+          , TextView body) {
+        for (View text : new View[] { identityText, headline, advertiser, body }) {
+            AlignStart(text);
         }
+        identityText.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        headline.setMaxLines(2);
+        headline.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+        body.setMaxLines(3);
+        body.setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
+        body.setPadding(0, Math.round(16 * density), 0, 0);
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        iconParams.gravity = Gravity.CENTER_VERTICAL;
+        iconParams.bottomMargin = 0;
+        iconParams.rightMargin = Math.round(16 * density);
+        row.addView(icon, iconParams);
+        row.addView(
+                identityText
+              , new LinearLayout.LayoutParams(
+                    0
+                  , ViewGroup.LayoutParams.WRAP_CONTENT
+                  , 1f));
+        // Centred down the column beside a landscape picture.
+        info.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        info.addView(
+                row
+              , new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                  , ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Detach(starRating);
+        SetCardTextSize(starRating, 15f);
+        List<View> figures = new ArrayList<>();
+        for (View figure : new View[] { starRating, cardPrice, cardStore }) {
+            if (figure == null) continue;
+
+            Detach(figure);
+            if (figure.getVisibility() != View.GONE) figures.add(figure);
+        }
+        if (!figures.isEmpty()) {
+            LinearLayout figuresRow = new LinearLayout(context);
+            figuresRow.setOrientation(LinearLayout.HORIZONTAL);
+            figuresRow.setGravity(Gravity.CENTER_VERTICAL);
+            for (int index = 0; index < figures.size(); ++index) {
+                if (index > 0) {
+                    View hairline = new View(context);
+                    hairline.setBackgroundColor(
+                            AdTheme.IsDark(context) ? 0xFF444746 : 0xFFDADCE0);
+                    figuresRow.addView(
+                            hairline
+                          , new LinearLayout.LayoutParams(
+                                Math.max(1, Math.round(density))
+                              , Math.round(20 * density)));
+                }
+                FrameLayout cell = new FrameLayout(context);
+                cell.addView(
+                        figures.get(index)
+                      , new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                          , ViewGroup.LayoutParams.WRAP_CONTENT
+                          , Gravity.CENTER));
+                figuresRow.addView(
+                        cell
+                      , new LinearLayout.LayoutParams(
+                            0
+                          , ViewGroup.LayoutParams.WRAP_CONTENT
+                          , 1f));
+            }
+            LinearLayout.LayoutParams figuresParams =
+                    new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                          , ViewGroup.LayoutParams.WRAP_CONTENT);
+            figuresParams.topMargin = Math.round(16 * density);
+            info.addView(figuresRow, figuresParams);
+        }
+        info.addView(
+                body
+              , new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                  , ViewGroup.LayoutParams.WRAP_CONTENT));
+        EnsureEndCardBackdrop(context);
+    }
+
+    // A store figure of the end card - the price or the store - in the ink,
+    // a step over the body; gone when the ad does not carry it.
+    private static TextView CreateEndCardFigure(Context context, String value) {
+        TextView figure = new TextView(context);
+        figure.setTextColor(AdTheme.Ink(context));
+        figure.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        SetCardTextSize(figure, 15f);
+        figure.setSingleLine(true);
+        figure.setEllipsize(TextUtils.TruncateAt.END);
+        figure.setIncludeFontPadding(false);
+        if (TextUtils.isEmpty(value)) {
+            figure.setVisibility(View.GONE);
+        } else {
+            figure.setText(value);
+        }
+        return figure;
+    }
+
+    // The dimmed, blurred copy of the creative's picture the end card's
+    // banner stands on, behind the ad view; a plain tone when the ad carries
+    // no picture to copy. Blurred where the platform can (Android 12 on).
+    private void EnsureEndCardBackdrop(Context context) {
+        if (cardBackdrop != null) return;
+
+        FrameLayout backdrop = new FrameLayout(context);
+        backdrop.setBackgroundColor(AdTheme.IsDark(context) ? 0xFF1F1F1F : 0xFFE9EEF6);
+        backdrop.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        Drawable image = FindFallbackMediaImage();
+        com.google.android.gms.ads.MediaContent mediaContent = nativeAd.getMediaContent();
+        if (image == null && mediaContent != null) image = mediaContent.getMainImage();
+        if (image != null) {
+            Drawable.ConstantState state = image.getConstantState();
+            ImageView copy = new ImageView(context);
+            copy.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            copy.setImageDrawable(state != null ? state.newDrawable().mutate() : image);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                float radius = 24 * context.getResources().getDisplayMetrics().density;
+                copy.setRenderEffect(
+                        RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP));
+            }
+            backdrop.addView(
+                    copy
+                  , new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                      , ViewGroup.LayoutParams.MATCH_PARENT));
+            View dim = new View(context);
+            dim.setBackgroundColor(0x8C000000);
+            backdrop.addView(
+                    dim
+                  , new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                      , ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+        // Drawn from the screen's edge, through this view's cutout padding.
+        setClipToPadding(false);
+        addView(backdrop, 0, new FrameLayout.LayoutParams(0, 0));
+        cardBackdrop = backdrop;
+    }
+
+    // Across the screen from its top edge to the foot of the picture, or in
+    // landscape down the screen from its left edge to the picture's right:
+    // the controls stand on it, clear of the creative.
+    private void PlaceEndCardBackdrop(View media, boolean onMedia) {
+        if (cardBackdrop == null) return;
+
+        cardBackdrop.setVisibility(onMedia ? View.VISIBLE : View.GONE);
+        // In portrait the controls stand on it; in landscape on the listing.
+        StyleControls(onMedia && !cardLandscape);
+        if (!onMedia) return;
+
+        int[] mediaAt = new int[2];
+        int[] selfAt = new int[2];
+        media.getLocationInWindow(mediaAt);
+        getLocationInWindow(selfAt);
+        int width = cardLandscape
+                ? mediaAt[0] - selfAt[0] + media.getWidth()
+                : getWidth();
+        int height = cardLandscape
+                ? getHeight()
+                : mediaAt[1] - selfAt[1] + media.getHeight();
+        FrameLayout.LayoutParams params =
+                (FrameLayout.LayoutParams) cardBackdrop.getLayoutParams();
+        if (params.width == width
+                && params.height == height
+                && params.leftMargin == -getPaddingLeft()
+                && params.topMargin == -getPaddingTop()) {
+            return;
+        }
+        params.width = width;
+        params.height = height;
+        params.leftMargin = -getPaddingLeft();
+        params.topMargin = -getPaddingTop();
+        cardBackdrop.setLayoutParams(params);
     }
 
     private static void Detach(View view) {
@@ -3345,7 +4032,7 @@ final class OverlayAdContentView extends FrameLayout {
         bar.setPadding(side, 0, side, 0);
         GradientDrawable shape = new GradientDrawable();
         shape.setShape(GradientDrawable.RECTANGLE);
-        shape.setColor(Color.parseColor(APP_BAR_COLOR));
+        shape.setColor(AdTheme.Surface(context));
         float round = barHeight / 2f;
         shape.setCornerRadii(new float[] {
                 round, round, 0f, 0f, 0f, 0f, round, round });
@@ -3369,15 +4056,26 @@ final class OverlayAdContentView extends FrameLayout {
         TextView name = new TextView(context);
         name.setText(packages.getApplicationLabel(application));
         name.setTextSize(15f);
-        name.setTextColor(Color.parseColor(PRIMARY_TEXT_ON_LIGHT_COLOR));
+        name.setTextColor(AdTheme.Ink(context));
         name.setSingleLine(true);
         name.setEllipsize(TextUtils.TruncateAt.END);
+        // The bar hugs what it holds; a long name gives way first.
+        name.setMaxWidth(Math.round(CardWindowSize(context).x * 0.4f));
         bar.addView(
                 name
               , new LinearLayout.LayoutParams(
-                    0
-                  , ViewGroup.LayoutParams.WRAP_CONTENT
-                  , 1f));
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                  , ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // The spinner and Continue to app share one slot as wide as the
+        // wider, so the bar keeps its length when one replaces the other.
+        FrameLayout state = new FrameLayout(context);
+        LinearLayout.LayoutParams stateParams =
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                      , ViewGroup.LayoutParams.WRAP_CONTENT);
+        stateParams.setMarginStart(Math.round(APP_BAR_NAME_GAP_DP * density));
+        bar.addView(state, stateParams);
 
         ProgressBar spinner = new ProgressBar(
                 context
@@ -3385,40 +4083,49 @@ final class OverlayAdContentView extends FrameLayout {
               , android.R.attr.progressBarStyleSmall);
         spinner.setIndeterminateTintList(
                 ColorStateList.valueOf(
-                        Color.parseColor(APP_BAR_ACTION_COLOR)));
+                        AdTheme.Primary(context)));
         int spinnerSize = Math.round(20 * density);
-        LinearLayout.LayoutParams spinnerParams =
-                new LinearLayout.LayoutParams(spinnerSize, spinnerSize);
+        FrameLayout.LayoutParams spinnerParams =
+                new FrameLayout.LayoutParams(
+                        spinnerSize
+                      , spinnerSize
+                      , Gravity.END | Gravity.CENTER_VERTICAL);
         spinnerParams.setMarginEnd(Math.round(barHeight / 2f));
-        bar.addView(spinner, spinnerParams);
+        state.addView(spinner, spinnerParams);
 
         LinearLayout ready = new LinearLayout(context);
         ready.setOrientation(LinearLayout.HORIZONTAL);
         ready.setGravity(Gravity.CENTER_VERTICAL);
         TextView go = new TextView(context);
         go.setText(APP_BAR_CONTINUE_TEXT);
-        go.setTextSize(14f);
-        go.setTextColor(Color.parseColor(APP_BAR_SECONDARY_COLOR));
+        // The action, so it weighs as much as the name beside it.
+        go.setTextSize(15f);
+        go.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        go.setTextColor(AdTheme.Ink(context));
         go.setSingleLine(true);
         ready.addView(go);
         View chevron = new View(context);
         chevron.setBackground(new ChevronDrawable(
                 density
-              , Color.parseColor(APP_BAR_ACTION_COLOR)));
+              , AdTheme.Primary(context)));
         int chevronSize = Math.round(22 * density);
         LinearLayout.LayoutParams chevronParams =
                 new LinearLayout.LayoutParams(chevronSize, chevronSize);
         chevronParams.setMarginStart(Math.round(6 * density));
         chevronParams.setMarginEnd(Math.round(barHeight / 2f - 6 * density));
         ready.addView(chevron, chevronParams);
-        bar.addView(ready);
+        state.addView(
+                ready
+              , new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                  , ViewGroup.LayoutParams.WRAP_CONTENT
+                  , Gravity.END | Gravity.CENTER_VERTICAL));
 
         bar.setOnClickListener(view -> {
             if (countDownRemainingMs <= 0L && onClose != null) onClose.run();
         });
         FrameLayout.LayoutParams barParams = new FrameLayout.LayoutParams(
-                Math.round(displayMetrics.widthPixels * APP_BAR_WIDTH_SHARE)
-                        + Math.round(barHeight / 2f)
+                ViewGroup.LayoutParams.WRAP_CONTENT
               , barHeight
               , Gravity.TOP | Gravity.END);
         barParams.topMargin = Math.round(APP_BAR_GAP_DP * density);
@@ -3439,8 +4146,9 @@ final class OverlayAdContentView extends FrameLayout {
         boolean done = countDownRemainingMs <= 0L;
         if (countdown != null) countdown.setVisibility(View.GONE);
         if (close != null) close.setVisibility(View.GONE);
-        appBarSpinner.setVisibility(done ? View.GONE : View.VISIBLE);
-        appBarReady.setVisibility(done ? View.VISIBLE : View.GONE);
+        // Invisible, not gone: the slot keeps the wider one's width.
+        appBarSpinner.setVisibility(done ? View.INVISIBLE : View.VISIBLE);
+        appBarReady.setVisibility(done ? View.VISIBLE : View.INVISIBLE);
     }
 
     // A chevron pointing right, drawn as the close cross is: two round-ended
@@ -3488,6 +4196,20 @@ final class OverlayAdContentView extends FrameLayout {
         }
     }
 
+    // Read from the left, as a listing row.
+    private static void AlignStart(View view) {
+        if (view == null) return;
+
+        if (view instanceof TextView) {
+            ((TextView) view).setGravity(Gravity.START);
+        }
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if (params instanceof LinearLayout.LayoutParams) {
+            ((LinearLayout.LayoutParams) params).gravity = Gravity.START;
+            view.setLayoutParams(params);
+        }
+    }
+
     private static void CentreUnderIcon(View view) {
         if (view == null) return;
 
@@ -3502,29 +4224,13 @@ final class OverlayAdContentView extends FrameLayout {
         }
     }
 
-    // Whether the panel reads as light, so its text goes dark. A panel
-    // mostly see-through shows the game, whose shade nothing here knows,
-    // and keeps the white text.
-    private static boolean IsLight(int color) {
-        if (Color.alpha(color) < 128) {
-            return false;
-        }
-        double luminance =
-                (0.2126 * Color.red(color)
-                        + 0.7152 * Color.green(color)
-                        + 0.0722 * Color.blue(color))
-                        / 255.0;
-        return luminance > 0.5;
-    }
-
-    private void ColorText(boolean onLight) {
-        int primary = onLight
-                ? Color.parseColor(PRIMARY_TEXT_ON_LIGHT_COLOR)
-                : Color.WHITE;
-        int secondary = Color.parseColor(
-                onLight
-                        ? SECONDARY_TEXT_ON_LIGHT_COLOR
-                        : SECONDARY_TEXT_COLOR);
+    // On the theme's surface, or white on a picture's veil.
+    private void ColorText(boolean onSurface) {
+        Context context = getContext();
+        int primary = onSurface ? AdTheme.Ink(context) : Color.WHITE;
+        int secondary = onSurface
+                ? AdTheme.Grey(context)
+                : Color.parseColor(SECONDARY_TEXT_COLOR);
         if (settleHeadline != null) {
             settleHeadline.setTextColor(primary);
         }
@@ -3535,14 +4241,12 @@ final class OverlayAdContentView extends FrameLayout {
             settleBody.setTextColor(secondary);
         }
         if (settleStarRating != null) {
-            settleStarRating.SetOnLight(onLight);
+            settleStarRating.setTextColor(secondary);
         }
     }
 
-    // The caller names the color outright, alpha included. Nothing is
-    // derived from the mode any more: a half-screen panel and a full-screen
-    // one both wear exactly what they were handed, which is why two of them
-    // in a row no longer flash a different shade between shows.
+    // AdTheme.Panel's color: the dark ground behind a full-screen card, the
+    // theme's surface for a half-screen panel.
     private void ConfigureBackground() {
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
@@ -3558,16 +4262,12 @@ final class OverlayAdContentView extends FrameLayout {
         }
 
         setOnApplyWindowInsetsListener((view, windowInsets) -> {
-            android.view.DisplayCutout displayCutout =
-                    windowInsets.getDisplayCutout();
-            int topInset = displayCutout == null
-                    ? 0
-                    : displayCutout.getSafeInsetTop();
-            view.setPadding(
-                    view.getPaddingLeft()
-                  , topInset
-                  , view.getPaddingRight()
-                  , view.getPaddingBottom());
+            Rect insets = SafeInsets(windowInsets.getDisplayCutout());
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            if (cardLayout && !insets.equals(cardBuiltCutout)) {
+                cardBuiltHeightPx = 0;
+                post(this::RefitCard);
+            }
             return windowInsets;
         });
         // Ask the host now instead of waiting to be told. Insets are
@@ -3578,6 +4278,40 @@ final class OverlayAdContentView extends FrameLayout {
         // on the first paint and the listener above only ever confirms it.
         ApplyCutoutInsetFromHost();
         requestApplyInsets();
+    }
+
+    // The full-screen face's cutout bands: the display's own, known before
+    // this view is attached, or the padding the insets set.
+    private Rect CutoutInsets() {
+        Rect insets = new Rect(
+                getPaddingLeft()
+              , getPaddingTop()
+              , getPaddingRight()
+              , getPaddingBottom());
+        if (fullScreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            WindowManager windowManager = (WindowManager)
+                    getContext().getSystemService(Context.WINDOW_SERVICE);
+            Rect display = SafeInsets(
+                    windowManager.getDefaultDisplay().getCutout());
+            insets.set(
+                    Math.max(insets.left, display.left)
+                  , Math.max(insets.top, display.top)
+                  , Math.max(insets.right, display.right)
+                  , Math.max(insets.bottom, display.bottom));
+        }
+        return insets;
+    }
+
+    private static Rect SafeInsets(android.view.DisplayCutout displayCutout) {
+        if (displayCutout == null
+                || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return new Rect();
+        }
+        return new Rect(
+                displayCutout.getSafeInsetLeft()
+              , displayCutout.getSafeInsetTop()
+              , displayCutout.getSafeInsetRight()
+              , displayCutout.getSafeInsetBottom());
     }
 
     private void ApplyCutoutInsetFromHost() {
@@ -3591,13 +4325,8 @@ final class OverlayAdContentView extends FrameLayout {
                 hostWindow.getDecorView().getRootWindowInsets();
         if (hostInsets == null) return;
 
-        android.view.DisplayCutout displayCutout =
-                hostInsets.getDisplayCutout();
-        setPadding(
-                getPaddingLeft()
-              , displayCutout == null ? 0 : displayCutout.getSafeInsetTop()
-              , getPaddingRight()
-              , getPaddingBottom());
+        Rect insets = SafeInsets(hostInsets.getDisplayCutout());
+        setPadding(insets.left, insets.top, insets.right, insets.bottom);
     }
 
     private TextView CreateAttributionView(
@@ -3605,9 +4334,12 @@ final class OverlayAdContentView extends FrameLayout {
           , float density) {
         TextView attribution = new TextView(context);
         attribution.setText(ATTRIBUTION_TEXT);
-        attribution.setTextColor(Color.BLACK);
-        attribution.setTextSize(10f);
+        attribution.setTextColor(AdTheme.ATTRIBUTION_TEXT);
+        // One size on every face and every device: a mark, not text that
+        // grows with the reader's font scale.
+        attribution.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
         attribution.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        attribution.setIncludeFontPadding(false);
         attribution.setGravity(Gravity.CENTER);
         attribution.setMinWidth(
                 Math.max(
@@ -3618,18 +4350,17 @@ final class OverlayAdContentView extends FrameLayout {
                         (int) (ATTRIBUTION_HEIGHT_DP * density)
                       , MIN_BADGE_SIZE_PX));
         attribution.setPadding(
-                (int) (5 * density)
-              , (int) density
-              , (int) (5 * density)
-              , (int) density);
+                (int) (6 * density)
+              , 0
+              , (int) (6 * density)
+              , 0);
         attribution.setClickable(false);
         attribution.setFocusable(false);
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(
-                Color.parseColor(ATTRIBUTION_BACKGROUND_COLOR));
-        background.setCornerRadius(ATTRIBUTION_CORNER_DP * density);
+        background.setColor(AdTheme.ATTRIBUTION);
         attribution.setBackground(background);
+        AdTheme.ShapeBadge(attribution, false);
         return attribution;
     }
 
@@ -3686,19 +4417,36 @@ final class OverlayAdContentView extends FrameLayout {
         }
     }
 
-    // A disc, light over a dark panel as Google draws its close, dark
-    // otherwise, the cross the other shade.
+    // The close and the countdown take the tone of what they stand on: dark
+    // over the dimmed game around the app open ad's card, over the end card's
+    // dimmed copy of its creative, and over a dark theme's surface.
+    private void StyleControls(boolean onEndCardBackdrop) {
+        boolean darkBackdrop = (cardLayout && !bleedLayout)
+                || onEndCardBackdrop
+                || AdTheme.IsDark(getContext());
+        if (controlsDark != null && controlsDark == darkBackdrop) return;
+
+        controlsDark = darkBackdrop;
+        ApplyCloseGlyph(close, getResources().getDisplayMetrics().density, darkBackdrop);
+        countdown.setBackground(
+                Disc(darkBackdrop ? DARK_BACKDROP_DISC_COLOR : CLOSE_BACKGROUND_COLOR));
+        countdown.setTextColor(
+                Color.parseColor(darkBackdrop ? DARK_BACKDROP_GLYPH_COLOR : CLOSE_GLYPH_COLOR));
+    }
+
+    // The tonal disc and its cross, for a light or a dark backdrop.
     private static void ApplyCloseGlyph(
             TextView close
           , float density
-          , boolean lightDisc) {
+          , boolean darkBackdrop) {
         close.setBackground(new LayerDrawable(new Drawable[] {
-                Disc(lightDisc ? LIGHT_DISC_COLOR : CLOSE_BACKGROUND_COLOR)
+                Disc(darkBackdrop ? DARK_BACKDROP_DISC_COLOR : CLOSE_BACKGROUND_COLOR)
               , new CloseGlyphDrawable(
                     density
-                  , lightDisc
-                            ? Color.parseColor(DARK_GLYPH_COLOR)
-                            : Color.WHITE) }));
+                  , Color.parseColor(
+                        darkBackdrop
+                                ? DARK_BACKDROP_GLYPH_COLOR
+                                : CLOSE_GLYPH_COLOR)) }));
     }
 
     private static Drawable Disc(String color) {
@@ -3727,6 +4475,29 @@ final class OverlayAdContentView extends FrameLayout {
         view.setClipToOutline(true);
     }
 
+    // The SDK lays its AdChoices layer over the NativeAdView's padded area,
+    // as the rect ad's InsetSdkOverlay leans on, so padding moves the mark in
+    // from the card's corner; the AdChoices reserve, left at the corner of
+    // that area, stands on it again. Our own views reach back out by as much
+    // and keep their places.
+    private static void InsetCardAdChoices(
+            NativeAdView nativeAdView
+          , int inset
+          , View... ownViews) {
+        nativeAdView.setPadding(inset, inset, inset, inset);
+        nativeAdView.setClipToPadding(false);
+        for (View view : ownViews) {
+            ViewGroup.MarginLayoutParams params =
+                    (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+            params.setMargins(
+                    params.leftMargin - inset
+                  , params.topMargin - inset
+                  , params.rightMargin - inset
+                  , params.bottomMargin - inset);
+            view.setLayoutParams(params);
+        }
+    }
+
     private TextView CreateControlView(
             Context context
           , String text
@@ -3752,7 +4523,7 @@ final class OverlayAdContentView extends FrameLayout {
           , float density) {
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(Color.parseColor(CTA_BACKGROUND_COLOR));
+        background.setColor(AdTheme.Primary(callToAction.getContext()));
         background.setCornerRadius(1000f * density);
         callToAction.setStateListAnimator(null);
         callToAction.setBackground(
@@ -3779,6 +4550,10 @@ final class OverlayAdContentView extends FrameLayout {
         text.setEllipsize(TextUtils.TruncateAt.MARQUEE);
         text.setMarqueeRepeatLimit(-1);
         text.setSelected(true);
+        // The scrolling line fades at its ends rather than cutting a letter in
+        // half at the edge.
+        text.setHorizontalFadingEdgeEnabled(true);
+        text.setFadingEdgeLength(Math.round(12 * text.getResources().getDisplayMetrics().density));
     }
 
     private void BindAssets(
@@ -3992,9 +4767,7 @@ final class OverlayAdContentView extends FrameLayout {
               , Math.round(mediaWidth / mediaAspectRatio));
     }
 
-    // The width a picture must keep to earn the rail beside it. The video
-    // floor for every creative, image ones included: a picture narrow
-    // enough to need the image floor is too narrow to carry a rail.
+    // The width a picture must keep to earn the rail beside it.
     private static int SideMediaFloor(float density) {
         return (int) Math.ceil(MIN_VIDEO_MEDIA_SIZE_DP * density);
     }
@@ -4118,21 +4891,10 @@ final class OverlayAdContentView extends FrameLayout {
         Runnable alignControlsToBadges = () -> {
             // The left control follows the attribution badge - which in the
             // side-media layout already stepped off the picture to the
-            // media's edge. When the avoidance pass chose the edge
-            // placement, the controls hug the panel's sides just below the
-            // badges instead of the top row.
-            int measuredLeftInset;
-            int measuredRightInset;
-            int measuredTopInset;
-            if (controlsAtEdgesBelowBadges) {
-                measuredLeftInset = 0;
-                measuredRightInset = 0;
-                measuredTopInset = attribution.getBottom() + controlGap;
-            } else {
-                measuredLeftInset = attribution.getRight() + controlGap;
-                measuredRightInset = rightControlInset;
-                measuredTopInset = 0;
-            }
+            // media's edge.
+            int measuredLeftInset = attribution.getRight() + controlGap;
+            int measuredRightInset = rightControlInset;
+            int measuredTopInset = 0;
             UpdateControlInsets(
                     countdown
                   , measuredLeftInset

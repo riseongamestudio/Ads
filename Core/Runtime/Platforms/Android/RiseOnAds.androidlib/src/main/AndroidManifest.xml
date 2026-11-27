@@ -11,8 +11,8 @@
              moment it is covering the seam it was raised for, and be gone
              when the ad closes. Finish() owns the lifetime instead.
 
-             singleTop: a cover already up is repainted, never stacked under a
-             second one. enableOnBackInvokedCallback: back is swallowed on
+             singleTop: never a second cover stacked on one already up (Start
+             also returns while one is). enableOnBackInvokedCallback: back is swallowed on
              purpose, through the predictive-back callback as well as
              onBackPressed. -->
         <activity

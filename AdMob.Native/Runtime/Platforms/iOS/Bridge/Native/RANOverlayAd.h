@@ -18,7 +18,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)configureWithFullScreen:(BOOL)fullScreen
                     heightRatio:(float)heightRatio
-                backgroundColor:(int32_t)backgroundColor
                       cacheSize:(int32_t)cacheSize
                        cooldown:(int32_t)cooldown
                       closeSide:(int32_t)closeSide

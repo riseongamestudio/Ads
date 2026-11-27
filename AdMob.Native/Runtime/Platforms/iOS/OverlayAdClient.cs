@@ -20,7 +20,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.IOS {
                 handle
               , settings.FullScreen
               , settings.HeightRatio
-              , settings.BackgroundColor
               , settings.CacheSize
               , settings.Close.Cooldown
               , (int)settings.Close.CloseSide

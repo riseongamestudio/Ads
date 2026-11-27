@@ -18,12 +18,6 @@ namespace RiseOn.Ads.AdMob.Native {
 
             /// <summary>Raw ads this ad asks its pool to keep warm; 0 means 1. The pool keeps the most any of its ads asks for.</summary>
             public int CacheSize;
-
-            /// <summary>
-            /// The cell's own backdrop, alpha included.<br/>
-            /// Transparent is a real answer here: a feed cell that wants no backdrop asks for it.
-            /// </summary>
-            public Color BackgroundColor;
         }
 
         public event Action<AdError> OnDisplayFailed;

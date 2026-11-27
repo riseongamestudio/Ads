@@ -12,10 +12,10 @@ namespace RiseOn.Ads {
 
         bool IsCurrentCollapsible(int session);
 
-        void EndCollapsible(int session);
+        /// <summary>How a collapsible offers to close when the show brings no close: the page's.</summary>
+        AdCloseSettings CollapsibleClose { get; }
 
-        /// <summary>The page's cover color.</summary>
-        Color CoverColor { get; }
+        void EndCollapsible(int session);
 
         /// <summary>Unity's thread, once an ad of the current run slid in or swapped in; <paramref name="first"/> for the run's first.</summary>
         void Displayed(bool first);
@@ -38,6 +38,11 @@ namespace RiseOn.Ads {
             this.off  = off;
         }
 
+        /// <summary>An ad that closes as the page's Formats section says.</summary>
+        /// <param name="onDisplayed">Called on Unity's thread once this ad has slid in or swapped in.</param>
+        public AdCollapsibleChain Then(Action onDisplayed = null) => Then(host.CollapsibleClose, onDisplayed);
+
+        /// <summary>An ad that closes as <paramref name="close"/> says.</summary>
         /// <param name="onDisplayed">Called on Unity's thread once this ad has slid in or swapped in.</param>
         public AdCollapsibleChain Then(in AdCloseSettings close, Action onDisplayed = null) {
             if (!off) steps.Add(new Step(close, onDisplayed));
@@ -97,7 +102,7 @@ namespace RiseOn.Ads {
                 session   = host.BeginCollapsible(mediation, usesCover);
 
                 // Added before the ad, hidden: an Android window added later stays above it.
-                if (usesCover) HalfScreenCover.Prepare(host.CoverColor, mediation.PanelHeight);
+                if (usesCover) HalfScreenCover.Prepare(mediation.PanelHeight);
 
                 ShowStep(0);
                 return completion.Task;

@@ -58,8 +58,8 @@ namespace RiseOn.Ads.AdMob {
 
         // ---- Full screen
 
-        // The ids and cache are the mediation's; how the ad looks and closes is the page's Formats section's.
-        private FullScreenSlot CreateNativeFullScreenSlot(AdFormat format, AdMobNativeFullScreenSettings settings, AdNativeFullScreenSettings look) {
+        // The ids and cache are the mediation's; how the ad closes comes with each show.
+        private FullScreenSlot CreateNativeFullScreenSlot(AdFormat format, AdMobNativeFullScreenSettings settings) {
             if (settings.UnitId.IsEmpty) {
                 LogNoUnitId(format);
                 return null;
@@ -68,9 +68,7 @@ namespace RiseOn.Ads.AdMob {
             var ad = new Native.FullScreenAd(new Native.FullScreenAd.Settings {
                 AdUnitId        = settings.UnitId.Value
               , CacheSize       = settings.CacheSize
-              , BackgroundColor = look.BackgroundColor
               , Format          = NativeFormatName(format)
-              , Close           = ToNative(look.Close)
               , Layout          = NativeLayout(format)
             });
 
@@ -97,8 +95,9 @@ namespace RiseOn.Ads.AdMob {
 
             public override void Load() => ad.Load();
 
-            public override void Show(IAdShowListener showListener) {
+            public override void Show(in AdCloseSettings close, IAdShowListener showListener) {
                 Volatile.Write(ref listener, showListener);
+                ad.SetClose(ToNative(close));
                 ad.Show();
             }
 
@@ -134,7 +133,6 @@ namespace RiseOn.Ads.AdMob {
                 AdUnitId        = nativeCollapsible.Value
               , HeightRatio     = context.Formats.NativeCollapsible.HeightRatio
               , CacheSize       = collapsibleCacheSize
-              , BackgroundColor = context.Formats.NativeCollapsible.BackgroundColor
               , Format          = NativeFormatName(AdFormat.NativeCollapsible)
             });
 
@@ -169,15 +167,15 @@ namespace RiseOn.Ads.AdMob {
         // ---- In-feed and MRec
 
         public INativeRect CreateInFeed(Vector2Int sizePx, int roundCornerPx) =>
-            CreateRectCell(AdFormat.NativeInFeed, nativeInFeed, inFeedCacheSize, context.Formats.NativeInFeed.BackgroundColor, sizePx, roundCornerPx);
+            CreateRectCell(AdFormat.NativeInFeed, nativeInFeed, inFeedCacheSize, sizePx, roundCornerPx);
 
         public INativeRect CreateNativeMRec(Vector2Int sizePx, int roundCornerPx) =>
-            CreateRectCell(AdFormat.NativeMRec, nativeMRec, mRecCacheSize, context.Formats.NativeMRec.BackgroundColor, sizePx, roundCornerPx);
+            CreateRectCell(AdFormat.NativeMRec, nativeMRec, mRecCacheSize, sizePx, roundCornerPx);
 
-        private INativeRect CreateRectCell(AdFormat format, AdUnitId unitId, int cacheSize, Color backgroundColor, Vector2Int sizePx, int roundCornerPx) {
+        private INativeRect CreateRectCell(AdFormat format, AdUnitId unitId, int cacheSize, Vector2Int sizePx, int roundCornerPx) {
             if (unitId.IsEmpty) return null;
 
-            var ad = NewRectAd(format, unitId, cacheSize, backgroundColor);
+            var ad = NewRectAd(format, unitId, cacheSize);
             ad.SetSize(sizePx, roundCornerPx);
             ad.OnAdPaid        += info => ReportNativePaid(format, info);
             ad.OnDisplayFailed += error => LogDisplayFailed(format, error);
@@ -187,18 +185,18 @@ namespace RiseOn.Ads.AdMob {
             return cell;
         }
 
-        private void StartNativeInFeed() => inFeedWarmer = StartWarmer(AdFormat.NativeInFeed, nativeInFeed, inFeedCacheSize, context.Formats.NativeInFeed.BackgroundColor);
+        private void StartNativeInFeed() => inFeedWarmer = StartWarmer(AdFormat.NativeInFeed, nativeInFeed, inFeedCacheSize);
 
-        private void StartNativeMRec() => mRecWarmer = StartWarmer(AdFormat.NativeMRec, nativeMRec, mRecCacheSize, context.Formats.NativeMRec.BackgroundColor);
+        private void StartNativeMRec() => mRecWarmer = StartWarmer(AdFormat.NativeMRec, nativeMRec, mRecCacheSize);
 
         // Its loads stand for the format's: each cell hears the same ones from the pool.
-        private Native.RectAd StartWarmer(AdFormat format, AdUnitId unitId, int cacheSize, Color backgroundColor) {
+        private Native.RectAd StartWarmer(AdFormat format, AdUnitId unitId, int cacheSize) {
             if (unitId.IsEmpty) {
                 LogNoUnitId(format);
                 return null;
             }
 
-            var warmer = NewRectAd(format, unitId, cacheSize, backgroundColor);
+            var warmer = NewRectAd(format, unitId, cacheSize);
             ReportLoads(format, warmer);
             return warmer;
         }
@@ -231,12 +229,11 @@ namespace RiseOn.Ads.AdMob {
 
         // ---- Shared
 
-        private static Native.RectAd NewRectAd(AdFormat format, AdUnitId unitId, int cacheSize, Color backgroundColor) {
+        private static Native.RectAd NewRectAd(AdFormat format, AdUnitId unitId, int cacheSize) {
             return new Native.RectAd(new Native.RectAd.Settings {
                 AdUnitId        = unitId.Value
               , Format          = NativeFormatName(format)
               , CacheSize       = cacheSize
-              , BackgroundColor = backgroundColor
             });
         }
 

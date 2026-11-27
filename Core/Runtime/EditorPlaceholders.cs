@@ -55,7 +55,7 @@ namespace RiseOn.Ads {
         public bool CallsBackOffLoop(AdFormat format) => true;
         public bool ShowsFromAnyThread(AdFormat format) => true;
 
-        public void Show(AdFormat format, string placement, IAdShowListener listener) {
+        public void Show(AdFormat format, string placement, in AdCloseSettings close, IAdShowListener listener) {
             if (EditorPlaceholders.Installed is { } placeholders) placeholders.ShowFullScreen(mediation.GetType(), format, listener);
             else listener.OnFailed(new AdError(-1, "no Editor placeholders"));
         }

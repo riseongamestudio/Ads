@@ -19,7 +19,6 @@ NSTimeInterval RANRectAdBackoffDelay(
 @implementation RANRectAd {
     NSString *_adUnitID;
     NSInteger _cacheSize;
-    int32_t _backgroundColor;
     RANRectAdSlot *_slot;
     // Main thread only; joined on the first turn, left on release.
     RANNativeAdPool *_pool;
@@ -35,14 +34,12 @@ NSTimeInterval RANRectAdBackoffDelay(
 
 - (instancetype)initWithAdUnitID:(NSString *)adUnitID
                        cacheSize:(NSInteger)cacheSize
-                 backgroundColor:(int32_t)backgroundColor
                       instanceID:(int32_t)instanceID {
     self = [super initWithInstanceID:instanceID];
     if (self == nil) return nil;
 
     _adUnitID = [adUnitID copy];
     _cacheSize = MAX(1, cacheSize);
-    _backgroundColor = backgroundColor;
     _ownedAds = [NSHashTable weakObjectsHashTable];
     _rectAdCallbacksLock = [NSObject new];
     _slot = [[RANRectAdSlot alloc] initWithOwner:self];
@@ -263,10 +260,6 @@ NSTimeInterval RANRectAdBackoffDelay(
 // ---------------------------------------------------------------------------
 // Accessors and notifications for the slot
 // ---------------------------------------------------------------------------
-
-- (float)slotBackgroundColor {
-    return _backgroundColor;
-}
 
 - (NSString *)unitAdUnitID {
     return _adUnitID;

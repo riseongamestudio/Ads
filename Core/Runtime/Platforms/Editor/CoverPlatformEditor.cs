@@ -15,9 +15,9 @@ namespace RiseOn.Ads.Platforms.Editor {
         private EditorCover fullScreen;
         private EditorCover halfScreen;
 
-        public void ShowFullScreen(Color color) => EditorThread.Run(() => {
+        public void ShowFullScreen() => EditorThread.Run(() => {
             if (!fullScreen) fullScreen = EditorCover.Create(FullScreenObjectName, AdsEditorLayers.FullScreenCover);
-            fullScreen.Apply(color, 0f);
+            fullScreen.Apply(Color.black, 0f);
             fullScreen.SetRevealed(true);
         });
 
@@ -28,10 +28,10 @@ namespace RiseOn.Ads.Platforms.Editor {
 
         // Screen pixels: the unit the Editor's own surface is measured in,
         // and the one a half-screen ad's preview publishes its height in.
-        public void PrepareHalfScreen(Color color, float panelHeight)
+        public void PrepareHalfScreen(float panelHeight)
             => EditorThread.Run(() => {
                 if (!halfScreen) halfScreen = EditorCover.Create(HalfScreenObjectName, AdsEditorLayers.HalfScreenCover);
-                halfScreen.Apply(color, panelHeight);
+                halfScreen.Apply(EditorPlaceholdersUI.SurfaceColor, panelHeight);
             });
 
         public void RevealHalfScreen() => EditorThread.Run(() => {

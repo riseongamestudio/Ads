@@ -36,7 +36,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
         final int closeSide;
         final int timerSide;
         final float heightRatio;
-        final int backgroundColor;
         // The close button commits the ad's click on its way out.
         final boolean redirectOnClose;
         // How a full-screen ad arranges itself, ordinals shared with the C#
@@ -49,7 +48,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , int closeSide
               , int timerSide
               , float heightRatio
-              , int backgroundColor
               , boolean redirectOnClose
               , int layout) {
             this.fullScreen = fullScreen;
@@ -57,7 +55,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
             this.closeSide = closeSide;
             this.timerSide = timerSide;
             this.heightRatio = heightRatio;
-            this.backgroundColor = backgroundColor;
             this.redirectOnClose = redirectOnClose;
             this.layout = layout;
         }
@@ -73,7 +70,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
                   , newCloseSide
                   , newTimerSide
                   , heightRatio
-                  , backgroundColor
                   , newRedirectOnClose
                   , layout);
         }
@@ -85,7 +81,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
                   , closeSide
                   , timerSide
                   , heightRatio
-                  , backgroundColor
                   , redirectOnClose
                   , newLayout);
         }
@@ -365,7 +360,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
     public synchronized void Configure(
             boolean fullScreen
           , float heightRatio
-          , int backgroundColor
           , int cacheSize
           , int cooldown
           , int closeSide
@@ -395,7 +389,6 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , closeSide
               , timerSide
               , heightRatio
-              , backgroundColor
               , redirectOnClose
               , 0);
         configured = true;
@@ -1026,7 +1019,7 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
               , style.ResolveTimerOnLeft(closeOnLeftForPresentation)
               , style.fullScreen
               , style.heightRatio
-              , style.backgroundColor
+              , AdTheme.Panel(activity, style.fullScreen, style.layout)
               , style.redirectOnClose);
         createdPresentation.setOnDismissListener(
                 ignored -> CompletePresentation(ad, ""));
@@ -1194,7 +1187,7 @@ public final class OverlayAd extends BaseAd implements NativeAdPool.Consumer {
                           , closeOnLeft
                           , style.ResolveTimerOnLeft(closeOnLeft)
                           , true
-                          , style.backgroundColor
+                          , AdTheme.Panel(activity, true, style.layout)
                           , style.redirectOnClose
                           , requestedPanelHeight
                           , style.layout

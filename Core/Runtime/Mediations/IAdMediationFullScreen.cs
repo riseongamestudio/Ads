@@ -19,6 +19,7 @@
         bool ShowsFromAnyThread(AdFormat format);
 
         /// <param name="placement">What the game passed to the show, null for none: for the SDK where it takes one, and for <see cref="AdImpression.Placement"/>.</param>
-        void Show(AdFormat format, string placement, IAdShowListener listener);
+        /// <param name="close">How a native format's ad offers to close, the show's own or the page's; the other formats take none.</param>
+        void Show(AdFormat format, string placement, in AdCloseSettings close, IAdShowListener listener);
     }
 }

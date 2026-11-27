@@ -15,8 +15,8 @@ namespace RiseOn.Ads.Platforms.Android {
         // The full-screen cover is an Activity, so the system pauses Unity
         // behind it without anyone asking - the same pause a full-screen ad
         // Activity gets. Nothing on this side calls UnityPlayer.pause.
-        public void ShowFullScreen(Color color) {
-            CallFullScreen("Show", AndroidApplication.currentActivity, Argb(color));
+        public void ShowFullScreen() {
+            CallFullScreen("Show", AndroidApplication.currentActivity);
         }
 
         public void HideFullScreen() {
@@ -25,11 +25,10 @@ namespace RiseOn.Ads.Platforms.Android {
 
         // Pixels, whole: the ad's window is a whole number of them, and the
         // two windows must end on the same line.
-        public void PrepareHalfScreen(Color color, float panelHeight) {
+        public void PrepareHalfScreen(float panelHeight) {
             CallHalfScreen(
                 "Prepare"
               , AndroidApplication.currentActivity
-              , Argb(color)
               , Mathf.RoundToInt(panelHeight));
         }
 
@@ -43,15 +42,6 @@ namespace RiseOn.Ads.Platforms.Android {
 
         public void RemoveHalfScreen() {
             CallHalfScreen("Remove");
-        }
-
-        // Packed the way android.graphics.Color reads an int.
-        private static int Argb(Color color) {
-            Color32 channels = color;
-            return channels.a << 24
-                 | channels.r << 16
-                 | channels.g << 8
-                 | channels.b;
         }
 
         private void CallFullScreen(string methodName, params object[] parameters) {

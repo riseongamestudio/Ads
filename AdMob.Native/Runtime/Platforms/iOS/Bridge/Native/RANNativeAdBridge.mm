@@ -43,14 +43,12 @@ static RANNativeAdListenerCallbacks RANMakeCallbacks(
 void* RANRectAdCreate(
         const char* adUnitID
       , int32_t cacheSize
-      , int32_t backgroundColor
       , int32_t instanceID) {
     NSString *unit = RANStringFromUtf8(adUnitID);
     if (unit.length == 0) return NULL;
     RANRectAd *ad =
             [[RANRectAd alloc] initWithAdUnitID:unit
                                       cacheSize:cacheSize
-                                backgroundColor:backgroundColor
                                      instanceID:instanceID];
     return (void *)CFBridgingRetain(ad);
 }
@@ -155,7 +153,6 @@ void RANOverlayAdConfigure(
         void* handle
       , bool fullScreen
       , float heightRatio
-      , int32_t backgroundColor
       , int32_t cacheSize
       , int32_t cooldown
       , int32_t closeSide
@@ -165,7 +162,6 @@ void RANOverlayAdConfigure(
     [(__bridge RANOverlayAd *)handle
             configureWithFullScreen:fullScreen
                         heightRatio:heightRatio
-                    backgroundColor:backgroundColor
                           cacheSize:cacheSize
                            cooldown:cooldown
                           closeSide:closeSide

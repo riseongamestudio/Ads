@@ -51,7 +51,7 @@ package:
     }
   ],
   "dependencies": {
-    "com.riseon.ads.admob": "1.1.0"
+    "com.riseon.ads.admob": "1.2.0"
   }
 }
 ```
@@ -79,7 +79,7 @@ https://github.com/riseongamestudio/Ads.git?path=/AdMob
 | `NativeInFeed`, `NativeMRec` | `RectAd` của `com.riseon.ads.admob.native` |
 
 Mỗi định dạng có ad unit id riêng cho Android và iOS. Ô trống ở nền tảng nào thì
-định dạng đó không tải ở nền tảng đó (có log lỗi). Vị trí, kiểu banner, màu nền và
+định dạng đó không tải ở nền tảng đó (có log lỗi). Vị trí, kiểu banner và
 nút đóng của native đặt ở mục **Formats** của trang (README `com.riseon.ads`);
 mục **Formats** của AdMob giữ unit id của từng format, format native có thêm
 **Cache Size**.

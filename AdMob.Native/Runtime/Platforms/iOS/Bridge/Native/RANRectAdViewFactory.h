@@ -30,6 +30,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) UIView *scrim;
 @property (nonatomic, strong, nullable) UIView *insetContent;
 @property (nonatomic) BOOL insetContentAvoidsBadges;
+// The picture's frame on a side template: the badge and the AdChoices view
+// stand on its top corners, as on the full-screen faces, not on the cell's.
+// Nil: they stand on the cell's.
+@property (nonatomic, strong, nullable) RANFrameLayoutView *badgeHost;
+// Where the badge stands when the scrim's first row reached its corner:
+// beside the icon, over the name.
+@property (nonatomic) BOOL attributionBesideIcon;
+@property (nonatomic) CGPoint attributionOrigin;
 // Each text's own right margin, before any mark dodge was added.
 @property (nonatomic, strong, nullable)
         NSMapTable<UIView *, NSNumber *> *baseRightMargins;
@@ -89,12 +97,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGFloat)minimumMediaLeftTextSlotWidthForPlan:(RANRectAdLayoutPlan *)plan;
 - (CGFloat)callToActionHeightForPlan:(RANRectAdLayoutPlan *)plan;
 - (CGFloat)headlineSizeForPlan:(RANRectAdLayoutPlan *)plan;
-// Moves the SDK's own AdChoices container in by the badge inset; see the
-// implementation for what that rests on. Idempotent, so every layout pass
-// may call it. logResult: report once per run how it went, from the pass by
-// which the SDK has had every chance to build the container.
-- (void)insetSDKAdChoicesInNativeAdView:(GADNativeAdView *)nativeAdView
-                              logResult:(BOOL)logResult;
 
 @end
 

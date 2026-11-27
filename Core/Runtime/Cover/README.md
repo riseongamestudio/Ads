@@ -1,9 +1,11 @@
 # Màn che
 
 Hai lớp màu trơn do nền tảng vẽ, nằm trên mọi thứ Unity vẽ: `FullScreenCover`
-che cả màn và **dừng game**, `HalfScreenCover` làm nền dưới một ad nửa màn hình
-trong lúc chuỗi ad đổi ad, **không** dừng gì. Cả hai `internal`, chỉ bộ điều
-phối quảng cáo dùng. Mọi hàm gọi được từ thread bất kỳ.
+màu đen, như nền sau ad full-screen của các mạng, che cả màn và **dừng game**;
+`HalfScreenCover` làm nền dưới một ad nửa màn hình trong lúc chuỗi ad đổi ad, màu
+mặt theo theme sáng hay tối của máy (`#FFFFFF` / `#29292B`, đúng màu panel của
+collapsible), **không** dừng gì. Màu do nền tảng chọn, không có tham số hay thiết
+lập. Cả hai `internal`, chỉ bộ điều phối quảng cáo dùng. Mọi hàm gọi được từ thread bất kỳ.
 
 ## Mục lục
 
@@ -19,9 +21,9 @@ phối quảng cáo dùng. Mọi hàm gọi được từ thread bất kỳ.
 
 | Hàm | Làm gì |
 |---|---|
-| `FullScreenCover.Show(color)` | Che cả màn, dừng game. Gọi lại khi đang che thì sơn lại màu và giữ lại pause |
+| `FullScreenCover.Show()` | Che cả màn, dừng game. Gọi lại khi đang che thì giữ lại pause, không thêm lớp thứ hai |
 | `FullScreenCover.Hide()` | Gỡ, game chạy lại |
-| `HalfScreenCover.Prepare(color, panelHeight)` | Thêm vào **ẩn**, đúng chỗ của nó trong thang lớp. Đã có thì sơn lại và đổi cao tại chỗ |
+| `HalfScreenCover.Prepare(panelHeight)` | Thêm vào **ẩn**, đúng chỗ của nó trong thang lớp, màu theo theme lúc gọi. Đã có thì sơn lại theo theme và đổi cao tại chỗ |
 | `HalfScreenCover.Reveal()` / `Conceal()` | Chỉ hiện/ẩn, không bao giờ thêm lại |
 | `HalfScreenCover.Remove()` | Gỡ hẳn |
 
@@ -73,8 +75,9 @@ mỗi bên tự đặt lớp của mình theo bảng chung:
 
 Trong Editor các lớp là sorting order của canvas Screen Space Overlay, tính từ
 **Editor Sorting Order** trên trang settings (`OverGame`) lên tới `FullScreenAd`
-(+5). Ô in-feed và native MRec trong Editor nằm trên banner (+1), vì ad giả không có
-view của game để chen xuống dưới.
+(+500), mỗi lớp cách nhau 100. Ô in-feed và native MRec trong Editor nằm trên banner
+(+100), vì ad giả không có view của game để chen xuống dưới. Màn che half-screen
+trong Editor lấy màu mặt theo skin của Editor (Light hay Dark).
 
 ## Android
 
@@ -91,7 +94,8 @@ view của game để chen xuống dưới.
     `windowAnimationStyle @null`.
   - **Không `android:noHistory`**: cờ đó finish Activity ngay khi nó stop, mà
     ad Activity mở lên trên làm nó stop — màn che chết đúng lúc đang che vết nối.
-  - `singleTop`: đang lên thì sơn lại, không xếp cái thứ hai. Back bị nuốt có
+  - Màn che đang lên thì `Start` bỏ qua, không mở cái thứ hai (`singleTop` chặn
+    thêm một lớp nữa). Back bị nuốt có
     chủ ý (`onBackPressed` + callback predictive back).
 - **Màn che half là window** (Dialog) `TYPE_APPLICATION_SUB_PANEL`,
   `Gravity.BOTTOM`, `FLAG_NOT_FOCUSABLE`, cao đúng `panelHeight` — **short

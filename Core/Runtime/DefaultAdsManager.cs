@@ -85,7 +85,7 @@ namespace RiseOn.Ads {
 
         // Native Collapsible: Get In The Bowl's three plans.
         [SerializeField, SectionList(Item = "plan", Foldable = true), LabelText("Collapsible Plans")]
-        [Tooltip("The ways ShowCollapsibleAsync may run: each show draws one, each plan's chance its weight over all the weights.")]
+        [Tooltip("The ways ShowCollapsibleAsync may run: each show draws one, each plan's chance its weight over all the weights. With none to draw, one collapsible shows, closing as the Formats section's Native Collapsible says.")]
         private AdCollapsiblePlan[] collapsiblePlans = {
             new("Plain", .6f, new AdCloseSettings { Cooldown = 3, CloseSide = AdCloseSide.Random, TimerSide = AdTimerSide.OppositeOfClose })
           , new("Chained", .3f
@@ -297,10 +297,9 @@ namespace RiseOn.Ads {
         public UniTask<int> ShowCollapsibleAsync(Action onDisplayed = null) {
             if (AdsSdk.IsSuppressed(AdFormat.NativeCollapsible) || !pacing[PacedAd.NativeCollapsible].Allows(AdFormat.NativeCollapsible)) return UniTask.FromResult(0);
 
+            Opportunity?.Invoke(AdFormat.NativeCollapsible, null);
             var plan = AdCollapsiblePlan.Pick(collapsiblePlans);
-            if (plan == null) Debug.LogWarning($"{GetType().Name}: no collapsible plan has steps and a weight above 0, so ShowCollapsibleAsync shows nothing");
-            else Opportunity?.Invoke(AdFormat.NativeCollapsible, null);
-            return AdsSdk.ShowCollapsibleAsync(plan, onDisplayed);
+            return plan == null ? AdsSdk.ShowCollapsibleAsync(onDisplayed) : AdsSdk.ShowCollapsibleAsync(plan, onDisplayed);
         }
 
         #endregion

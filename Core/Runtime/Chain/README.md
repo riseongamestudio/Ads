@@ -61,12 +61,19 @@ Chuỗi lấy từ `AdsSdk.Chain()` bỏ bước ngay lúc thêm khi format củ
 chặn, `NoStep` nếu chuỗi không có bước nào. Bước có thưởng bị chặn thì `Rewarded` vẫn
 đúng: chặn lấy đi quảng cáo, không lấy đi phần thưởng.
 
+## Cách đóng ad native
+
+Mỗi bước native có `AdCloseSettings` riêng (đếm ngược, bên nút đóng, redirect), lấy
+lúc gọi `Then`: `AdChain.Then(format, close)` và `AdCollapsibleChain.Then(close)` dùng
+`close` truyền vào; `AdChain.Then(format)` và `AdCollapsibleChain.Then()` dùng
+**Close** của format trong mục Formats của trang. Format không phải native bỏ qua
+`close`.
+
 ## Collapsible
 
 `AdCollapsibleChain` lấy mediation đầu tiên trong danh sách ưu tiên có ad sẵn sàng
-và hiện cả chuỗi trên mediation đó. Mỗi bước có `AdCloseSettings` riêng (đếm ngược,
-bên nút đóng, redirect). Ad đầu trượt vào; `onDisplayed` của bước đến sau khi trượt
-xong. Ad cuối trượt ra khi người chơi đóng. Đóng kiểu redirect thì không trượt.
+và hiện cả chuỗi trên mediation đó. Ad đầu trượt vào; `onDisplayed` của bước đến
+sau khi trượt xong. Ad cuối trượt ra khi người chơi đóng. Đóng kiểu redirect thì không trượt.
 Màn che half-screen chỉ hiện dưới ad chưa phải cuối, để ad kế tiếp thay chỗ mà game
 không lộ ra. `Run()` trả số ad đã hiện. `AdsSdk.HideCollapsible()` cắt chuỗi đang
 chạy.

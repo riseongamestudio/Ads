@@ -6,6 +6,18 @@ Mọi thay đổi đáng kể của `com.riseon.ads.admob` được ghi ở đâ
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
+Cần `com.riseon.ads` 4.0.0: adapter bản này không chạy với Core 3.0.0.
+
+### Đổi
+
+- Theo `com.riseon.ads` mới: `Show` của mediation nhận `close`.
+- Native toàn màn hình đặt nút đóng theo `close` của lần hiện, không còn đọc **Close**
+  từ mục Formats; màu theo theme máy, adapter không còn truyền màu.
+- Phụ thuộc lên bản phát hành cùng đợt: `com.riseon.ads` 4.0.0,
+  `com.riseon.ads.admob.native` 3.0.0.
+
 ## [1.1.0] - 2026-11-26
 
 Cần `com.riseon.ads` 3.0.0: adapter bản này không chạy với Core 2.0.0.

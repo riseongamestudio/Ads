@@ -8,7 +8,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
 
         private readonly IRectAdCallbacks callbacks;
         private readonly string adUnitId;
-        private readonly Color backgroundColor;
+        private readonly string format;
         private Vector2Int positionPx;
         private EditorAdConfig config;
         private EditorAd preview;
@@ -18,7 +18,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , IRectAdCallbacks callbacks) {
             this.callbacks  = callbacks;
             adUnitId        = settings.AdUnitId;
-            backgroundColor = settings.BackgroundColor;
+            format          = settings.Format;
         }
 
         public void SetSize(Vector2Int sizePx, int roundCornerPx) {
@@ -27,7 +27,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                 adUnitId
               , positionPx
               , sizePx
-              , backgroundColor
+              , format
               , roundCornerPx);
         }
 

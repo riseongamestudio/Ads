@@ -11,13 +11,8 @@ namespace RiseOn.Ads {
     internal sealed class AdsSettings : ScriptableObject {
         public const string ResourceName = "RiseOnAdsSettings";
 
-        // The sections that stay open come before those that fold.
-        [SerializeField, SectionGroup("Display"), LabelText("Cover")]
-        [Tooltip("What shows under a full-screen ad or a chained collapsible where the ad does not reach, such as the margins a notch leaves; the game never shows through.")]
-        private Color coverColor = Color.black;
-
-        [SerializeField, SectionGroup("Display"), LabelText("Editor Sorting Order")]
-        [Tooltip("The lowest sorting order of the Editor's ad layers: banners and MRecs, then native in-feed cells and MRecs, the collapsible's cover, the collapsible, the full-screen cover and full-screen ads, each one higher. Keep the game's canvases below it.")]
+        [SerializeField, LabelText("Editor Sorting Order"), AdsEditorLayersTable]
+        [Tooltip("The lowest sorting order of the Editor's ad layers, each layer 100 above the one under it; unfold for each layer's. Keep the game's canvases below it, or between two layers.")]
         private int editorSortingOrder = 1000;
 
         // The Editor keeps it an instance of the game's one manager class, so the page offers no type to pick; a game
@@ -90,7 +85,6 @@ namespace RiseOn.Ads {
             }
         }
 
-        public Color CoverColor => coverColor;
         public int EditorSortingOrder => editorSortingOrder;
 
         /// <summary>The project's asset, or an empty setup when the project never saved one.</summary>

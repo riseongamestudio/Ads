@@ -2,9 +2,8 @@
 using UnityEngine.UI;
 
 namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
-    // The AdChoices mark as the Digital Advertising Alliance draws it: a
-    // cyan rounded triangle in outline, open at its bottom left, with an i
-    // inside, on a light chip.
+    // The AdChoices mark as the device shows it: a cyan i in a ring on a
+    // light square chip.
     internal sealed class EditorAdChoicesGraphic : MaskableGraphic {
         private const int CapSegments = 12;
         private const float IconSizeRatio = 0.8f;
@@ -12,8 +11,11 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         private const float StemHalfWidthRatio = 0.06f;
         private const float DotRadiusRatio = 0.075f;
 
+        private const int RingSegments = 28;
+        private const float RingRadiusRatio = 0.4f;
+
         private static readonly Color backgroundColor =
-                new(1f, 1f, 1f, 0.9f);
+                new(.918f, .918f, .918f, 1f);
         private static readonly Color iconColor =
                 new(0f, 0.68f, 0.8f, 1f);
 
@@ -32,21 +34,25 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     rect.center + new Vector2(x, y) * size;
 
             var edge = size * EdgeHalfWidthRatio;
-            // The left edge runs on into a tail; the lower edge stops short
-            // of it.
-            AddLine(vertexHelper, At(-0.3f, 0.36f), At(-0.3f, -0.42f), edge);
-            AddLine(vertexHelper, At(-0.3f, 0.36f), At(0.36f, 0f), edge);
-            AddLine(vertexHelper, At(0.36f, 0f), At(-0.13f, -0.27f), edge);
+            for (var segment = 0; segment < RingSegments; ++segment) {
+                var from = segment * Mathf.PI * 2f / RingSegments;
+                var to = (segment + 1) * Mathf.PI * 2f / RingSegments;
+                AddLine(
+                    vertexHelper
+                  , At(Mathf.Cos(from) * RingRadiusRatio, Mathf.Sin(from) * RingRadiusRatio)
+                  , At(Mathf.Cos(to) * RingRadiusRatio, Mathf.Sin(to) * RingRadiusRatio)
+                  , edge);
+            }
             EditorGraphicUtility.AddCircle(
                 vertexHelper
-              , At(-0.06f, 0.13f)
+              , At(0f, 0.18f)
               , size * DotRadiusRatio
               , iconColor
               , CapSegments);
             AddLine(
                 vertexHelper
-              , At(-0.06f, -0.02f)
-              , At(-0.06f, -0.2f)
+              , At(0f, 0.04f)
+              , At(0f, -0.2f)
               , size * StemHalfWidthRatio);
         }
 

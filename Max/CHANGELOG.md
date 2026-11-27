@@ -6,6 +6,15 @@ Mọi thay đổi đáng kể của `com.riseon.ads.max` được ghi ở đây.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
+Cần `com.riseon.ads` 4.0.0: adapter bản này không chạy với Core 3.0.0.
+
+### Đổi
+
+- Theo `com.riseon.ads` mới: `Show` của mediation nhận `close`.
+- Phụ thuộc lên `com.riseon.ads` 4.0.0.
+
 ## [1.1.0] - 2026-11-26
 
 Cần `com.riseon.ads` 3.0.0: adapter bản này không chạy với Core 2.0.0.

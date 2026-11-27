@@ -21,6 +21,18 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger maxLines;
 @property (nonatomic, getter=isMarquee) BOOL marquee;
 @property (nonatomic) NSTextAlignment textAlignment;
+// Wrapped mode only: the lines' height over the font's (1 by default), as
+// Android's setLineSpacing multiplier.
+@property (nonatomic) CGFloat lineHeightMultiple;
+// Wrapped mode only: the last allowed line ends in "…" when the value runs
+// past it, as Android's END ellipsis. Off by default: the rect templates
+// reject a value that does not fit instead.
+@property (nonatomic) BOOL ellipsizes;
+// Five stars filled to this score drawn before the text, as the rating's
+// line shows them (RANStarsText); 0 draws none. starsOnDark picks the empty
+// stars' grey for a dark ground.
+@property (nonatomic) CGFloat stars;
+@property (nonatomic) BOOL starsOnDark;
 
 // Whether the whole value is readable: always true for marquee (the scroll
 // will bring the rest around), and for wrapped only when the allotted lines

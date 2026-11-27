@@ -17,7 +17,9 @@ namespace RiseOn.Ads.Editor {
         private const string Tip = "Each format: the mediations that serve it, tried left to right, with none the format off; the Remote Config key that can replace them at launch; and how it shows. "
                                  + "The mediations can split into a list per platform, the Editor playing the active build target's.";
 
-        private static readonly GUIContent mediations = new("Mediations", "Which mediations serve the format, tried left to right; with none the format is off.");
+        private const string MediationsTip = "Which mediations serve the format, tried left to right; with none the format is off.";
+
+        private static readonly GUIContent mediations = new("Mediations", MediationsTip);
 
         // Each format's settings, by the field of AdFormatSettings that holds them; the formats with nothing to set are not here.
         private static readonly Dictionary<AdFormat, string> settingsFields = new() {
@@ -27,8 +29,6 @@ namespace RiseOn.Ads.Editor {
           , { AdFormat.NativeAppOpen, "nativeAppOpen" }
           , { AdFormat.NativeEndCard, "nativeEndCard" }
           , { AdFormat.NativeCollapsible, "nativeCollapsible" }
-          , { AdFormat.NativeMRec, "nativeMRec" }
-          , { AdFormat.NativeInFeed, "nativeInFeed" }
         };
 
         // Each format's section keeps its fold on its entry of the map, so an Alt+click on Formats folds them all; the natives start folded.
@@ -53,17 +53,30 @@ namespace RiseOn.Ads.Editor {
 
             var settings = Property.Tree.WeakTargets.OfType<AdsSettings>().FirstOrDefault();
             var looks = Property.Children["settings"];
+            // The bars' title column, the same on every bar so they line up: as wide as the longest format's name, its arrow included.
+            var page   = EditorGUIUtility.labelWidth;
+            var titles = Section.Inset + formats.Max(format => Mathf.Ceil(EditorStyles.foldout.CalcSize(new GUIContent(ChoiceFieldUtils.NameOf(format))).x));
             foreach (var format in formats) {
-                using var sub = Section.Foldout(entries[format], ChoiceFieldUtils.NameOf(format));
-                if (!sub.Open) continue;
+                // The mediations on the format's bar; a format with nothing more to set is its bar alone.
+                var entry = entries[format];
+                var look  = settingsFields.TryGetValue(format, out var field) ? looks.Children[field] : null;
+                var name  = ChoiceFieldUtils.NameOf(format);
+                EditorGUIUtility.labelWidth = titles;
+                using var sub = look != null
+                    ? Section.Foldout(entry, name, MediationsTip, barValue: true)
+                    : new Section(name, MediationsTip, barValue: true, barOnly: true);
+                // The mediations' Remote Config key at the end of the line, locked without that pack.
+                AdPlatformValueRows.DrawOnBar(entry.Children["value"], (rect, row) => AdPriorityListDrawer.Draw(rect, settings, () => (AdPriorityList) row.ValueEntry.WeakSmartValue, format),
+                    settings ? rect => AdRemoteKeyDrawer.Draw(rect, settings, format) : null);
+                if (look == null || !sub.Open) continue;
 
-                // The mediations' Remote Config key at the end of their row, locked without that pack.
-                AdPlatformValueRows.Draw(entries[format].Children["value"], mediations, settings ? rect => AdRemoteKeyDrawer.Draw(rect, settings, format) : null);
-                if (!settingsFields.TryGetValue(format, out var field)) continue;
-
-                // One value for both platforms; the empty square keeps each row's end in line with the Mediations row's.
-                foreach (var row in looks.Children[field].Children) AdButtonRow.Draw(() => row.Draw());
+                // The rows under the bar keep the page's label column, narrowed by the section's inset as the section narrows its own.
+                EditorGUIUtility.labelWidth = page - Section.Inset;
+                // One value for both platforms; the empty square keeps each row's end in line with the bar's.
+                foreach (var row in look.Children) AdButtonRow.Draw(() => row.Draw());
             }
+
+            EditorGUIUtility.labelWidth = page;
         }
     }
 }

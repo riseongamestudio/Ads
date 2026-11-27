@@ -1,4 +1,5 @@
 #import "RANRectAdSlot.h"
+#import "RANAdTheme.h"
 
 #import "RANRectAdPresentation.h"
 
@@ -365,7 +366,7 @@ static NSTimeInterval RANNow(void) {
                                              y:_rect.y
                                          width:_rect.width
                                         height:_rect.height
-                               backgroundColor:[owner slotBackgroundColor]
+                               backgroundColor:(int32_t)RANThemeSurface()
                                    roundCorner:_rect.roundCorner
                                       listener:self];
     entry.presentation = presentation;

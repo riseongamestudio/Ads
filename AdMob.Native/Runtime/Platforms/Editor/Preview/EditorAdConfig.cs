@@ -10,7 +10,8 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
         internal EditorAdMode Mode              { get; }
         internal CloseSettings             Close             { get; private set; }
         internal float                     HeightRatio       { get; }
-        internal Color                     BackgroundColor   { get; }
+        /// <summary>The format's name, written on the creative.</summary>
+        internal string                    FormatName        { get; }
         /// <summary>Rect ads only: the cell's corner radius in pixels.</summary>
         internal int                       RoundCornerPx     { get; }
         internal Vector2Int                PositionPx        { get; private set; }
@@ -24,7 +25,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
           , EditorAdMode mode
           , in CloseSettings controls
           , float heightRatio
-          , Color backgroundColor
+          , string formatName
           , int roundCornerPx
           , Vector2Int positionPx
           , Vector2Int sizePx
@@ -34,7 +35,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             Mode            = mode;
             Close = controls;
             HeightRatio     = heightRatio;
-            BackgroundColor = backgroundColor;
+            FormatName      = formatName;
             RoundCornerPx   = Mathf.Max(0, roundCornerPx);
             PositionPx      = positionPx;
             SizePx          = sizePx;
@@ -46,7 +47,6 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             string adUnitId
           , bool fullScreen
           , float heightRatio
-          , Color backgroundColor
           , in CloseSettings controls
           , FullScreenLayout layout) {
             return new(
@@ -56,7 +56,13 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
                     : EditorAdMode.Collapsible
               , controls
               , ResolveRatio(heightRatio, DefaultHeightRatio)
-              , backgroundColor
+              , !fullScreen
+                    ? "Native Collapsible"
+                    : layout switch {
+                        FullScreenLayout.AppOpen => "Native App Open"
+                      , FullScreenLayout.EndCard => "Native End Card"
+                      , _                        => "Native Interstitial"
+                    }
               , 0
               , default
               , default
@@ -68,14 +74,14 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
             string adUnitId
           , Vector2Int positionPx
           , Vector2Int sizePx
-          , Color backgroundColor
+          , string format
           , int roundCornerPx) {
             return new(
                 adUnitId
               , EditorAdMode.RectAd
               , default
               , default
-              , backgroundColor
+              , format == "NATIVE_MREC" ? "Native MRec" : "Native In-Feed"
               , roundCornerPx
               , positionPx
               , sizePx
@@ -97,7 +103,7 @@ namespace RiseOn.Ads.AdMob.Native.Platforms.Editor {
               , Mode
               , Close
               , HeightRatio
-              , BackgroundColor
+              , FormatName
               , RoundCornerPx
               , PositionPx
               , SizePx

@@ -18,10 +18,16 @@ assembly của mediation phải sửa asset của từng project.
   target khác).
   Mediation chỉ tải những định dạng đó. `AdUnitId.Value` trả unit id của nền tảng
   đang chạy; trong Editor là của Android, ô Android trống thì của iOS.
-- Cách định dạng hiện (vị trí, adaptive của banner, màu nền và nút đóng của
-  native...) thuộc mục Formats của trang, không thuộc mediation: mediation đọc
-  `IAdMediationContext.Formats` và đổi sang kiểu của SDK, không khai field riêng cho
-  những thứ đó. `Formats` như nhau trên cả hai nền tảng.
+- Cách định dạng hiện (vị trí, adaptive của banner...) thuộc mục Formats của
+  trang, không thuộc mediation: mediation đọc `IAdMediationContext.Formats` và đổi
+  sang kiểu của SDK, không khai field riêng cho những thứ đó. `Formats` như nhau
+  trên cả hai nền tảng.
+- Nút đóng của ad native đến theo từng lần hiện, qua tham số `close` của
+  `IAdMediationFullScreen.Show` và `IAdMediationNative.ShowCollapsible`: là `close`
+  game truyền vào lời gọi hiện, không có thì **Close** của format trên trang.
+  Mediation đặt nút đóng theo tham số này, không đọc **Close** từ `Formats`. Format
+  không phải native bỏ qua nó.
+- Màu ad native không có setting: theo theme sáng tối của máy.
 - Định dạng nào SDK không phục vụ mà vẫn được giao thì log lỗi "take it off the
   priority list", không ném.
 - Mọi lần show kết thúc bằng đúng một `OnClosed` hoặc `OnFailed`, kể cả show bị từ

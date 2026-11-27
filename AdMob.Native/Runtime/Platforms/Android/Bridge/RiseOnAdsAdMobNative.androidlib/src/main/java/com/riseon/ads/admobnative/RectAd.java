@@ -25,7 +25,6 @@ public final class RectAd extends BaseAd implements NativeAdPool.Consumer {
 
     private final String adUnitId;
     private final int cacheSize;
-    private final int backgroundColor;
     private final RectAdSlot slot;
     private Activity activity;
     // Main thread only; joined on the first message, left on release.
@@ -39,8 +38,7 @@ public final class RectAd extends BaseAd implements NativeAdPool.Consumer {
     public RectAd(
             Activity currentActivity
           , String adUnitId
-          , int cacheSize
-          , int backgroundColor) {
+          , int cacheSize) {
         if (adUnitId == null || adUnitId.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "RectAd requires a non-empty adUnitId");
@@ -48,7 +46,6 @@ public final class RectAd extends BaseAd implements NativeAdPool.Consumer {
 
         this.adUnitId = adUnitId;
         this.cacheSize = Math.max(1, cacheSize);
-        this.backgroundColor = backgroundColor;
         this.activity = currentActivity;
         this.slot = new RectAdSlot(this);
         main.post(() -> {
@@ -261,10 +258,6 @@ public final class RectAd extends BaseAd implements NativeAdPool.Consumer {
 
     Activity CurrentActivity() {
         return activity;
-    }
-
-    int BackgroundColor() {
-        return backgroundColor;
     }
 
     String AdUnitId() {

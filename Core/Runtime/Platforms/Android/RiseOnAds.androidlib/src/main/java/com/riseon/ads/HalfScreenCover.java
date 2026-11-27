@@ -2,6 +2,7 @@ package com.riseon.ads;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -29,14 +30,22 @@ public final class HalfScreenCover {
 
     private HalfScreenCover() {}
 
+    // The device theme's surface, the collapsible panel's own (the AdMob
+    // native pack's AdTheme), so a swap between two ads shows no seam.
+    private static int Surface(Activity activity) {
+        int night = activity.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
+        return night == Configuration.UI_MODE_NIGHT_YES ? 0xFF29292B : Color.WHITE;
+    }
+
     // panelHeight is the ad's own panel height in pixels, as the ad publishes
     // it, so the two windows end at the same line. Anything at or below 0
     // means the whole screen.
     public static void Prepare(
             Activity currentActivity
-          , int color
           , int panelHeight) {
         BaseCover.RunOnMainThread(() -> {
+            int color = Surface(currentActivity);
             CoverDialog current = dialog;
             if (current != null
                     && current.IsAddedTo(currentActivity)) {

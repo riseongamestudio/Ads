@@ -352,7 +352,6 @@ final class RectAdSlot {
                       , rect.yPx
                       , rect.widthPx
                       , rect.heightPx
-                      , owner.BackgroundColor()
                       , rect.roundCornerPx
                       , new NativeAdPresentation.Listener() {
                             @Override

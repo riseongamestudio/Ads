@@ -1,4 +1,5 @@
 #import "RANAdTextLabel.h"
+#import "RANNativeAdStarRatingView.h"
 
 // The slack Android spends under the same name, TEXT_BOUNDS_TOLERANCE_PX.
 // One point against one pixel: the two are not the same quantity, and the
@@ -9,6 +10,9 @@ static const NSTimeInterval kRANMarqueeRepeatDelaySeconds = 1.2;
 static const CGFloat kRANMarqueePointsPerSecond = 30;
 // Android separates the ghost from the tail by a third of the view width.
 static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
+// A scrolling line fades out over this much at each end, as Android's
+// fading edge, rather than cutting a letter in half at the edge.
+static const CGFloat kRANMarqueeFadeLength = 12;
 
 @implementation RANAdTextLabel {
     UILabel *_label;
@@ -34,6 +38,7 @@ static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
     _font = [UIFont systemFontOfSize:UIFont.labelFontSize];
     _textColor = UIColor.whiteColor;
     _maxLines = 1;
+    _lineHeightMultiple = 1;
     _textAlignment = NSTextAlignmentLeft;
     _label = [[UILabel alloc] init];
     _ghost = [[UILabel alloc] init];
@@ -75,6 +80,26 @@ static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
     [self ran_applyTextConfiguration];
 }
 
+- (void)setLineHeightMultiple:(CGFloat)lineHeightMultiple {
+    _lineHeightMultiple = MAX(1, lineHeightMultiple);
+    [self ran_applyTextConfiguration];
+}
+
+- (void)setEllipsizes:(BOOL)ellipsizes {
+    _ellipsizes = ellipsizes;
+    [self ran_applyTextConfiguration];
+}
+
+- (void)setStars:(CGFloat)stars {
+    _stars = stars;
+    [self ran_applyTextConfiguration];
+}
+
+- (void)setStarsOnDark:(BOOL)starsOnDark {
+    _starsOnDark = starsOnDark;
+    [self ran_applyTextConfiguration];
+}
+
 // One attributed rebuild for every configuration change: full hyphenation in
 // wrapped mode matches the Android factory's HYPHENATION_FREQUENCY_FULL, so
 // line counts - and with them which candidates fit - agree across platforms.
@@ -87,18 +112,36 @@ static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
     } else {
         paragraph.lineBreakMode = NSLineBreakByWordWrapping;
         paragraph.hyphenationFactor = 1;
+        paragraph.lineHeightMultiple = _lineHeightMultiple;
     }
 
-    NSAttributedString *value = [[NSAttributedString alloc]
+    NSDictionary *attributes = @{
+        NSFontAttributeName: self.font
+      , NSForegroundColorAttributeName: self.textColor
+      , NSParagraphStyleAttributeName: paragraph
+    };
+    NSMutableAttributedString *value = [[NSMutableAttributedString alloc]
             initWithString:self.text ?: @""
-                attributes:@{
-                    NSFontAttributeName: self.font
-                  , NSForegroundColorAttributeName: self.textColor
-                  , NSParagraphStyleAttributeName: paragraph
-                }];
+                attributes:attributes];
+    if (_stars > 0) {
+        NSMutableAttributedString *stars = [[NSMutableAttributedString alloc]
+                initWithAttributedString:RANStarsText(_stars, self.font, _starsOnDark)];
+        [stars appendAttributedString:[[NSAttributedString alloc]
+                initWithString:@" "
+                    attributes:attributes]];
+        [stars addAttribute:NSParagraphStyleAttributeName
+                      value:paragraph
+                      range:NSMakeRange(0, stars.length)];
+        [value insertAttributedString:stars atIndex:0];
+    }
     _label.attributedText = value;
     _ghost.attributedText = value;
     _label.numberOfLines = self.marquee ? 1 : self.maxLines;
+    // The label's own mode applies to its last line only: the lines above
+    // still wrap at words.
+    _label.lineBreakMode = !self.marquee && _ellipsizes
+            ? NSLineBreakByTruncatingTail
+            : (self.marquee ? NSLineBreakByClipping : NSLineBreakByWordWrapping);
     _ghost.numberOfLines = 1;
     _ghost.hidden = YES;
     [self setNeedsLayout];
@@ -216,6 +259,7 @@ static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
     CGFloat viewHeight = self.bounds.size.height;
     _laidOutSize = self.bounds.size;
     _laidOut = YES;
+    self.layer.mask = nil;
     if (!self.marquee) {
         _ghost.hidden = YES;
         _label.frame = CGRectMake(0, 0, viewWidth, viewHeight);
@@ -234,6 +278,18 @@ static const CGFloat kRANMarqueeGhostGapRatio = 1.0f / 3.0f;
     }
 
     CGFloat ghostOffset = textWidth + viewWidth * kRANMarqueeGhostGapRatio;
+    CGFloat fade = MIN(kRANMarqueeFadeLength / viewWidth, 0.25);
+    CAGradientLayer *mask = [CAGradientLayer layer];
+    mask.frame = self.bounds;
+    mask.startPoint = CGPointMake(0, 0.5);
+    mask.endPoint = CGPointMake(1, 0.5);
+    mask.colors = @[
+        (id)UIColor.clearColor.CGColor
+      , (id)UIColor.blackColor.CGColor
+      , (id)UIColor.blackColor.CGColor
+      , (id)UIColor.clearColor.CGColor ];
+    mask.locations = @[ @0, @(fade), @(1 - fade), @1 ];
+    self.layer.mask = mask;
     _ghost.hidden = NO;
     _ghost.frame = CGRectMake(ghostOffset, textTop, textWidth, lineHeight);
     [self ran_scheduleMarqueeCycleWithOffset:ghostOffset

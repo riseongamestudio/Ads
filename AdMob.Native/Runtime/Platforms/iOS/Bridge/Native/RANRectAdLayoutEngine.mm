@@ -888,21 +888,22 @@ static const NSInteger kRANNudgeTextMaxSteps = 5;
 
     CGFloat aspect = [self ran_mediaAspectRatioForVideo:plan.renderVideo];
     if (plan.layoutTemplate == RANRectAdTemplateMediaBackground) {
-        // Both dimensions carry the registered MediaView, so both are
-        // held to the media minimum - video's floor for a video creative,
-        // the far lower image floor otherwise.
+        // Both dimensions carry the registered MediaView, the cell less its
+        // corner clearance, so both are held to the media minimum - video's
+        // floor for a video creative, the far lower image floor otherwise.
         CGFloat minSide = [_viewFactory mediaPolicyFloor];
-        if (plan.width < minSide || plan.height < minSide) {
+        CGFloat mediaHeight = [self ran_contentHeightForPlan:plan];
+        if (contentWidth < minSide || mediaHeight < minSide) {
             [self ran_recordRejectionForTemplate:plan.layoutTemplate
                                            tier:plan.tier
                                          reason:[NSString stringWithFormat:
-                                                @"slot %gx%g is under the "
+                                                @"picture %gx%g is under the "
                                                  "media minimum"
-                                              , plan.width, plan.height]];
+                                              , contentWidth, mediaHeight]];
             return NO;
         }
-        plan.mediaWidth = plan.width;
-        plan.mediaHeight = plan.height;
+        plan.mediaWidth = contentWidth;
+        plan.mediaHeight = mediaHeight;
         return YES;
     }
     if (plan.layoutTemplate == RANRectAdTemplateMediaTop) {
